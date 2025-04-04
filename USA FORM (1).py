@@ -188,10 +188,22 @@ def init_db():
         cursor.execute("SELECT COUNT(*) FROM breaks")
         if cursor.fetchone()[0] == 0:
             default_breaks = [
-                ("Morning Break", "10:00", "10:15", 5, "System"),
-                ("Lunch Break", "12:00", "12:30", 5, "System"),
-                ("Afternoon Break", "15:00", "15:15", 5, "System"),
-                ("Evening Break", "17:00", "17:15", 5, "System")
+                ("LUNCH BREAK", "19:00", "19:30", 10, "System"),
+                ("LUNCH BREAK", "19:30", "20:00", 10, "System"),
+                ("LUNCH BREAK", "20:00", "20:30", 10, "System"),
+                ("LUNCH BREAK", "20:30", "21:00", 10, "System"),
+                ("LUNCH BREAK", "21:00", "21:30", 10, "System"),
+                ("TEA BREAK", "16:00", "16:15", 5, "System"),
+                ("TEA BREAK", "16:15", "16:30", 5, "System"),
+                ("TEA BREAK", "16:30", "16:45", 5, "System"),
+                ("TEA BREAK", "16:45", "17:00", 5, "System"),
+                ("TEA BREAK", "17:00", "17:15", 5, "System"),
+                ("TEA BREAK", "17:15", "17:30", 5, "System"),
+                ("TEA BREAK", "21:30", "21:45", 5, "System"),
+                ("TEA BREAK", "21:45", "22:00", 5, "System"),
+                ("TEA BREAK", "22:00", "22:15", 5, "System"),
+                ("TEA BREAK", "22:15", "22:30", 5, "System"),
+                ("TEA BREAK", "22:30", "22:45", 5, "System")
             ]
             for break_name, start, end, max_users, creator in default_breaks:
                 cursor.execute("""
@@ -257,7 +269,6 @@ def init_db():
         conn.commit()
     finally:
         conn.close()
-
 
 def is_killswitch_enabled():
     conn = get_db_connection()
@@ -630,7 +641,7 @@ def get_all_break_slots():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM breaks ORDER BY start_time")
+        cursor.execute("SELECT * FROM breaks ORDER BY break_name, start_time")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -649,7 +660,7 @@ def get_available_break_slots(date):
                 GROUP BY break_id
             ) bb ON b.id = bb.break_id
             WHERE b.max_users > IFNULL(bb.booking_count, 0)
-            ORDER BY b.start_time
+            ORDER BY b.break_name, b.start_time
         """, (date,))
         return cursor.fetchall()
     finally:
@@ -1050,6 +1061,20 @@ st.markdown("""
     .time-input {
         font-family: monospace;
     }
+    /* Break slots styling */
+    .break-slot {
+        padding: 10px;
+        border: 1px solid #444;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .lunch-break {
+        background-color: #2d3748;
+    }
+    .tea-break {
+        background-color: #2d3748;
+    }
     /* Fancy number checker styles */
     .fancy-number { color: #00ff00; font-weight: bold; }
     .normal-number { color: #ffffff; }
@@ -1292,10 +1317,10 @@ else:
             with st.expander("➕ Add New Break Slot"):
                 with st.form("add_break_form"):
                     cols = st.columns(3)
-                    break_name = cols[0].text_input("Break Name")
+                    break_name = cols[0].selectbox("Break Name", ["LUNCH BREAK", "TEA BREAK"])
                     start_time = cols[1].text_input("Start Time (HH:MM)")
                     end_time = cols[2].text_input("End Time (HH:MM)")
-                    max_users = st.number_input("Max Users", min_value=1, value=1)
+                    max_users = st.number_input("Max Users", min_value=1, value=5)
                     
                     if st.form_submit_button("Add Break Slot"):
                         if break_name:
@@ -1318,6 +1343,49 @@ else:
             st.subheader("Current Break Schedule")
             breaks = get_all_break_slots()
             
+            # Group breaks by type
+            lunch_breaks = [b for b in breaks if b[1] == "LUNCH BREAK"]
+            tea_breaks = [b for b in breaks if b[1] == "TEA BREAK"]
+            
+            # Display Lunch Breaks in a grid
+            st.markdown("### LUNCH BREAK")
+            lunch_cols = st.columns(6)
+            for i, break_slot in enumerate(lunch_breaks):
+                with lunch_cols[i % 6]:
+                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                    st.markdown(f"""
+                    <div class="break-slot lunch-break">
+                        <strong>{start} - {end}</strong><br>
+                        Max: {max_u}
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Display Tea Breaks in two columns
+            st.markdown("### TEA BREAK")
+            tea_col1, tea_col2 = st.columns(2)
+            
+            with tea_col1:
+                st.markdown("**Early Tea Breaks**")
+                for break_slot in tea_breaks[:6]:  # First 6 tea breaks (early)
+                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                    st.markdown(f"""
+                    <div class="break-slot tea-break">
+                        <strong>{start} - {end}</strong><br>
+                        Max: {max_u}
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            with tea_col2:
+                st.markdown("**Late Tea Breaks**")
+                for break_slot in tea_breaks[6:]:  # Remaining tea breaks (late)
+                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                    st.markdown(f"""
+                    <div class="break-slot tea-break">
+                        <strong>{start} - {end}</strong><br>
+                        Max: {max_u}
+                    </div>
+                    """, unsafe_allow_html=True)
+            
             # Initialize break_edits if not exists
             if "break_edits" not in st.session_state:
                 st.session_state.break_edits = {}
@@ -1334,6 +1402,7 @@ else:
                     }
             
             # Display editable breaks
+            st.subheader("Edit Break Slots")
             for b in breaks:
                 b_id, name, start, end, max_u, curr_u, created_by, ts = b
                 with st.container():
@@ -1341,9 +1410,10 @@ else:
                     
                     cols = st.columns([3, 2, 2, 1, 1])
                     with cols[0]:
-                        st.session_state.break_edits[b_id]["break_name"] = st.text_input(
+                        st.session_state.break_edits[b_id]["break_name"] = st.selectbox(
                             "Break Name", 
-                            value=st.session_state.break_edits[b_id]["break_name"],
+                            ["LUNCH BREAK", "TEA BREAK"],
+                            index=0 if name == "LUNCH BREAK" else 1,
                             key=f"name_{b_id}"
                         )
                     with cols[1]:
@@ -1416,13 +1486,20 @@ else:
                 st.rerun()
         
         else:
+            # Agent view
             st.subheader("Available Break Slots")
+            
             try:
                 available_breaks = get_available_break_slots(formatted_date)
+                lunch_breaks = [b for b in available_breaks if b[1] == "LUNCH BREAK"]
+                tea_breaks = [b for b in available_breaks if b[1] == "TEA BREAK"]
                 
-                if available_breaks:
-                    for b in available_breaks:
-                        b_id, name, start, end, max_u, curr_u, created_by, ts = b
+                # Display Lunch Breaks in a grid
+                st.markdown("### LUNCH BREAK")
+                lunch_cols = st.columns(6)
+                for i, break_slot in enumerate(lunch_breaks):
+                    with lunch_cols[i % 6]:
+                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
                         
                         try:
                             conn = get_db_connection()
@@ -1440,24 +1517,114 @@ else:
                         finally:
                             conn.close()
                         
-                        with st.container():
-                            cols = st.columns([3, 2, 1])
-                            cols[0].write(f"*{name}* ({start} - {end})")
-                            cols[1].write(f"Available slots: {remaining}/{max_u}")
-                            
-                            if cols[2].button("Book", key=f"book_{b_id}"):
-                                try:
-                                    conn = get_db_connection()
-                                    cursor = conn.cursor()
-                                    cursor.execute("SELECT id FROM users WHERE username = ?", 
-                                                (st.session_state.username,))
-                                    user_id = cursor.fetchone()[0]
-                                    book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error booking slot: {str(e)}")
-                                finally:
-                                    conn.close()
+                        st.markdown(f"""
+                        <div class="break-slot lunch-break">
+                            <strong>{start} - {end}</strong><br>
+                            Available: {remaining}/{max_u}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("Book", key=f"book_lunch_{b_id}"):
+                            try:
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT id FROM users WHERE username = ?", 
+                                              (st.session_state.username,))
+                                user_id = cursor.fetchone()[0]
+                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error booking slot: {str(e)}")
+                            finally:
+                                conn.close()
+                
+                # Display Tea Breaks in two columns
+                st.markdown("### TEA BREAK")
+                tea_col1, tea_col2 = st.columns(2)
+                
+                with tea_col1:
+                    st.markdown("**Early Tea Breaks**")
+                    for break_slot in tea_breaks[:6]:  # First 6 tea breaks (early)
+                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                        
+                        try:
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                                SELECT COUNT(*) 
+                                FROM break_bookings 
+                                WHERE break_id = ? AND booking_date = ?
+                            """, (b_id, formatted_date))
+                            booked_count = cursor.fetchone()[0]
+                            remaining = max_u - booked_count
+                        except Exception as e:
+                            st.error(f"Error checking availability: {str(e)}")
+                            continue
+                        finally:
+                            conn.close()
+                        
+                        st.markdown(f"""
+                        <div class="break-slot tea-break">
+                            <strong>{start} - {end}</strong><br>
+                            Available: {remaining}/{max_u}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("Book", key=f"book_tea_early_{b_id}"):
+                            try:
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT id FROM users WHERE username = ?", 
+                                            (st.session_state.username,))
+                                user_id = cursor.fetchone()[0]
+                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error booking slot: {str(e)}")
+                            finally:
+                                conn.close()
+                
+                with tea_col2:
+                    st.markdown("**Late Tea Breaks**")
+                    for break_slot in tea_breaks[6:]:  # Remaining tea breaks (late)
+                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                        
+                        try:
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                                SELECT COUNT(*) 
+                                FROM break_bookings 
+                                WHERE break_id = ? AND booking_date = ?
+                            """, (b_id, formatted_date))
+                            booked_count = cursor.fetchone()[0]
+                            remaining = max_u - booked_count
+                        except Exception as e:
+                            st.error(f"Error checking availability: {str(e)}")
+                            continue
+                        finally:
+                            conn.close()
+                        
+                        st.markdown(f"""
+                        <div class="break-slot tea-break">
+                            <strong>{start} - {end}</strong><br>
+                            Available: {remaining}/{max_u}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("Book", key=f"book_tea_late_{b_id}"):
+                            try:
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT id FROM users WHERE username = ?", 
+                                            (st.session_state.username,))
+                                user_id = cursor.fetchone()[0]
+                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error booking slot: {str(e)}")
+                            finally:
+                                conn.close()
             except Exception as e:
                 st.error(f"Error loading break slots: {str(e)}")
             
@@ -1469,7 +1636,15 @@ else:
                 if user_bookings:
                     for b in user_bookings:
                         b_id, break_id, user_id, username, date, ts, break_name, start, end = b
-                        st.write(f"{break_name} ({start} - {end})")
+                        st.markdown(f"""
+                        <div class="card">
+                            <div style="display: flex; justify-content: space-between;">
+                                <h4>{break_name}</h4>
+                                <small>{date}</small>
+                            </div>
+                            <p>Time: {start} - {end}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                 else:
                     st.info("You have no bookings for selected date")
             except Exception as e:
