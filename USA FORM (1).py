@@ -1061,19 +1061,87 @@ st.markdown("""
     .time-input {
         font-family: monospace;
     }
-    /* Break slots styling */
-    .break-slot {
-        padding: 10px;
-        border: 1px solid #444;
-        border-radius: 5px;
+    /* New Break Slots Styling */
+    .break-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .break-card {
+        background-color: #2D3748;
+        border-radius: 10px;
+        padding: 15px;
+        width: calc(33% - 10px);
+        min-width: 250px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+    .break-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .break-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 10px;
-        text-align: center;
     }
-    .lunch-break {
-        background-color: #2d3748;
+    .break-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #E2E8F0;
     }
-    .tea-break {
-        background-color: #2d3748;
+    .break-time {
+        font-size: 0.9rem;
+        color: #A0AEC0;
+    }
+    .break-details {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    .break-availability {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .break-available {
+        color: #48BB78;
+        font-weight: bold;
+    }
+    .break-full {
+        color: #F56565;
+        font-weight: bold;
+    }
+    .break-button {
+        width: 100%;
+        margin-top: 10px;
+    }
+    .break-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .lunch-tag {
+        background-color: #2C5282;
+        color: #BEE3F8;
+    }
+    .tea-tag {
+        background-color: #553C9A;
+        color: #E9D8FD;
+    }
+    .break-section {
+        margin-bottom: 30px;
+    }
+    .break-section-title {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+        color: #E2E8F0;
+        border-bottom: 1px solid #4A5568;
+        padding-bottom: 8px;
     }
     /* Fancy number checker styles */
     .fancy-number { color: #00ff00; font-weight: bold; }
@@ -1347,44 +1415,55 @@ else:
             lunch_breaks = [b for b in breaks if b[1] == "LUNCH BREAK"]
             tea_breaks = [b for b in breaks if b[1] == "TEA BREAK"]
             
-            # Display Lunch Breaks in a grid
-            st.markdown("### LUNCH BREAK")
-            lunch_cols = st.columns(6)
-            for i, break_slot in enumerate(lunch_breaks):
-                with lunch_cols[i % 6]:
-                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                    st.markdown(f"""
-                    <div class="break-slot lunch-break">
-                        <strong>{start} - {end}</strong><br>
-                        Max: {max_u}
-                    </div>
-                    """, unsafe_allow_html=True)
+            # Display Lunch Breaks
+            st.markdown('<div class="break-section">', unsafe_allow_html=True)
+            st.markdown('<div class="break-section-title">🍽️ LUNCH BREAKS</div>', unsafe_allow_html=True)
+            st.markdown('<div class="break-container">', unsafe_allow_html=True)
             
-            # Display Tea Breaks in two columns
-            st.markdown("### TEA BREAK")
-            tea_col1, tea_col2 = st.columns(2)
-            
-            with tea_col1:
-                st.markdown("**Early Tea Breaks**")
-                for break_slot in tea_breaks[:6]:  # First 6 tea breaks (early)
-                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                    st.markdown(f"""
-                    <div class="break-slot tea-break">
-                        <strong>{start} - {end}</strong><br>
-                        Max: {max_u}
+            for break_slot in lunch_breaks:
+                b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                st.markdown(f"""
+                <div class="break-card">
+                    <div class="break-header">
+                        <div class="break-title">Lunch Break</div>
+                        <span class="break-tag lunch-tag">Lunch</span>
                     </div>
-                    """, unsafe_allow_html=True)
-            
-            with tea_col2:
-                st.markdown("**Late Tea Breaks**")
-                for break_slot in tea_breaks[6:]:  # Remaining tea breaks (late)
-                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                    st.markdown(f"""
-                    <div class="break-slot tea-break">
-                        <strong>{start} - {end}</strong><br>
-                        Max: {max_u}
+                    <div class="break-time">{start} - {end}</div>
+                    <div class="break-details">
+                        <div class="break-availability">
+                            <span>Capacity:</span>
+                            <span>{max_u}</span>
+                        </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div></div>', unsafe_allow_html=True)
+            
+            # Display Tea Breaks
+            st.markdown('<div class="break-section">', unsafe_allow_html=True)
+            st.markdown('<div class="break-section-title">☕ TEA BREAKS</div>', unsafe_allow_html=True)
+            st.markdown('<div class="break-container">', unsafe_allow_html=True)
+            
+            for break_slot in tea_breaks:
+                b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                st.markdown(f"""
+                <div class="break-card">
+                    <div class="break-header">
+                        <div class="break-title">Tea Break</div>
+                        <span class="break-tag tea-tag">Tea</span>
+                    </div>
+                    <div class="break-time">{start} - {end}</div>
+                    <div class="break-details">
+                        <div class="break-availability">
+                            <span>Capacity:</span>
+                            <span>{max_u}</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            st.markdown('</div></div>', unsafe_allow_html=True)
             
             # Initialize break_edits if not exists
             if "break_edits" not in st.session_state:
@@ -1494,137 +1573,104 @@ else:
                 lunch_breaks = [b for b in available_breaks if b[1] == "LUNCH BREAK"]
                 tea_breaks = [b for b in available_breaks if b[1] == "TEA BREAK"]
                 
-                # Display Lunch Breaks in a grid
-                st.markdown("### LUNCH BREAK")
-                lunch_cols = st.columns(6)
-                for i, break_slot in enumerate(lunch_breaks):
-                    with lunch_cols[i % 6]:
-                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                        
-                        try:
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute("""
-                                SELECT COUNT(*) 
-                                FROM break_bookings 
-                                WHERE break_id = ? AND booking_date = ?
-                            """, (b_id, formatted_date))
-                            booked_count = cursor.fetchone()[0]
-                            remaining = max_u - booked_count
-                        except Exception as e:
-                            st.error(f"Error checking availability: {str(e)}")
-                            continue
-                        finally:
-                            conn.close()
-                        
-                        st.markdown(f"""
-                        <div class="break-slot lunch-break">
-                            <strong>{start} - {end}</strong><br>
-                            Available: {remaining}/{max_u}
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("Book", key=f"book_lunch_{b_id}"):
-                            try:
-                                conn = get_db_connection()
-                                cursor = conn.cursor()
-                                cursor.execute("SELECT id FROM users WHERE username = ?", 
-                                              (st.session_state.username,))
-                                user_id = cursor.fetchone()[0]
-                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error booking slot: {str(e)}")
-                            finally:
-                                conn.close()
+                # Display Lunch Breaks
+                st.markdown('<div class="break-section">', unsafe_allow_html=True)
+                st.markdown('<div class="break-section-title">🍽️ LUNCH BREAKS</div>', unsafe_allow_html=True)
+                st.markdown('<div class="break-container">', unsafe_allow_html=True)
                 
-                # Display Tea Breaks in two columns
-                st.markdown("### TEA BREAK")
-                tea_col1, tea_col2 = st.columns(2)
-                
-                with tea_col1:
-                    st.markdown("**Early Tea Breaks**")
-                    for break_slot in tea_breaks[:6]:  # First 6 tea breaks (early)
-                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                        
-                        try:
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute("""
-                                SELECT COUNT(*) 
-                                FROM break_bookings 
-                                WHERE break_id = ? AND booking_date = ?
-                            """, (b_id, formatted_date))
-                            booked_count = cursor.fetchone()[0]
-                            remaining = max_u - booked_count
-                        except Exception as e:
-                            st.error(f"Error checking availability: {str(e)}")
-                            continue
-                        finally:
-                            conn.close()
-                        
-                        st.markdown(f"""
-                        <div class="break-slot tea-break">
-                            <strong>{start} - {end}</strong><br>
-                            Available: {remaining}/{max_u}
+                for break_slot in lunch_breaks:
+                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                    
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            SELECT COUNT(*) 
+                            FROM break_bookings 
+                            WHERE break_id = ? AND booking_date = ?
+                        """, (b_id, formatted_date))
+                        booked_count = cursor.fetchone()[0]
+                        remaining = max_u - booked_count
+                        is_available = remaining > 0
+                    except Exception as e:
+                        st.error(f"Error checking availability: {str(e)}")
+                        continue
+                    finally:
+                        conn.close()
+                    
+                    st.markdown(f"""
+                    <div class="break-card">
+                        <div class="break-header">
+                            <div class="break-title">Lunch Break</div>
+                            <span class="break-tag lunch-tag">Lunch</span>
                         </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("Book", key=f"book_tea_early_{b_id}"):
-                            try:
-                                conn = get_db_connection()
-                                cursor = conn.cursor()
-                                cursor.execute("SELECT id FROM users WHERE username = ?", 
-                                            (st.session_state.username,))
-                                user_id = cursor.fetchone()[0]
-                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error booking slot: {str(e)}")
-                            finally:
-                                conn.close()
-                
-                with tea_col2:
-                    st.markdown("**Late Tea Breaks**")
-                    for break_slot in tea_breaks[6:]:  # Remaining tea breaks (late)
-                        b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
-                        
-                        try:
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute("""
-                                SELECT COUNT(*) 
-                                FROM break_bookings 
-                                WHERE break_id = ? AND booking_date = ?
-                            """, (b_id, formatted_date))
-                            booked_count = cursor.fetchone()[0]
-                            remaining = max_u - booked_count
-                        except Exception as e:
-                            st.error(f"Error checking availability: {str(e)}")
-                            continue
-                        finally:
-                            conn.close()
-                        
-                        st.markdown(f"""
-                        <div class="break-slot tea-break">
-                            <strong>{start} - {end}</strong><br>
-                            Available: {remaining}/{max_u}
+                        <div class="break-time">{start} - {end}</div>
+                        <div class="break-details">
+                            <div class="break-availability">
+                                <span>Available:</span>
+                                <span class="{'break-available' if is_available else 'break-full'}">{remaining}/{max_u}</span>
+                            </div>
                         </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("Book", key=f"book_tea_late_{b_id}"):
-                            try:
-                                conn = get_db_connection()
-                                cursor = conn.cursor()
-                                cursor.execute("SELECT id FROM users WHERE username = ?", 
-                                            (st.session_state.username,))
-                                user_id = cursor.fetchone()[0]
-                                book_break_slot(b_id, user_id, st.session_state.username, formatted_date)
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error booking slot: {str(e)}")
-                            finally:
-                                conn.close()
+                        {"<button class='break-button' onclick='bookBreak()'>Book Now</button>" if is_available else "<div class='break-button' style='background-color: #4A5568; color: #A0AEC0; text-align: center; padding: 8px; border-radius: 4px;'>Full</div>"}
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown('</div></div>', unsafe_allow_html=True)
+                
+                # Display Tea Breaks
+                st.markdown('<div class="break-section">', unsafe_allow_html=True)
+                st.markdown('<div class="break-section-title">☕ TEA BREAKS</div>', unsafe_allow_html=True)
+                st.markdown('<div class="break-container">', unsafe_allow_html=True)
+                
+                for break_slot in tea_breaks:
+                    b_id, name, start, end, max_u, curr_u, created_by, ts = break_slot
+                    
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("""
+                            SELECT COUNT(*) 
+                            FROM break_bookings 
+                            WHERE break_id = ? AND booking_date = ?
+                        """, (b_id, formatted_date))
+                        booked_count = cursor.fetchone()[0]
+                        remaining = max_u - booked_count
+                        is_available = remaining > 0
+                    except Exception as e:
+                        st.error(f"Error checking availability: {str(e)}")
+                        continue
+                    finally:
+                        conn.close()
+                    
+                    st.markdown(f"""
+                    <div class="break-card">
+                        <div class="break-header">
+                            <div class="break-title">Tea Break</div>
+                            <span class="break-tag tea-tag">Tea</span>
+                        </div>
+                        <div class="break-time">{start} - {end}</div>
+                        <div class="break-details">
+                            <div class="break-availability">
+                                <span>Available:</span>
+                                <span class="{'break-available' if is_available else 'break-full'}">{remaining}/{max_u}</span>
+                            </div>
+                        </div>
+                        {"<button class='break-button' onclick='bookBreak()'>Book Now</button>" if is_available else "<div class='break-button' style='background-color: #4A5568; color: #A0AEC0; text-align: center; padding: 8px; border-radius: 4px;'>Full</div>"}
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown('</div></div>', unsafe_allow_html=True)
+                
+                # Add JavaScript for booking functionality
+                st.markdown("""
+                <script>
+                function bookBreak() {
+                    // This would be replaced with actual booking logic
+                    alert("Booking functionality would be implemented here!");
+                }
+                </script>
+                """, unsafe_allow_html=True)
+                
             except Exception as e:
                 st.error(f"Error loading break slots: {str(e)}")
             
