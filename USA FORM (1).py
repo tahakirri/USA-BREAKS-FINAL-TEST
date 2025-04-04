@@ -177,25 +177,27 @@ def init_db():
             ("Youssef Kamal", "admin@006"),
             ("Fouad Fathi", "admin@55")
         ]
-          # Create default break slots if none exist
-cursor.execute("SELECT COUNT(*) FROM breaks")
-if cursor.fetchone()[0] == 0:
-    default_breaks = [
-        ("Morning Break", "10:00", "10:15", 5, "System"),
-        ("Lunch Break", "12:00", "12:30", 5, "System"),
-        ("Afternoon Break", "15:00", "15:15", 5, "System"),
-        ("Evening Break", "17:00", "17:15", 5, "System")
-    ]
-    for break_name, start, end, max_users, creator in default_breaks:
-        cursor.execute("""
-            INSERT INTO breaks (break_name, start_time, end_time, max_users, created_by, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (break_name, start, end, max_users, creator, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        
         for username, password in admin_accounts:
             cursor.execute("""
                 INSERT OR IGNORE INTO users (username, password, role) 
                 VALUES (?, ?, ?)
             """, (username, hash_password(password), "admin"))
+
+        # Create default break slots if none exist
+        cursor.execute("SELECT COUNT(*) FROM breaks")
+        if cursor.fetchone()[0] == 0:
+            default_breaks = [
+                ("Morning Break", "10:00", "10:15", 5, "System"),
+                ("Lunch Break", "12:00", "12:30", 5, "System"),
+                ("Afternoon Break", "15:00", "15:15", 5, "System"),
+                ("Evening Break", "17:00", "17:15", 5, "System")
+            ]
+            for break_name, start, end, max_users, creator in default_breaks:
+                cursor.execute("""
+                    INSERT INTO breaks (break_name, start_time, end_time, max_users, created_by, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (break_name, start, end, max_users, creator, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         
         # Create agent accounts (agent name as username, workspace ID as password)
         agents = [
@@ -255,6 +257,7 @@ if cursor.fetchone()[0] == 0:
         conn.commit()
     finally:
         conn.close()
+
 
 def is_killswitch_enabled():
     conn = get_db_connection()
