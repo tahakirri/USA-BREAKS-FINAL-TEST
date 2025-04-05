@@ -13,7 +13,6 @@ from threading import Thread
 # --------------------------
 # Database Functions
 # --------------------------
-
   def get_db_connection():
     """Create and return a database connection."""
        os.makedirs("data", exist_ok=True)
@@ -32,8 +31,8 @@ from threading import Thread
         if conn:
             conn.close()
         raise
-
-def hash_password(password):
+      
+  def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def authenticate(username, password):
