@@ -45,13 +45,15 @@ def init_db():
         cursor = conn.cursor()
         
         # Create all tables with proper schema
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT NOT NULL CHECK(role IN ('agent', 'admin')),
-                product TEXT)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('agent', 'admin')),
+        product TEXT  -- This is the product column
+    )
+""")
         """)
         
         cursor.execute("""
