@@ -14,11 +14,11 @@ from threading import Thread
 # Database Functions
 # --------------------------
 
-def get_db_connection():
+    def get_db_connection():
     """Create and return a database connection."""
-   os.makedirs("data", exist_ok=True)
-    conn = None
-    try:
+       os.makedirs("data", exist_ok=True)
+        conn = None
+        try:
         conn = sqlite3.connect(
             "data/requests.db",
             timeout=10,  # Add timeout
