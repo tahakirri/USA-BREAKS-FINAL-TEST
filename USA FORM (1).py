@@ -14,7 +14,7 @@ from threading import Thread
 # Database Functions
 # --------------------------
 
-    def get_db_connection():
+ def get_db_connection():
     """Create and return a database connection."""
        os.makedirs("data", exist_ok=True)
         conn = None
