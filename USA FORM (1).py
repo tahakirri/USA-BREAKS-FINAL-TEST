@@ -16,8 +16,22 @@ from threading import Thread
 
 def get_db_connection():
     """Create and return a database connection."""
-    os.makedirs("data", exist_ok=True)
-    return sqlite3.connect("data/requests.db")
+   os.makedirs("data", exist_ok=True)
+    conn = None
+    try:
+        conn = sqlite3.connect(
+            "data/requests.db",
+            timeout=10,  # Add timeout
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            isolation_level=None  # Add autocommit mode
+        )
+        conn.execute("PRAGMA journal_mode=WAL")  # Better concurrency
+        return conn
+    except sqlite3.Error as e:
+        st.error(f"Database connection failed: {e}")
+        if conn:
+            conn.close()
+        raise
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -86,7 +100,14 @@ def init_db():
                 image_data BLOB,
                 timestamp TEXT)
         """)
-        
+                conn.commit()
+    except sqlite3.Error as e:
+        st.error(f"Database error: {e}")
+        conn.rollback()
+    finally:
+        if conn:
+            conn.close()
+            
         # Handle system_settings table schema migration
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='system_settings'")
         if not cursor.fetchone():
