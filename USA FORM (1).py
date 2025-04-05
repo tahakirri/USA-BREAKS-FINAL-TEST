@@ -40,20 +40,18 @@ def authenticate(username, password):
         conn.close()
 
 def init_db():
-    """Initialize database with all required tables"""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
-        # Users table
+        # Create all tables with proper schema
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT NOT NULL CHECK(role IN ('agent', 'admin')),
-                product TEXT
-            )
+                product TEXT)
         """)
         
         cursor.execute("""
@@ -172,19 +170,19 @@ def init_db():
         
         # Create default admin accounts
         admin_accounts = [
-            ("taha kirri", "arise@99", "admin"),
-            ("Issam Samghini", "admin@2025", "admin"),
-            ("Loubna Fellah", "admin@99", "admin"),
-            ("Youssef Kamal", "admin@006", "admin"),
-            ("Fouad Fathi", "admin@55", "admin")
+            ("taha kirri", "arise@99", "admin", None),
+            ("Issam Samghini", "admin@2025", "admin", None),
+            ("Loubna Fellah", "admin@99", "admin", None),
+            ("Youssef Kamal", "admin@006", "admin", None),
+            ("Fouad Fathi", "admin@55", "admin", None)
         ]
         
-        for username, password, role in admin_accounts:
+        for username, password, role, product in admin_accounts:
             try:
                 cursor.execute("""
-                    INSERT OR IGNORE INTO users (username, password, role) 
-                    VALUES (?, ?, ?)
-                """, (username, hash_password(password), role))
+                    INSERT OR IGNORE INTO users (username, password, role, product) 
+                    VALUES (?, ?, ?, ?)
+                """, (username, hash_password(password), role, product))
             except sqlite3.IntegrityError:
                 pass
         
@@ -433,12 +431,12 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users")
+        cursor.execute("SELECT id, username, role, product FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_user(username, password, role):
+def add_user(username, password, role, product=None):
     if is_killswitch_enabled():
         st.error("System is currently locked")
         return False
@@ -446,8 +444,8 @@ def add_user(username, password, role):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                      (username, hash_password(password), role))
+        cursor.execute("INSERT INTO users (username, password, role, product) VALUES (?, ?, ?, ?)",
+                      (username, hash_password(password), role, product))
         conn.commit()
         return True
     except sqlite3.Error as e:
@@ -2087,6 +2085,37 @@ def show_midshift_issues_section():
             
             df = pd.DataFrame(data)
             st.dataframe(df)
+            
+            # Download button
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download as CSV",
+                data=csv,
+                file_name="midshift_issues.csv",
+                mime="text/csv"
+            )
+            
+            if st.button("Clear All Records"):
+                clear_midshift_issues()
+                st.rerun()
+        else:
+            st.info("No mid-shift issue records found")
+    else:
+        # For agents, only show their own records
+        user_issues = [issue for issue in midshift_issues if issue[1] == st.session_state.username]
+        if user_issues:
+            data = []
+            for issue in user_issues:
+                _, agent, issue_type, start_time, end_time, ts = issue
+                data.append({
+                    "Agent's Name": agent,
+                    "Issue Type": issue_type,
+                    "Start time": start_time,
+                    "End Time": end_time
+                })
+            
+            df = pd.DataFrame(data)
+            st.dataframe(df
             
             # Download button
             csv = df.to_csv(index=False).encode('utf-8')
