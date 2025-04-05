@@ -40,20 +40,20 @@ def authenticate(username, password):
         conn.close()
 
 def init_db():
+    """Initialize database with all required tables"""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         
-        # Create all tables with proper schema
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT NOT NULL CHECK(role IN ('agent', 'admin')),
-        product TEXT  -- This is the product column
-    )
-""")
+        # Users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('agent', 'admin')),
+                product TEXT
+            )
         """)
         
         cursor.execute("""
