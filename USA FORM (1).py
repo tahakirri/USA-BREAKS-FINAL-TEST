@@ -227,7 +227,7 @@ if target_aht < current_aht:
     st.success(f"""
     Reducing AHT from {current_aht}s to {target_aht}s would allow you to:
     - **Save {required_agents_current - required_agents_target} agents** while maintaining service levels
-    - **Handle {math.floor(calls_forecast * (current_aht/target_aht) - calls_forecast} more calls per hour** with the same staff
+    - **Handle (math.floor(calls_forecast * (current_aht/target_aht) - calls_forecast) more calls per hour** with the same staff
     - **Reduce abandoned calls by {call_loss_current - call_loss_target} calls per hour**
     - **Improve staffing coverage by {coverage_target - coverage_current:.1f} percentage points**
     """)
