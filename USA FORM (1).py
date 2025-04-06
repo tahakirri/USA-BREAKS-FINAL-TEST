@@ -1,170 +1,94 @@
 import streamlit as st
+import numpy as np
 import math
 
-# Page configuration
-st.set_page_config(layout="wide")
-st.title("📊 Call Center Staffing Optimizer")
+st.title("Call Center Schedule Optimizer with AHT Analysis")
 
-# Dark mode CSS
-st.markdown("""
-<style>
-body {
-    color: #ffffff;
-    background-color: #1a1a1a;
-}
-.metric-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #2d3436;
-    margin-bottom: 10px;
-    border-left: 5px solid #3498db;
-}
-.warning-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #2d3436;
-    border-left: 5px solid #e74c3c;
-    margin-bottom: 10px;
-}
-.stNumberInput, .stSelectbox, .stSlider {
-    background-color: #2d3436 !important;
-    color: white !important;
-}
-.graph-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #2d3436;
-    border: 1px solid #3498db;
-    margin-bottom: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
+# Input parameters
+st.header("Input Parameters")
+col1, col2 = st.columns(2)
 
-# Input Section
-with st.expander("⚙️ Configure Metrics", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        calls_per_hour = st.number_input("Calls per hour", min_value=1, value=200, step=1)
-        current_agents = st.number_input("Current agents", min_value=1, value=8, step=1)
-    with col2:
-        current_aht = st.number_input("Current AHT (seconds)", min_value=30, value=300, step=10)
-        current_abandon_rate = st.number_input("Current abandon rate (%)", min_value=0.0, value=15.0, step=0.5)
+with col1:
+    calls_forecast = st.slider("Expected Calls per Hour", 50, 500, 200)
+    service_level_target = st.slider("Target Service Level (%)", 70, 100, 80)
+    max_agents = st.slider("Maximum Available Agents", 5, 50, 20)
+    
+with col2:
+    current_aht = st.slider("Current AHT (seconds)", 120, 600, 300)
+    target_aht = st.slider("Target AHT (seconds)", 120, 600, 240)
+    target_answer_time = st.slider("Target Answer Time (seconds)", 10, 120, 30)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        target_sla = st.number_input("Target SLA (%)", min_value=50, value=80, step=1)
-        target_answer_time = st.number_input("Target answer time (seconds)", min_value=5, value=30, step=5)
-    with col2:
-        target_aht = st.number_input("Target AHT (seconds)", min_value=30, value=240, step=10)
-        target_abandon_rate = st.number_input("Target abandon rate (%)", min_value=0.0, value=8.0, step=0.5)
-
-# Calculations
-def erlang_c(calls, aht, agents, target_answer_time):
-    intensity = calls * (aht/3600)
+# Erlang C calculation (more accurate version)
+def erlang_c(agents, calls, aht):
+    intensity = calls * (aht/3600)  # Convert AHT to hours
     agents = math.ceil(agents)
     
-    if agents <= intensity:
-        return 0
-    
-    sum_series = sum((intensity**n)/math.factorial(n) for n in range(agents))
+    # Calculate probability of wait
+    sum_series = sum([(intensity**n)/math.factorial(n) for n in range(agents)])
     erlang_b = (intensity**agents)/math.factorial(agents)
     pw = erlang_b / (erlang_b + (1 - (intensity/agents)) * sum_series)
-    return (1 - (pw * math.exp(-(agents - intensity) * (target_answer_time/aht)))) * 100
-
-def find_required_agents(calls, aht, target_sla, target_answer_time):
-    intensity = calls * (aht/3600)
-    agents = math.ceil(intensity)
     
+    # Calculate service level
+    sl = 1 - (pw * math.exp(-(agents - intensity) * (target_answer_time/aht)))
+    
+    return sl * 100  # Return as percentage
+
+# Find required agents to meet SLA
+def find_required_agents(calls, aht, target_sla):
+    agents = calls * (aht/3600)  # Start with minimum possible
     while True:
-        sl = erlang_c(calls, aht, agents, target_answer_time)
-        if sl >= target_sla or agents > 100:
+        sl = erlang_c(agents, calls, aht)
+        if sl >= target_sla or agents > 100:  # Prevent infinite loop
             break
-        agents += 1
-        
-    return agents
+        agents += 0.1  # Small increments for precision
+    return math.ceil(agents)
 
-def predict_abandon_rate(calls, agents, aht, current_abandon_rate):
-    intensity = calls * (aht/3600)
-    occupancy = min(100, (intensity/agents)*100)
+# Calculate with current and target AHT
+required_agents_current = find_required_agents(calls_forecast, current_aht, service_level_target)
+required_agents_target = find_required_agents(calls_forecast, target_aht, service_level_target)
+
+# Calculate coverage
+coverage_current = min(100, (required_agents_current / max_agents) * 100)
+coverage_target = min(100, (required_agents_target / max_agents) * 100)
+
+# Display results
+st.header("Optimization Results")
+
+st.subheader("With Current AHT")
+col1, col2, col3 = st.columns(3)
+col1.metric("Agents Required", required_agents_current)
+col2.metric("Projected SLA", f"{erlang_c(required_agents_current, calls_forecast, current_aht):.1f}%")
+col3.metric("Coverage", f"{coverage_current:.1f}%", 
+            "Overstaffed" if coverage_current < 100 else "Fully utilized")
+
+st.subheader("With Target AHT")
+col1, col2, col3 = st.columns(3)
+col1.metric("Agents Required", required_agents_target)
+col2.metric("Projected SLA", f"{erlang_c(required_agents_target, calls_forecast, target_aht):.1f}%")
+col3.metric("Coverage", f"{coverage_target:.1f}%", 
+            "Overstaffed" if coverage_target < 100 else "Fully utilized")
+
+# AHT Impact Analysis
+st.header("AHT Impact Analysis")
+st.write(f"Reducing AHT from {current_aht}s to {target_aht}s would allow you to:")
+st.write(f"- Handle the same volume with {required_agents_current - required_agents_target} fewer agents")
+st.write(f"- Improve your coverage from {coverage_current:.1f}% to {coverage_target:.1f}%")
+st.write(f"- Potentially handle {math.floor(calls_forecast * (current_aht/target_aht))} calls/hour with the same staff")
+
+# Explanation of Coverage
+st.header("What Does Coverage Mean?")
+with st.expander("Understanding Coverage Metrics"):
+    st.write("""
+    **Coverage** in call center staffing refers to the percentage of your required staffing that you actually have available.
     
-    # Abandon rate model
-    if occupancy <= 80:
-        predicted_abandon = current_abandon_rate * (occupancy/80)
-    else:
-        predicted_abandon = current_abandon_rate * (1 + (occupancy-80)/20)**2
+    - **100% Coverage**: You have exactly the number of agents needed to meet your service level target
+    - **Below 100%**: You're understaffed and likely to miss your service level targets
+    - **Above 100%**: You have more staff than needed (which may be good for unexpected spikes)
     
-    return min(100, predicted_abandon)
-
-# Perform calculations
-required_agents = find_required_agents(calls_per_hour, current_aht, target_sla, target_answer_time)
-required_agents_target = find_required_agents(calls_per_hour, target_aht, target_sla, target_answer_time)
-current_coverage = (current_agents / required_agents) * 100
-current_sla = erlang_c(calls_per_hour, current_aht, current_agents, target_answer_time)
-predicted_abandon = predict_abandon_rate(calls_per_hour, current_agents, current_aht, current_abandon_rate)
-shift_abandon = (predicted_abandon/100) * calls_per_hour * 9  # 9-hour shift projection
-occupancy = min(100, (calls_per_hour * (current_aht/3600) / current_agents * 100))
-
-# Results Display
-st.header("📊 Results")
-
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown(f"""
-    <div class="metric-box">
-        <h3>Staffing Requirements</h3>
-        <p>Current Agents: {current_agents}</p>
-        <p>Required Agents (Current AHT): {required_agents}</p>
-        <p>Required Agents (Target AHT): {required_agents_target}</p>
-        <p>Coverage: {current_coverage:.1f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown(f"""
-    <div class="metric-box">
-        <h3>Performance Metrics</h3>
-        <p>Current SLA: {current_sla:.1f}%</p>
-        <p>Hourly Abandon Rate: {predicted_abandon:.1f}%</p>
-        <p>9h Shift Abandon Projection: {int(shift_abandon)} calls</p>
-        <p>Occupancy: {occupancy:.1f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Recommendations
-st.header("📝 Action Plan")
-if current_coverage < 100:
-    st.markdown(f"""
-    <div class="warning-box">
-        <h3>Staffing Shortage Solutions</h3>
-        <p>Gap: {required_agents - current_agents} agents needed</p>
-        <ul>
-            <li>Team leaders to actively coach high-AHT agents</li>
-            <li>Implement dynamic queue prioritization for high-wait calls</li>
-            <li>Activate surge capacity protocols during peak hours</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-if current_aht > target_aht:
-    st.markdown(f"""
-    <div class="metric-box">
-        <h3>AHT Reduction Strategy</h3>
-        <p>Potential savings: {required_agents - required_agents_target} agents</p>
-        <ul>
-            <li>Redesign call processes to eliminate redundant steps</li>
-            <li>Implement real-time AHT monitoring dashboard</li>
-            <li>Create quick resolution playbooks for common issues</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown(f"""
-<div class="metric-box">
-    <h3>Queue Management Protocol</h3>
-    <ul>
-        <li>Automatically escalate calls waiting > {target_answer_time * 1.5} seconds</li>
-        <li>Implement callback option for calls predicted to wait > {target_answer_time} seconds</li>
-        <li>Prioritize repeat callers and high-value customers in queue</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+    The formula is:
+    ```
+    Coverage = (Available Agents / Required Agents) × 100
+    ```
+    
+    Higher coverage means better ability to handle calls promptly. Lower coverage means longer wait times and potentially lower service levels.
+    """)
