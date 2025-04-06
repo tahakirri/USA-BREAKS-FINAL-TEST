@@ -102,6 +102,7 @@ current_coverage = (current_agents / required_agents) * 100
 current_sla = erlang_c(calls_per_hour, current_aht, current_agents, target_answer_time)
 predicted_abandon = predict_abandon_rate(calls_per_hour, current_agents, current_aht, current_abandon_rate)
 shift_abandon = (predicted_abandon/100) * calls_per_hour * 9  # 9-hour shift projection
+occupancy = min(100, (calls_per_hour * (current_aht/3600) / current_agents * 100)
 
 # Results Display
 st.header("📊 Results")
@@ -125,7 +126,7 @@ with col2:
         <p>Current SLA: {current_sla:.1f}%</p>
         <p>Hourly Abandon Rate: {predicted_abandon:.1f}%</p>
         <p>9h Shift Abandon Projection: {int(shift_abandon)} calls</p>
-        <p>Occupancy: {min(100, (calls_per_hour * (current_aht/3600) / current_agents * 100):.1f}%</p>
+        <p>Occupancy: {occupancy:.1f}%</p>
     </div>
     """, unsafe_allow_html=True)
 
