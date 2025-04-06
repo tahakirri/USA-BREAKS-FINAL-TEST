@@ -88,16 +88,8 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Additional Agents Needed", additional_agents_current, 
             f"Total: {required_agents_current} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, current_aht):.1f}%")
-
-# Show "Understaffed" in red if coverage < 100%
-if coverage_current < 100:
-    col3.metric("Coverage", f"{coverage_current:.1f}%", 
-                f"<span style='color:red'>Understaffed</span>", 
-                help="Coverage below 100% means you're understaffed", 
-                label_visibility="visible")
-else:
-    col3.metric("Coverage", f"{coverage_current:.1f}%", "Fully utilized")
-
+col3.metric("Coverage", f"{coverage_current:.1f}%", 
+            "Understaffed" if coverage_current < 100 else "Fully utilized")
 col4.metric("Expected Call Loss", f"{call_loss_current} calls/hour", 
             delta=f"{abandonment_rate_current*100:.1f}% abandonment")
 
@@ -106,16 +98,8 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Additional Agents Needed", additional_agents_target, 
             f"Total: {required_agents_target} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, target_aht):.1f}%")
-
-# Show "Understaffed" in red if coverage < 100%
-if coverage_target < 100:
-    col3.metric("Coverage", f"{coverage_target:.1f}%", 
-                f"<span style='color:red'>Understaffed</span>", 
-                help="Coverage below 100% means you're understaffed", 
-                label_visibility="visible")
-else:
-    col3.metric("Coverage", f"{coverage_target:.1f}%", "Fully utilized")
-
+col3.metric("Coverage", f"{coverage_target:.1f}%", 
+            "Understaffed" if coverage_target < 100 else "Fully utilized")
 col4.metric("Expected Call Loss", f"{call_loss_target} calls/hour", 
             delta=f"{abandonment_rate_target*100:.1f}% abandonment")
 
@@ -156,13 +140,3 @@ with st.expander("Detailed Explanation"):
     ```
     (capped at 35% maximum abandonment)
     """)
-
-# Add custom CSS to style the red text
-st.markdown("""
-<style>
-div[data-testid="stMetric"] div:has(> span[style*="color:red"]) {
-    color: red;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
