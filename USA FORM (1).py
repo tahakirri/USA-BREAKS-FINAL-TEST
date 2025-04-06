@@ -1,21 +1,5 @@
 import streamlit as st
 import math
-import subprocess
-import sys
-import platform
-
-# Check and install required packages
-try:
-    import matplotlib.pyplot as plt
-    import numpy as np
-except ImportError:
-    st.warning("Installing required packages...")
-    if platform.system() == "Linux":
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "numpy", "pillow"])
-    else:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "numpy", "pillow"])
-    import matplotlib.pyplot as plt
-    import numpy as np
 
 # Page configuration
 st.set_page_config(layout="wide")
@@ -90,53 +74,29 @@ current_coverage = (current_agents / required_agents) * 100
 current_sla = erlang_c(calls_per_hour, current_aht, current_agents, target_answer_time)
 occupancy = min(100, (calls_per_hour * (current_aht/3600) / current_agents) * 100)
 
-# Visualization 1: Staffing Comparison
-with st.container():
-    st.subheader("👥 Staffing Requirements")
-    fig, ax = plt.subplots(figsize=(10, 4))
-    labels = ['Current', 'Required', 'With Target AHT']
-    values = [current_agents, required_agents, required_agents_target]
-    colors = ['#ff6b6b', '#51cf66', '#339af0']
-    bars = ax.bar(labels, values, color=colors)
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-                f'{int(height)}', ha='center', va='bottom')
-    ax.set_ylabel('Number of Agents')
-    st.pyplot(fig)
+# Visualization 1: Staffing Comparison (using native Streamlit)
+st.subheader("👥 Staffing Requirements")
+st.write(f"""
+- **Current agents**: {current_agents}
+- **Required agents (current AHT)**: {required_agents}
+- **Required agents (target AHT)**: {required_agents_target}
+""")
 
 # Visualization 2: Performance Metrics
-with st.container():
-    st.subheader("📊 Performance Metrics")
-    fig, ax = plt.subplots(figsize=(10, 4))
-    metrics = ['SLA', 'AHT', 'Abandon Rate', 'Occupancy']
-    current = [current_sla, current_aht, current_abandon_rate, occupancy]
-    target = [target_sla, target_aht, target_abandon_rate, 85]
-    
-    x = np.arange(len(metrics))
-    width = 0.35
-    ax.bar(x - width/2, current, width, label='Current')
-    ax.bar(x + width/2, target, width, label='Target')
-    ax.set_xticks(x)
-    ax.set_xticklabels(metrics)
-    ax.legend()
-    st.pyplot(fig)
+st.subheader("📊 Performance Metrics")
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Current SLA", f"{current_sla:.1f}%", f"Target: {target_sla}%")
+col2.metric("Current AHT", f"{current_aht}s", f"Target: {target_aht}s")
+col3.metric("Abandon Rate", f"{current_abandon_rate}%", f"Target: {target_abandon_rate}%")
+col4.metric("Occupancy", f"{occupancy:.1f}%", "Ideal: 85%")
 
 # Visualization 3: AHT Impact
-with st.container():
-    st.subheader("⏱️ AHT Impact Analysis")
-    aht_values = np.linspace(180, 600, 10)
-    agents_needed = [find_required_agents(calls_per_hour, aht, target_sla, target_answer_time) 
-                    for aht in aht_values]
-    
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(aht_values, agents_needed, marker='o')
-    ax.axvline(current_aht, color='red', linestyle='--', label='Current AHT')
-    ax.axvline(target_aht, color='green', linestyle='--', label='Target AHT')
-    ax.set_xlabel('AHT (seconds)')
-    ax.set_ylabel('Agents Required')
-    ax.legend()
-    st.pyplot(fig)
+st.subheader("⏱️ AHT Impact Analysis")
+st.write(f"""
+- **Current AHT**: {current_aht}s requires {required_agents} agents
+- **Target AHT**: {target_aht}s requires {required_agents_target} agents
+- **Potential savings**: {required_agents - required_agents_target} agents
+""")
 
 # Recommendations
 st.header("📝 Recommendations")
@@ -162,6 +122,19 @@ if current_aht > target_aht:
             <li>Create quick reference guides</li>
             <li>Improve knowledge base</li>
             <li>Streamline call processes</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+if current_abandon_rate > target_abandon_rate:
+    st.markdown(f"""
+    <div class="metric-box">
+        <h3>Abandon Rate Reduction</h3>
+        <p>Current abandon rate is {current_abandon_rate}% vs. target of {target_abandon_rate}%.</p>
+        <ul>
+            <li>Provide accurate wait time estimates</li>
+            <li>Implement virtual hold options</li>
+            <li>Improve on-hold messaging</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
