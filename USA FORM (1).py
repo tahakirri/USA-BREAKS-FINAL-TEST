@@ -16,7 +16,7 @@ with col1:
 with col2:
     current_aht = st.slider("Current AHT (seconds)", 120, 600, 300)
     target_aht = st.slider("Target AHT (seconds)", 120, 600, 240)
-    target_answer_time = st.slider("Target Answer Time (seconds)", 10, 120, 30)
+    target_answer_time = st.slider("Target Answer Time (seconds)", 10, 180, 30)
 
 # Erlang C calculation (more accurate version)
 def erlang_c(agents, calls, aht):
