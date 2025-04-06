@@ -20,13 +20,6 @@ st.markdown("""
     background-color: #fff4f4;
     border-left: 5px solid #ff4b4b;
 }
-.graph-box {
-    padding: 15px;
-    border-radius: 10px;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    margin-bottom: 20px;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,12 +41,15 @@ with st.expander("⚙️ Configure Metrics", expanded=True):
         target_aht = st.number_input("Target AHT (seconds)", min_value=30, value=240, step=10)
         target_abandon_rate = st.number_input("Target abandon rate (%)", min_value=0.0, value=8.0, step=0.5)
 
-# Calculations
+# Calculations (Fixed integer handling)
 def erlang_c(calls, aht, agents, target_answer_time):
     intensity = calls * (aht/3600)
+    agents = math.ceil(agents)  # Ensure integer
+    
     if agents <= intensity:
         return 0
-    sum_series = sum((intensity**n)/math.factorial(n) for n in range(int(agents)))
+    
+    sum_series = sum((intensity**n)/math.factorial(n) for n in range(agents))
     erlang_b = (intensity**agents)/math.factorial(agents)
     pw = erlang_b / (erlang_b + (1 - (intensity/agents)) * sum_series)
     return (1 - (pw * math.exp(-(agents - intensity) * (target_answer_time/aht)))) * 100
@@ -61,42 +57,45 @@ def erlang_c(calls, aht, agents, target_answer_time):
 def find_required_agents(calls, aht, target_sla, target_answer_time):
     intensity = calls * (aht/3600)
     agents = math.ceil(intensity)
+    
     while True:
         sl = erlang_c(calls, aht, agents, target_answer_time)
         if sl >= target_sla or agents > 100:
             break
-        agents += 0.1
-    return math.ceil(agents)
+        agents += 1  # Increment by whole numbers only
+        
+    return agents
 
+# Perform calculations
 required_agents = find_required_agents(calls_per_hour, current_aht, target_sla, target_answer_time)
 required_agents_target = find_required_agents(calls_per_hour, target_aht, target_sla, target_answer_time)
 current_coverage = (current_agents / required_agents) * 100
 current_sla = erlang_c(calls_per_hour, current_aht, current_agents, target_answer_time)
-occupancy = min(100, (calls_per_hour * (current_aht/3600) / current_agents) * 100)
 
-# Visualization 1: Staffing Comparison (using native Streamlit)
-st.subheader("👥 Staffing Requirements")
-st.write(f"""
-- **Current agents**: {current_agents}
-- **Required agents (current AHT)**: {required_agents}
-- **Required agents (target AHT)**: {required_agents_target}
-""")
+# Results Display
+st.header("📊 Results")
 
-# Visualization 2: Performance Metrics
-st.subheader("📊 Performance Metrics")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Current SLA", f"{current_sla:.1f}%", f"Target: {target_sla}%")
-col2.metric("Current AHT", f"{current_aht}s", f"Target: {target_aht}s")
-col3.metric("Abandon Rate", f"{current_abandon_rate}%", f"Target: {target_abandon_rate}%")
-col4.metric("Occupancy", f"{occupancy:.1f}%", "Ideal: 85%")
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown(f"""
+    <div class="metric-box">
+        <h3>Staffing Requirements</h3>
+        <p>Current Agents: {current_agents}</p>
+        <p>Required Agents (Current AHT): {required_agents}</p>
+        <p>Required Agents (Target AHT): {required_agents_target}</p>
+        <p>Coverage: {current_coverage:.1f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Visualization 3: AHT Impact
-st.subheader("⏱️ AHT Impact Analysis")
-st.write(f"""
-- **Current AHT**: {current_aht}s requires {required_agents} agents
-- **Target AHT**: {target_aht}s requires {required_agents_target} agents
-- **Potential savings**: {required_agents - required_agents_target} agents
-""")
+with col2:
+    st.markdown(f"""
+    <div class="metric-box">
+        <h3>Performance Metrics</h3>
+        <p>Current SLA: {current_sla:.1f}%</p>
+        <p>Target SLA: {target_sla}%</p>
+        <p>Abandon Rate: {current_abandon_rate}% → Target: {target_abandon_rate}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Recommendations
 st.header("📝 Recommendations")
@@ -106,9 +105,9 @@ if current_coverage < 100:
         <h3>Staffing Shortage</h3>
         <p>You need {required_agents - current_agents} more agents to meet your SLA target.</p>
         <ul>
-            <li>Implement overtime for current staff</li>
-            <li>Offer call-back options</li>
-            <li>Cross-train agents from other departments</li>
+            <li>Implement overtime shifts</li>
+            <li>Activate call-back system</li>
+            <li>Prioritize urgent calls</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -116,25 +115,12 @@ if current_coverage < 100:
 if current_aht > target_aht:
     st.markdown(f"""
     <div class="metric-box">
-        <h3>AHT Reduction Potential</h3>
+        <h3>AHT Reduction Opportunity</h3>
         <p>Reducing AHT to {target_aht}s would save {required_agents - required_agents_target} agents.</p>
         <ul>
             <li>Create quick reference guides</li>
-            <li>Improve knowledge base</li>
-            <li>Streamline call processes</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-if current_abandon_rate > target_abandon_rate:
-    st.markdown(f"""
-    <div class="metric-box">
-        <h3>Abandon Rate Reduction</h3>
-        <p>Current abandon rate is {current_abandon_rate}% vs. target of {target_abandon_rate}%.</p>
-        <ul>
-            <li>Provide accurate wait time estimates</li>
-            <li>Implement virtual hold options</li>
-            <li>Improve on-hold messaging</li>
+            <li>Optimize call scripts</li>
+            <li>Automate repetitive tasks</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
