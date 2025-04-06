@@ -20,18 +20,23 @@ with col2:
 
 # Erlang C calculation (more accurate version)
 def erlang_c(agents, calls, aht):
-    intensity = calls * (aht/3600)  # Convert AHT to hours
+    intensity = calls * (aht/3600)
     agents = math.ceil(agents)
     
-    # Calculate probability of wait
+    # Prevent division by zero/negative agents
+    if agents <= 0 or intensity <= 0:
+        return 0.0
+    
     sum_series = sum([(intensity**n)/math.factorial(n) for n in range(agents)])
     erlang_b = (intensity**agents)/math.factorial(agents)
     pw = erlang_b / (erlang_b + (1 - (intensity/agents)) * sum_series)
     
-    # Calculate service level
-    sl = 1 - (pw * math.exp(-(agents - intensity) * (target_answer_time/aht)))
+    # Handle extreme understaffing
+    if (agents - intensity) < 0:
+        return 0.0  # Or "Overloaded" as a string
     
-    return sl * 100  # Return as percentage
+    sl = 1 - (pw * math.exp(-(agents - intensity) * (target_answer_time/aht)))
+    return max(0.0, sl * 100)  # Cap at 0%
 
 # Find required agents to meet SLA
 def find_required_agents(calls, aht, target_sla):
