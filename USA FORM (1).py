@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 st.title("Call Center Schedule Optimizer with AHT Analysis")
 
@@ -61,6 +62,16 @@ def estimate_abandonment_rate(agents_available, calls, aht, target_sla):
     
     return min(max_abandonment, base_abandonment + (understaffing_ratio * 0.3))
 
+# Find optimal AHT for current staffing
+def find_optimal_aht(max_agents, calls, target_sla):
+    aht = 600  # Start with maximum AHT
+    while aht >= 120:  # Minimum AHT boundary
+        sl = erlang_c(max_agents, calls, aht)
+        if sl >= target_sla:
+            return math.floor(aht)  # Return first AHT that meets SLA
+        aht -= 1  # Reduce AHT by 1 second increments
+    return None  # No solution with current constraints
+
 # Calculate with current and target AHT
 required_agents_current = find_required_agents(calls_forecast, current_aht, service_level_target)
 required_agents_target = find_required_agents(calls_forecast, target_aht, service_level_target)
@@ -80,6 +91,10 @@ call_loss_current = int(calls_forecast * abandonment_rate_current)
 abandonment_rate_target = estimate_abandonment_rate(max_agents, calls_forecast, target_aht, service_level_target)
 call_loss_target = int(calls_forecast * abandonment_rate_target)
 
+# Find optimal scenarios
+optimal_aht = find_optimal_aht(max_agents, calls_forecast, service_level_target)
+min_agents_target = find_required_agents(calls_forecast, target_aht, service_level_target)
+
 # Display results
 st.header("Optimization Results")
 
@@ -88,8 +103,14 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Additional Agents Needed", additional_agents_current, 
             f"Total: {required_agents_current} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, current_aht):.1f}%")
-col3.metric("Coverage", f"{coverage_current:.1f}%", 
-            "Understaffed" if coverage_current < 100 else "Fully utilized")
+
+# Show "Understaffed" in red if coverage < 100%
+if coverage_current < 100:
+    col3.metric("Coverage", f"{coverage_current:.1f}%", 
+                delta="Understaffed", delta_color="off")
+else:
+    col3.metric("Coverage", f"{coverage_current:.1f}%", "Fully utilized")
+
 col4.metric("Expected Call Loss", f"{call_loss_current} calls/hour", 
             delta=f"{abandonment_rate_current*100:.1f}% abandonment")
 
@@ -98,10 +119,51 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Additional Agents Needed", additional_agents_target, 
             f"Total: {required_agents_target} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, target_aht):.1f}%")
-col3.metric("Coverage", f"{coverage_target:.1f}%", 
-            "Understaffed" if coverage_target < 100 else "Fully utilized")
+
+# Show "Understaffed" in red if coverage < 100%
+if coverage_target < 100:
+    col3.metric("Coverage", f"{coverage_target:.1f}%", 
+                delta="Understaffed", delta_color="off")
+else:
+    col3.metric("Coverage", f"{coverage_target:.1f}%", "Fully utilized")
+
 col4.metric("Expected Call Loss", f"{call_loss_target} calls/hour", 
             delta=f"{abandonment_rate_target*100:.1f}% abandonment")
+
+# Perfect Scenario Analysis
+st.header("Perfect Scenario Analysis")
+
+if optimal_aht:
+    st.success(f"✨ **Perfect AHT:** With your current {max_agents} agents, you can achieve {service_level_target}% SLA by reducing AHT to **{optimal_aht} seconds**")
+else:
+    st.error(f"⚠️ **Impossible Scenario:** With your current {max_agents} agents, you cannot reach {service_level_target}% SLA at any AHT (need more agents)")
+
+st.success(f"✨ **Perfect Staffing:** To achieve {service_level_target}% SLA with your target AHT ({target_aht}s), you need exactly **{min_agents_target} agents**")
+
+# Visualize the trade-off
+st.subheader("Agent-AHT Trade-off Curve")
+st.write("This curve shows how reducing AHT decreases the number of agents needed to maintain your target SLA:")
+
+# Generate curve data
+aht_values = list(range(120, 601, 30))  # From 120s to 600s in 30s steps
+agent_counts = [find_required_agents(calls_forecast, aht, service_level_target) for aht in aht_values]
+
+# Create the plot
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(aht_values, agent_counts, marker='o', color='#1f77b4')
+ax.set_xlabel("AHT (seconds)", fontsize=12)
+ax.set_ylabel("Agents Required", fontsize=12)
+ax.set_title(f"Agents Needed to Maintain {service_level_target}% Service Level", fontsize=14)
+ax.grid(True, linestyle='--', alpha=0.7)
+
+# Highlight current and target points
+current_point = (current_aht, find_required_agents(calls_forecast, current_aht, service_level_target))
+target_point = (target_aht, min_agents_target)
+ax.plot(current_point[0], current_point[1], 'ro', markersize=10, label='Current Scenario')
+ax.plot(target_point[0], target_point[1], 'go', markersize=10, label='Target Scenario')
+
+ax.legend()
+st.pyplot(fig)
 
 # AHT Impact Analysis
 st.header("AHT Impact Analysis")
@@ -140,3 +202,20 @@ with st.expander("Detailed Explanation"):
     ```
     (capped at 35% maximum abandonment)
     """)
+
+# Custom CSS for red understaffed text
+st.markdown("""
+<style>
+div[data-testid="stMetric"] {
+    background-color: rgba(28, 131, 225, 0.1);
+    border-radius: 10px;
+    padding: 5% 5% 5% 10%;
+    border-left: 0.5rem solid #1c83e1 !important;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+    margin-bottom: 1rem;
+}
+div[data-testid="stMetric"] div:has(> div[data-testid="stMetricDelta"] svg) {
+    color: rgb(255, 43, 43) !important;
+}
+</style>
+""", unsafe_allow_html=True)
