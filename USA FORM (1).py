@@ -65,6 +65,10 @@ def estimate_abandonment_rate(agents_available, calls, aht, target_sla):
 required_agents_current = find_required_agents(calls_forecast, current_aht, service_level_target)
 required_agents_target = find_required_agents(calls_forecast, target_aht, service_level_target)
 
+# Calculate additional agents needed
+additional_agents_current = max(0, required_agents_current - max_agents)
+additional_agents_target = max(0, required_agents_target - max_agents)
+
 # Calculate coverage
 coverage_current = min(100, (max_agents / required_agents_current) * 100)
 coverage_target = min(100, (max_agents / required_agents_target) * 100)
@@ -81,7 +85,8 @@ st.header("Optimization Results")
 
 st.subheader("With Current AHT")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Agents Required", required_agents_current)
+col1.metric("Additional Agents Needed", additional_agents_current, 
+            f"Total: {required_agents_current} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, current_aht):.1f}%")
 col3.metric("Coverage", f"{coverage_current:.1f}%", 
             "Understaffed" if coverage_current < 100 else "Fully utilized")
@@ -90,7 +95,8 @@ col4.metric("Expected Call Loss", f"{call_loss_current} calls/hour",
 
 st.subheader("With Target AHT")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Agents Required", required_agents_target)
+col1.metric("Additional Agents Needed", additional_agents_target, 
+            f"Total: {required_agents_target} agents")
 col2.metric("Projected SLA", f"{erlang_c(max_agents, calls_forecast, target_aht):.1f}%")
 col3.metric("Coverage", f"{coverage_target:.1f}%", 
             "Understaffed" if coverage_target < 100 else "Fully utilized")
@@ -100,7 +106,8 @@ col4.metric("Expected Call Loss", f"{call_loss_target} calls/hour",
 # AHT Impact Analysis
 st.header("AHT Impact Analysis")
 st.write(f"Reducing AHT from {current_aht}s to {target_aht}s would allow you to:")
-st.write(f"- Handle the same volume with {required_agents_current - required_agents_target} fewer agents")
+st.write(f"- Reduce additional agents needed from {additional_agents_current} to {additional_agents_target}")
+st.write(f"- Lower total staffing requirement from {required_agents_current} to {required_agents_target} agents")
 st.write(f"- Improve your coverage from {coverage_current:.1f}% to {coverage_target:.1f}%")
 st.write(f"- Reduce call abandonment from {abandonment_rate_current*100:.1f}% to {abandonment_rate_target*100:.1f}%")
 st.write(f"- Save approximately {call_loss_current - call_loss_target} calls/hour from being lost")
