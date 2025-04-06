@@ -5,20 +5,37 @@ import math
 st.set_page_config(layout="wide")
 st.title("📊 Call Center Staffing Optimizer")
 
-# Custom CSS
+# Dark mode CSS
 st.markdown("""
 <style>
+body {
+    color: #ffffff;
+    background-color: #1a1a1a;
+}
 .metric-box {
     padding: 15px;
     border-radius: 10px;
-    background-color: #f0f2f6;
+    background-color: #2d3436;
     margin-bottom: 10px;
+    border-left: 5px solid #3498db;
 }
 .warning-box {
     padding: 15px;
     border-radius: 10px;
-    background-color: #fff4f4;
-    border-left: 5px solid #ff4b4b;
+    background-color: #2d3436;
+    border-left: 5px solid #e74c3c;
+    margin-bottom: 10px;
+}
+.stNumberInput, .stSelectbox, .stSlider {
+    background-color: #2d3436 !important;
+    color: white !important;
+}
+.graph-box {
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #2d3436;
+    border: 1px solid #3498db;
+    margin-bottom: 20px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -41,10 +58,10 @@ with st.expander("⚙️ Configure Metrics", expanded=True):
         target_aht = st.number_input("Target AHT (seconds)", min_value=30, value=240, step=10)
         target_abandon_rate = st.number_input("Target abandon rate (%)", min_value=0.0, value=8.0, step=0.5)
 
-# Calculations (Fixed integer handling)
+# Calculations
 def erlang_c(calls, aht, agents, target_answer_time):
     intensity = calls * (aht/3600)
-    agents = math.ceil(agents)  # Ensure integer
+    agents = math.ceil(agents)
     
     if agents <= intensity:
         return 0
@@ -62,15 +79,29 @@ def find_required_agents(calls, aht, target_sla, target_answer_time):
         sl = erlang_c(calls, aht, agents, target_answer_time)
         if sl >= target_sla or agents > 100:
             break
-        agents += 1  # Increment by whole numbers only
+        agents += 1
         
     return agents
+
+def predict_abandon_rate(calls, agents, aht, current_abandon_rate):
+    intensity = calls * (aht/3600)
+    occupancy = min(100, (intensity/agents)*100)
+    
+    # Abandon rate model
+    if occupancy <= 80:
+        predicted_abandon = current_abandon_rate * (occupancy/80)
+    else:
+        predicted_abandon = current_abandon_rate * (1 + (occupancy-80)/20)**2
+    
+    return min(100, predicted_abandon)
 
 # Perform calculations
 required_agents = find_required_agents(calls_per_hour, current_aht, target_sla, target_answer_time)
 required_agents_target = find_required_agents(calls_per_hour, target_aht, target_sla, target_answer_time)
 current_coverage = (current_agents / required_agents) * 100
 current_sla = erlang_c(calls_per_hour, current_aht, current_agents, target_answer_time)
+predicted_abandon = predict_abandon_rate(calls_per_hour, current_agents, current_aht, current_abandon_rate)
+shift_abandon = (predicted_abandon/100) * calls_per_hour * 9  # 9-hour shift projection
 
 # Results Display
 st.header("📊 Results")
@@ -92,22 +123,23 @@ with col2:
     <div class="metric-box">
         <h3>Performance Metrics</h3>
         <p>Current SLA: {current_sla:.1f}%</p>
-        <p>Target SLA: {target_sla}%</p>
-        <p>Abandon Rate: {current_abandon_rate}% → Target: {target_abandon_rate}%</p>
+        <p>Hourly Abandon Rate: {predicted_abandon:.1f}%</p>
+        <p>9h Shift Abandon Projection: {int(shift_abandon)} calls</p>
+        <p>Occupancy: {min(100, (calls_per_hour * (current_aht/3600) / current_agents * 100):.1f}%</p>
     </div>
     """, unsafe_allow_html=True)
 
 # Recommendations
-st.header("📝 Recommendations")
+st.header("📝 Action Plan")
 if current_coverage < 100:
     st.markdown(f"""
     <div class="warning-box">
-        <h3>Staffing Shortage</h3>
-        <p>You need {required_agents - current_agents} more agents to meet your SLA target.</p>
+        <h3>Staffing Shortage Solutions</h3>
+        <p>Gap: {required_agents - current_agents} agents needed</p>
         <ul>
-            <li>Implement overtime shifts</li>
-            <li>Activate call-back system</li>
-            <li>Prioritize urgent calls</li>
+            <li>Team leaders to actively coach high-AHT agents</li>
+            <li>Implement dynamic queue prioritization for high-wait calls</li>
+            <li>Activate surge capacity protocols during peak hours</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -115,12 +147,23 @@ if current_coverage < 100:
 if current_aht > target_aht:
     st.markdown(f"""
     <div class="metric-box">
-        <h3>AHT Reduction Opportunity</h3>
-        <p>Reducing AHT to {target_aht}s would save {required_agents - required_agents_target} agents.</p>
+        <h3>AHT Reduction Strategy</h3>
+        <p>Potential savings: {required_agents - required_agents_target} agents</p>
         <ul>
-            <li>Create quick reference guides</li>
-            <li>Optimize call scripts</li>
-            <li>Automate repetitive tasks</li>
+            <li>Redesign call processes to eliminate redundant steps</li>
+            <li>Implement real-time AHT monitoring dashboard</li>
+            <li>Create quick resolution playbooks for common issues</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="metric-box">
+    <h3>Queue Management Protocol</h3>
+    <ul>
+        <li>Automatically escalate calls waiting > {target_answer_time * 1.5} seconds</li>
+        <li>Implement callback option for calls predicted to wait > {target_answer_time} seconds</li>
+        <li>Prioritize repeat callers and high-value customers in queue</li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
