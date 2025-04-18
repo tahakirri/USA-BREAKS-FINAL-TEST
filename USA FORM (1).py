@@ -2924,62 +2924,59 @@ if st.session_state.current_section == "fancy_number":
     phone_input = st.text_input("Enter Phone Number", 
                               placeholder="e.g., 1555123456 or 44207123456")
 
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        if st.button("🔍 Check Number"):
-            if not phone_input:
-                st.warning("Please enter a phone number")
+    if st.button("🔍 Check Number"):
+        if not phone_input:
+            st.warning("Please enter a phone number")
+        else:
+            is_fancy, pattern = is_fancy_number(phone_input)
+            clean_number = re.sub(r'\D', '', phone_input)
+            
+            # Extract last 6 digits for display
+            last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+            formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+
+            if is_fancy:
+                st.markdown(f"""
+                <div class="result-box fancy-result">
+                    <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                    <p>FANCY NUMBER DETECTED!</p>
+                    <p><strong>Pattern:</strong> {pattern}</p>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                is_fancy, pattern = is_fancy_number(phone_input)
-                clean_number = re.sub(r'\D', '', phone_input)
-                
-                # Extract last 6 digits for display
-                last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
-                formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+                st.markdown(f"""
+                <div class="result-box normal-result">
+                    <h3><span class="normal-number">{formatted_num}</span></h3>
+                    <p>Standard phone number</p>
+                    <p><strong>Reason:</strong> {pattern}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
-                if is_fancy:
-                    st.markdown(f"""
-                    <div class="result-box fancy-result">
-                        <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
-                        <p>FANCY NUMBER DETECTED!</p>
-                        <p><strong>Pattern:</strong> {pattern}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="result-box normal-result">
-                        <h3><span class="normal-number">{formatted_num}</span></h3>
-                        <p>Standard phone number</p>
-                        <p><strong>Reason:</strong> {pattern}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-        ### Lycamobile Fancy Number Policy
-        **Qualifying Patterns (last 6 digits only):**
-        
-        #### 6-Digit Patterns
-        - 123456 (ascending)
-        - 987654 (descending)
-        - 666666 (repeating)
-        - 100001 (palindrome)
-        
-        #### 3-Digit Patterns  
-        - 444 555 (double triplets)
-        - 121 122 (similar triplets)
-        - 786 786 (repeating triplets)
-        - 457 456 (nearly sequential)
-        
-        #### 2-Digit Patterns
-        - 11 12 13 (incremental)
-        - 20 20 20 (repeating)
-        - 01 01 01 (alternating)
-        - 32 42 52 (stepping)
-        
-        #### Exceptional Cases
-        - Ending with 123/555/777/999
-        """)
+    st.markdown("""
+    ### Lycamobile Fancy Number Policy
+    **Qualifying Patterns (last 6 digits only):**
+    
+    #### 6-Digit Patterns
+    - 123456 (ascending)
+    - 987654 (descending)
+    - 666666 (repeating)
+    - 100001 (palindrome)
+    
+    #### 3-Digit Patterns  
+    - 444 555 (double triplets)
+    - 121 122 (similar triplets)
+    - 786 786 (repeating triplets)
+    - 457 456 (nearly sequential)
+    
+    #### 2-Digit Patterns
+    - 11 12 13 (incremental)
+    - 20 20 20 (repeating)
+    - 01 01 01 (alternating)
+    - 32 42 52 (stepping)
+    
+    #### Exceptional Cases
+    - Ending with 123/555/777/999
+    """)
 
     # Test cases
     debug_mode = st.checkbox("Show test cases", False)
