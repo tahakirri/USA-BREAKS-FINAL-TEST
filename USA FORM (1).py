@@ -71,6 +71,17 @@ def init_db():
             )
         """)
         
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mistakes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_leader TEXT,
+                agent_name TEXT,
+                ticket_id TEXT,
+                error_description TEXT,
+                timestamp TEXT
+            )
+        """)
+        
         # Create default admin account
         cursor.execute("""
             INSERT OR IGNORE INTO users (username, password, role, is_vip) 
