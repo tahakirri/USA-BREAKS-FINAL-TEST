@@ -26,10 +26,10 @@ def authenticate(username, password):
     try:
         cursor = conn.cursor()
         hashed_password = hash_password(password)
-        cursor.execute("SELECT role FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
+        cursor.execute("SELECT role, is_vip FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
                       (username, hashed_password))
         result = cursor.fetchone()
-        return result[0] if result else None
+        return (result[0], bool(result[1])) if result else (None, False)
     finally:
         conn.close()
 
@@ -58,6 +58,17 @@ def init_db():
                 mentions TEXT
             )
         """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY,
+                killswitch_enabled INTEGER DEFAULT 0,
+                chat_killswitch_enabled INTEGER DEFAULT 0
+            )
+        """)
+        
+        # Initialize system settings if not exists
+        cursor.execute("INSERT OR IGNORE INTO system_settings (id) VALUES (1)")
         
         # Create default admin account
         cursor.execute("""
@@ -339,7 +350,7 @@ def send_group_message(sender, message):
             INSERT INTO group_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
         """, (sender, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-             ','.join(mentions)))
+             ','.join(mentions))
         conn.commit()
         return True
     finally:
@@ -517,6 +528,8 @@ def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
              datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
         return True
+    except Exception as e:
+        st.error(f"Error adding quality issue: {str(e)}")
     finally:
         conn.close()
 
@@ -616,6 +629,7 @@ def send_vip_message(sender, message):
         st.error("Chat is currently locked. Please contact the developer.")
         return False
     
+    # Only allow VIP users or taha kirri to send messages
     if not is_vip_user(sender) and sender.lower() != "taha kirri":
         st.error("Only VIP users can send messages in this chat.")
         return False
@@ -644,8 +658,33 @@ def get_vip_messages():
     finally:
         conn.close()
 
+def is_vip_user(username):
+    """Check if a user has VIP status"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        return bool(result[0]) if result else False
+    finally:
+        conn.close()
+
+def set_vip_status(username, is_vip):
+    """Set or remove VIP status for a user"""
+    if not username:
+        return False
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET is_vip = ? WHERE username = ?", 
+                      (1 if is_vip else 0, username))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
 # --------------------------
-# Break Scheduling Functions (from first code)
+# Break Scheduling Functions
 # --------------------------
 
 def init_break_session_state():
@@ -1345,30 +1384,142 @@ def agent_break_dashboard():
                 st.success("Your breaks have been confirmed!")
                 st.rerun()
 
-def is_vip_user(username):
-    """Check if a user has VIP status"""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        return bool(result[0]) if result else False
-    finally:
-        conn.close()
+# --------------------------
+# Fancy Number Functions
+# --------------------------
 
-def set_vip_status(username, is_vip):
-    """Set or remove VIP status for a user"""
-    if not username:
-        return False
-    conn = get_db_connection()
+def is_sequential(digits, step=1):
+    """Check if digits form a sequential pattern with given step"""
     try:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET is_vip = ? WHERE username = ?", 
-                      (1 if is_vip else 0, username))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
+        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
+    except:
+        return False
+
+def is_fancy_number(phone_number):
+    clean_number = re.sub(r'\D', '', phone_number)
+    
+    # Get last 6 digits according to Lycamobile policy
+    if len(clean_number) >= 6:
+        last_six = clean_number[-6:]
+        last_three = clean_number[-3:]
+    else:
+        return False, "Number too short (need at least 6 digits)"
+    
+    patterns = []
+    
+    # Special case for 13322866688
+    if clean_number == "13322866688":
+        patterns.append("Special VIP number (13322866688)")
+    
+    # Check for ABBBAA pattern (like 566655)
+    if (len(last_six) == 6 and 
+        last_six[0] == last_six[5] and 
+        last_six[1] == last_six[2] == last_six[3] and 
+        last_six[4] == last_six[0] and 
+        last_six[0] != last_six[1]):
+        patterns.append("ABBBAA pattern (e.g., 566655)")
+    
+    # Check for ABBBA pattern (like 233322)
+    if (len(last_six) >= 5 and 
+        last_six[0] == last_six[4] and 
+        last_six[1] == last_six[2] == last_six[3] and 
+        last_six[0] != last_six[1]):
+        patterns.append("ABBBA pattern (e.g., 233322)")
+    
+    # 1. 6-digit patterns (strict matches only)
+    # All same digits (666666)
+    if len(set(last_six)) == 1:
+        patterns.append("6 identical digits")
+    
+    # Consecutive ascending (123456)
+    if is_sequential(last_six, 1):
+        patterns.append("6-digit ascending sequence")
+        
+    # Consecutive descending (654321)
+    if is_sequential(last_six, -1):
+        patterns.append("6-digit descending sequence")
+        
+    # Palindrome (100001)
+    if last_six == last_six[::-1]:
+        patterns.append("6-digit palindrome")
+    
+    # 2. 3-digit patterns (strict matches from image)
+    first_triple = last_six[:3]
+    second_triple = last_six[3:]
+    
+    # Double triplets (444555)
+    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple:
+        patterns.append("Double triplets (444555)")
+    
+    # Similar triplets (121122)
+    if (first_triple[0] == first_triple[1] and 
+        second_triple[0] == second_triple[1] and 
+        first_triple[2] == second_triple[2]):
+        patterns.append("Similar triplets (121122)")
+    
+    # Repeating triplets (786786)
+    if first_triple == second_triple:
+        patterns.append("Repeating triplets (786786)")
+    
+    # Nearly sequential (457456) - exactly 1 digit difference
+    if abs(int(first_triple) - int(second_triple)) == 1:
+        patterns.append("Nearly sequential triplets (457456)")
+    
+    # 3. 2-digit patterns (strict matches from image)
+    # Incremental pairs (111213)
+    pairs = [last_six[i:i+2] for i in range(0, 5, 1)]
+    try:
+        if all(int(pairs[i]) == int(pairs[i-1]) + 1 for i in range(1, len(pairs))):
+            patterns.append("Incremental pairs (111213)")
+    
+        # Repeating pairs (202020)
+        if (pairs[0] == pairs[2] == pairs[4] and 
+            pairs[1] == pairs[3] and 
+            pairs[0] != pairs[1]):
+            patterns.append("Repeating pairs (202020)")
+    
+        # Alternating pairs (010101)
+        if (pairs[0] == pairs[2] == pairs[4] and 
+            pairs[1] == pairs[3] and 
+            pairs[0] != pairs[1]):
+            patterns.append("Alternating pairs (010101)")
+    
+        # Stepping pairs (324252) - Fixed this check
+        if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
+            all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
+            patterns.append("Stepping pairs (324252)")
+    except:
+        pass
+    
+    # 4. Exceptional cases (must match exactly)
+    exceptional_triplets = ['123', '555', '777', '999']
+    if last_three in exceptional_triplets:
+        patterns.append(f"Exceptional case ({last_three})")
+    
+    # Strict validation - only allow patterns that exactly match our rules
+    valid_patterns = []
+    for p in patterns:
+        if any(rule in p for rule in [
+            "Special VIP number",
+            "ABBBAA pattern",
+            "ABBBA pattern",
+            "6 identical digits",
+            "6-digit ascending sequence",
+            "6-digit descending sequence",
+            "6-digit palindrome",
+            "Double triplets (444555)",
+            "Similar triplets (121122)",
+            "Repeating triplets (786786)",
+            "Nearly sequential triplets (457456)",
+            "Incremental pairs (111213)",
+            "Repeating pairs (202020)",
+            "Alternating pairs (010101)",
+            "Stepping pairs (324252)",
+            "Exceptional case"
+        ]):
+            valid_patterns.append(p)
+    
+    return bool(valid_patterns), ", ".join(valid_patterns) if valid_patterns else "No qualifying fancy pattern"
 
 # --------------------------
 # Streamlit App
@@ -1626,6 +1777,7 @@ if "authenticated" not in st.session_state:
         "authenticated": False,
         "role": None,
         "username": None,
+        "is_vip": False,
         "current_section": "requests",
         "last_request_count": 0,
         "last_mistake_count": 0,
@@ -1648,12 +1800,13 @@ if not st.session_state.authenticated:
         with submit_col2:
             if st.form_submit_button("Login", use_container_width=True):
                 if username and password:
-                    role = authenticate(username, password)
+                    role, is_vip = authenticate(username, password)
                     if role:
                         st.session_state.update({
                             "authenticated": True,
                             "role": role,
                             "username": username,
+                            "is_vip": is_vip,
                             "last_request_count": len(get_requests()),
                             "last_mistake_count": len(get_mistakes()),
                             "last_message_ids": [msg[0] for msg in get_group_messages()]
@@ -1710,6 +1863,8 @@ else:
 
     with st.sidebar:
         st.title(f"👋 Welcome, {st.session_state.username}")
+        if st.session_state.is_vip:
+            st.markdown("⭐ VIP User")
         st.markdown("---")
         
         nav_options = [
@@ -1887,7 +2042,7 @@ else:
             <script>
             // Check if notifications are supported
             if ('Notification' in window) {
-                const container = document.getElementById('notification-container');
+                const container = document.getElementById('notification-container");
                 if (Notification.permission === 'default') {
                     container.innerHTML = `
                         <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;">
@@ -1913,7 +2068,7 @@ else:
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
                 # Check if user is VIP or taha kirri
-                is_vip = is_vip_user(st.session_state.username)
+                is_vip = st.session_state.is_vip
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
                 if is_vip or is_taha:
@@ -2024,138 +2179,32 @@ else:
         if not is_killswitch_enabled():
             st.title("📱 Fancy Number Checker")
             
-         def is_sequential(digits, step=1):
-    """Check if digits form a sequential pattern with given step"""
-    try:
-        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
-    except:
-        return False
-
-def is_fancy_number(phone_number):
-    clean_number = re.sub(r'\D', '', phone_number)
-    
-    # Get last 6 digits according to Lycamobile policy
-    if len(clean_number) >= 6:
-        last_six = clean_number[-6:]
-        last_three = clean_number[-3:]
-    else:
-        return False, "Number too short (need at least 6 digits)"
-    
-    patterns = []
-    
-    # Special case for 13322866688
-    if clean_number == "13322866688":
-        patterns.append("Special VIP number (13322866688)")
-    
-    # Check for ABBBAA pattern (like 566655)
-    if (len(last_six) == 6 and 
-        last_six[0] == last_six[5] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[4] == last_six[0] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBAA pattern (e.g., 566655)")
-    
-    # Check for ABBBA pattern (like 233322)
-    if (len(last_six) >= 5 and 
-        last_six[0] == last_six[4] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBA pattern (e.g., 233322)")
-    
-    # 1. 6-digit patterns (strict matches only)
-    # All same digits (666666)
-    if len(set(last_six)) == 1:
-        patterns.append("6 identical digits")
-    
-    # Consecutive ascending (123456)
-    if is_sequential(last_six, 1):
-        patterns.append("6-digit ascending sequence")
-        
-    # Consecutive descending (654321)
-    if is_sequential(last_six, -1):
-        patterns.append("6-digit descending sequence")
-        
-    # Palindrome (100001)
-    if last_six == last_six[::-1]:
-        patterns.append("6-digit palindrome")
-    
-    # 2. 3-digit patterns (strict matches from image)
-    first_triple = last_six[:3]
-    second_triple = last_six[3:]
-    
-    # Double triplets (444555)
-    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple:
-        patterns.append("Double triplets (444555)")
-    
-    # Similar triplets (121122)
-    if (first_triple[0] == first_triple[1] and 
-        second_triple[0] == second_triple[1] and 
-        first_triple[2] == second_triple[2]):
-        patterns.append("Similar triplets (121122)")
-    
-    # Repeating triplets (786786)
-    if first_triple == second_triple:
-        patterns.append("Repeating triplets (786786)")
-    
-    # Nearly sequential (457456) - exactly 1 digit difference
-    if abs(int(first_triple) - int(second_triple)) == 1:
-        patterns.append("Nearly sequential triplets (457456)")
-    
-    # 3. 2-digit patterns (strict matches from image)
-    # Incremental pairs (111213)
-    pairs = [last_six[i:i+2] for i in range(0, 5, 1)]
-    try:
-        if all(int(pairs[i]) == int(pairs[i-1]) + 1 for i in range(1, len(pairs))):
-            patterns.append("Incremental pairs (111213)")
-    
-        # Repeating pairs (202020)
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Repeating pairs (202020)")
-    
-        # Alternating pairs (010101)
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Alternating pairs (010101)")
-    
-        # Stepping pairs (324252) - Fixed this check
-        if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
-            all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
-            patterns.append("Stepping pairs (324252)")
-    except:
-        pass
-    
-    # 4. Exceptional cases (must match exactly)
-    exceptional_triplets = ['123', '555', '777', '999']
-    if last_three in exceptional_triplets:
-        patterns.append(f"Exceptional case ({last_three})")
-    
-    # Strict validation - only allow patterns that exactly match our rules
-    valid_patterns = []
-    for p in patterns:
-        if any(rule in p for rule in [
-            "Special VIP number",
-            "ABBBAA pattern",
-            "ABBBA pattern",
-            "6 identical digits",
-            "6-digit ascending sequence",
-            "6-digit descending sequence",
-            "6-digit palindrome",
-            "Double triplets (444555)",
-            "Similar triplets (121122)",
-            "Repeating triplets (786786)",
-            "Nearly sequential triplets (457456)",
-            "Incremental pairs (111213)",
-            "Repeating pairs (202020)",
-            "Alternating pairs (010101)",
-            "Stepping pairs (324252)",
-            "Exceptional case"
-        ]):
-            valid_patterns.append(p)
-    
-    return bool(valid_patterns), ", ".join(valid_patterns) if valid_patterns else "No qualifying fancy pattern"
+            with st.form("fancy_number_form"):
+                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
+                submit = st.form_submit_button("Check Number")
+                
+                if submit and phone_number:
+                    is_fancy, patterns = is_fancy_number(phone_number)
+                    
+                    # Format number in a readable way
+                    clean_number = re.sub(r'\D', '', phone_number)
+                    if len(clean_number) >= 10:
+                        formatted_number = f"({clean_number[:3]}) {clean_number[3:6]}-{clean_number[6:]}"
+                    else:
+                        formatted_number = phone_number
+                    
+                    # Display results
+                    st.write("### Analysis Results")
+                    st.write(f"Formatted Number: {formatted_number}")
+                    
+                    if is_fancy:
+                        st.success("🌟 This is a fancy number!")
+                        st.write("Patterns found:")
+                        for pattern in patterns.split(", "):
+                            st.write(f"- {pattern}")
+                    else:
+                        st.info("This appears to be a regular number.")
+                        st.write(patterns)
         else:
             st.error("System is currently locked. Access to fancy number checker is disabled.")
 
