@@ -2818,8 +2818,8 @@ def is_sequential(digits, step=1):
     except:
         return False
 
-
 def is_fancy_number(phone_number):
+    """Check if a phone number is fancy according to Lycamobile policy"""
     clean_number = re.sub(r'\D', '', phone_number)
     
     # Get last 6 digits according to Lycamobile policy
@@ -2908,7 +2908,7 @@ def is_fancy_number(phone_number):
             pairs[0] != pairs[1]):
             patterns.append("Alternating pairs (010101)")
     
-        # Stepping pairs (324252) - Fixed this check
+        # Stepping pairs (324252)
         if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
             all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
             patterns.append("Stepping pairs (324252)")
