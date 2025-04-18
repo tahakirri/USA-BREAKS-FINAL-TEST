@@ -26,10 +26,10 @@ def authenticate(username, password):
     try:
         cursor = conn.cursor()
         hashed_password = hash_password(password)
-        cursor.execute("SELECT role FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
+        cursor.execute("SELECT role, is_vip FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
                       (username, hashed_password))
         result = cursor.fetchone()
-        return result[0] if result else None
+        return result if result else (None, None)
     finally:
         conn.close()
 
@@ -44,7 +44,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin')),
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
@@ -1648,12 +1648,13 @@ if not st.session_state.authenticated:
         with submit_col2:
             if st.form_submit_button("Login", use_container_width=True):
                 if username and password:
-                    role = authenticate(username, password)
+                    role, is_vip = authenticate(username, password)
                     if role:
                         st.session_state.update({
                             "authenticated": True,
                             "role": role,
                             "username": username,
+                            "is_vip": bool(is_vip),
                             "last_request_count": len(get_requests()),
                             "last_mistake_count": len(get_mistakes()),
                             "last_message_ids": [msg[0] for msg in get_group_messages()]
@@ -1712,21 +1713,41 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        nav_options = [
-            ("📋 Requests", "requests"),
-            ("☕ Breaks", "breaks"),
-            ("🖼️ HOLD", "hold"),
-            ("❌ Mistakes", "mistakes"),
-            ("💬 Chat", "chat"),
-            ("📱 Fancy Number", "fancy_number"),
-            ("⏰ Late Login", "late_login"),
-            ("📞 Quality Issues", "quality_issues"),
-            ("🔄 Mid-shift Issues", "midshift_issues")
-        ]
+        # Define navigation options based on role
+        nav_options = []
         
-        # Add admin option for admin users
-        if st.session_state.role == "admin":
-            nav_options.append(("⚙️ Admin", "admin"))
+        if st.session_state.role == "qa":
+            nav_options = [
+                ("📱 Fancy Number", "fancy_number"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("⏰ Late Login", "late_login"),
+                ("🔄 Mid-shift Issues", "midshift_issues")
+            ]
+        elif st.session_state.role == "admin":
+            nav_options = [
+                ("📋 Requests", "requests"),
+                ("☕ Breaks", "breaks"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues"),
+                ("⚙️ Admin", "admin")
+            ]
+        else:  # agent role
+            nav_options = [
+                ("📋 Requests", "requests"),
+                ("☕ Breaks", "breaks"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues")
+            ]
         
         # Add VIP Management for taha kirri
         if st.session_state.username.lower() == "taha kirri":
@@ -1899,13 +1920,6 @@ else:
                     `;
                 }
             }
-
-            async function requestNotificationPermission() {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    document.getElementById('notification-container').style.display = 'none';
-                }
-            }
             </script>
             """, unsafe_allow_html=True)
             
@@ -1913,10 +1927,9 @@ else:
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
                 # Check if user is VIP or taha kirri
-                is_vip = is_vip_user(st.session_state.username)
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
-                if is_vip or is_taha:
+                if st.session_state.is_vip or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
                     with tab1:
@@ -2158,34 +2171,43 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
         st.subheader("Late Login Records")
+        
+        # Add search functionality
+        search_query = st.text_input("🔍 Search records...", key="late_login_search")
         late_logins = get_late_logins()
         
-        if st.session_state.role == "admin":
+        if st.session_state.role == "admin" or st.session_state.role == "qa":
             if late_logins:
                 data = []
                 for login in late_logins:
                     _, agent, presence, login_time, reason, ts = login
-                    data.append({
-                        "Agent's Name": agent,
-                        "Time of presence": presence,
-                        "Time of log in": login_time,
-                        "Reason": reason
-                    })
+                    # Filter based on search query
+                    if search_query.lower() in agent.lower() or search_query.lower() in reason.lower():
+                        data.append({
+                            "Agent's Name": agent,
+                            "Time of presence": presence,
+                            "Time of log in": login_time,
+                            "Reason": reason,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name="late_logins.csv",
-                    mime="text/csv"
-                )
-                
-                if st.button("Clear All Records"):
-                    clear_late_logins()
-                    st.rerun()
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                    
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download as CSV",
+                        data=csv,
+                        file_name="late_logins.csv",
+                        mime="text/csv"
+                    )
+                    
+                    if st.session_state.role == "admin" and st.button("Clear All Records"):
+                        clear_late_logins()
+                        st.rerun()
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("No late login records found")
         else:
@@ -2194,15 +2216,20 @@ else:
                 data = []
                 for login in user_logins:
                     _, agent, presence, login_time, reason, ts = login
-                    data.append({
-                        "Agent's Name": agent,
-                        "Time of presence": presence,
-                        "Time of log in": login_time,
-                        "Reason": reason
-                    })
+                    # Filter based on search query
+                    if search_query.lower() in reason.lower():
+                        data.append({
+                            "Time of presence": presence,
+                            "Time of log in": login_time,
+                            "Reason": reason,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("You have no late login records")
 
@@ -2240,35 +2267,47 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
+        
+        # Add search functionality
+        search_query = st.text_input("🔍 Search records...", key="quality_issues_search")
         quality_issues = get_quality_issues()
         
-        if st.session_state.role == "admin":
+        if st.session_state.role in ["admin", "qa"]:
             if quality_issues:
                 data = []
                 for issue in quality_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
-                    data.append({
-                        "Agent's Name": agent,
-                        "Type of issue": issue_type,
-                        "Timing": timing,
-                        "Mobile number": mobile,
-                        "Product": product
-                    })
+                    # Filter based on search query
+                    if (search_query.lower() in agent.lower() or 
+                        search_query.lower() in issue_type.lower() or 
+                        search_query.lower() in mobile.lower() or 
+                        search_query.lower() in product.lower()):
+                        data.append({
+                            "Agent's Name": agent,
+                            "Type of issue": issue_type,
+                            "Timing": timing,
+                            "Mobile number": mobile,
+                            "Product": product,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name="quality_issues.csv",
-                    mime="text/csv"
-                )
-                
-                if st.button("Clear All Records"):
-                    clear_quality_issues()
-                    st.rerun()
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                    
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download as CSV",
+                        data=csv,
+                        file_name="quality_issues.csv",
+                        mime="text/csv"
+                    )
+                    
+                    if st.session_state.role == "admin" and st.button("Clear All Records"):
+                        clear_quality_issues()
+                        st.rerun()
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("No quality issue records found")
         else:
@@ -2277,16 +2316,23 @@ else:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
-                    data.append({
-                        "Agent's Name": agent,
-                        "Type of issue": issue_type,
-                        "Timing": timing,
-                        "Mobile number": mobile,
-                        "Product": product
-                    })
+                    # Filter based on search query
+                    if (search_query.lower() in issue_type.lower() or 
+                        search_query.lower() in mobile.lower() or 
+                        search_query.lower() in product.lower()):
+                        data.append({
+                            "Type of issue": issue_type,
+                            "Timing": timing,
+                            "Mobile number": mobile,
+                            "Product": product,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("You have no quality issue records")
 
@@ -2322,34 +2368,43 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
         st.subheader("Mid-shift Issue Records")
+        
+        # Add search functionality
+        search_query = st.text_input("🔍 Search records...", key="midshift_issues_search")
         midshift_issues = get_midshift_issues()
         
-        if st.session_state.role == "admin":
+        if st.session_state.role in ["admin", "qa"]:
             if midshift_issues:
                 data = []
                 for issue in midshift_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
-                    data.append({
-                        "Agent's Name": agent,
-                        "Issue Type": issue_type,
-                        "Start time": start_time,
-                        "End Time": end_time
-                    })
+                    # Filter based on search query
+                    if search_query.lower() in agent.lower() or search_query.lower() in issue_type.lower():
+                        data.append({
+                            "Agent's Name": agent,
+                            "Issue Type": issue_type,
+                            "Start time": start_time,
+                            "End Time": end_time,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name="midshift_issues.csv",
-                    mime="text/csv"
-                )
-                
-                if st.button("Clear All Records"):
-                    clear_midshift_issues()
-                    st.rerun()
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                    
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download as CSV",
+                        data=csv,
+                        file_name="midshift_issues.csv",
+                        mime="text/csv"
+                    )
+                    
+                    if st.session_state.role == "admin" and st.button("Clear All Records"):
+                        clear_midshift_issues()
+                        st.rerun()
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("No mid-shift issue records found")
         else:
@@ -2358,15 +2413,20 @@ else:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
-                    data.append({
-                        "Agent's Name": agent,
-                        "Issue Type": issue_type,
-                        "Start time": start_time,
-                        "End Time": end_time
-                    })
+                    # Filter based on search query
+                    if search_query.lower() in issue_type.lower():
+                        data.append({
+                            "Issue Type": issue_type,
+                            "Start time": start_time,
+                            "End Time": end_time,
+                            "Timestamp": ts
+                        })
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info("No matching records found")
             else:
                 st.info("You have no mid-shift issue records")
 
@@ -2490,7 +2550,7 @@ else:
                 pwd = st.text_input("Password", type="password")
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin"])
+                    role = st.selectbox("Role", ["agent", "admin", "qa"])
                 else:
                     role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
