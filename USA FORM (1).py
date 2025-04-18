@@ -2121,10 +2121,13 @@ else:
             st.header("Lycamobile Fancy Number Checker")
             st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
 
-            phone_input = st.text_input("Enter Phone Number", 
-                                    placeholder="e.g., 1555123456 or 44207123456")
+            phone_input = st.text_input(
+                "Enter Phone Number", 
+                placeholder="e.g., 1555123456 or 44207123456",
+                key="fancy_number_input"
+            )
 
-            if st.button("🔍 Check Number"):
+            if st.button("🔍 Check Number", key="check_fancy_number"):
                 if not phone_input:
                     st.warning("Please enter a phone number")
                 else:
@@ -2179,7 +2182,7 @@ else:
             """)
 
             # Test cases
-            debug_mode = st.checkbox("Show test cases", False)
+            debug_mode = st.checkbox("Show test cases", key="fancy_number_debug", value=False)
             if debug_mode:
                 test_numbers = [
                     ("16109055580", False),  # 055580 → No pattern ✗
