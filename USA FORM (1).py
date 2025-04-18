@@ -2118,63 +2118,90 @@ else:
     elif st.session_state.current_section == "fancy_number":
         if not is_killswitch_enabled():
             st.title("📱 Fancy Number Checker")
-            
-            with st.form("fancy_number_form"):
-                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
-                submit = st.form_submit_button("Check Number")
-                
-                if submit and phone_number:
-                    # Clean the phone number
-                    cleaned_number = ''.join(filter(str.isdigit, phone_number))
+            st.header("Lycamobile Fancy Number Checker")
+            st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
+
+            phone_input = st.text_input("Enter Phone Number", 
+                                    placeholder="e.g., 1555123456 or 44207123456")
+
+            if st.button("🔍 Check Number"):
+                if not phone_input:
+                    st.warning("Please enter a phone number")
+                else:
+                    is_fancy, pattern = is_fancy_number(phone_input)
+                    clean_number = re.sub(r'\D', '', phone_input)
                     
-                    if len(cleaned_number) != 10:
-                        st.error("Please enter a valid 10-digit phone number")
+                    # Extract last 6 digits for display
+                    last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+                    formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+
+                    if is_fancy:
+                        st.markdown(f"""
+                        <div class="result-box fancy-result">
+                            <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                            <p>FANCY NUMBER DETECTED!</p>
+                            <p><strong>Pattern:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
-                        # Check for patterns
-                        patterns = []
-                        
-                        # Check for repeating digits
-                        for i in range(10):
-                            if str(i) * 3 in cleaned_number:
-                                patterns.append(f"Contains triple {i}'s")
-                            if str(i) * 4 in cleaned_number:
-                                patterns.append(f"Contains quadruple {i}'s")
-                        
-                        # Check for sequential numbers (ascending and descending)
-                        for i in range(len(cleaned_number)-2):
-                            if (int(cleaned_number[i]) + 1 == int(cleaned_number[i+1]) and 
-                                int(cleaned_number[i+1]) + 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains ascending sequence")
-                            elif (int(cleaned_number[i]) - 1 == int(cleaned_number[i+1]) and 
-                                  int(cleaned_number[i+1]) - 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains descending sequence")
-                        
-                        # Check for palindrome patterns
-                        for i in range(len(cleaned_number)-3):
-                            segment = cleaned_number[i:i+4]
-                            if segment == segment[::-1]:
-                                patterns.append(f"Contains palindrome pattern: {segment}")
-                        
-                        # Check for repeated pairs
-                        for i in range(len(cleaned_number)-1):
-                            pair = cleaned_number[i:i+2]
-                            if cleaned_number.count(pair) > 1:
-                                patterns.append(f"Contains repeated pair: {pair}")
-                        
-                        # Format number in a readable way
-                        formatted_number = f"({cleaned_number[:3]}) {cleaned_number[3:6]}-{cleaned_number[6:]}"
-                        
-                        # Display results
-                        st.write("### Analysis Results")
-                        st.write(f"Formatted Number: {formatted_number}")
-                        
-                        if patterns:
-                            st.success("This is a fancy number! 🌟")
-                            st.write("Special patterns found:")
-                            for pattern in set(patterns):  # Using set to remove duplicates
-                                st.write(f"- {pattern}")
-                        else:
-                            st.info("This appears to be a regular number. No special patterns found.")
+                        st.markdown(f"""
+                        <div class="result-box normal-result">
+                            <h3><span class="normal-number">{formatted_num}</span></h3>
+                            <p>Standard phone number</p>
+                            <p><strong>Reason:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+            st.markdown("""
+            ### Lycamobile Fancy Number Policy
+            **Qualifying Patterns (last 6 digits only):**
+            
+            #### 6-Digit Patterns
+            - 123456 (ascending)
+            - 987654 (descending)
+            - 666666 (repeating)
+            - 100001 (palindrome)
+            
+            #### 3-Digit Patterns  
+            - 444 555 (double triplets)
+            - 121 122 (similar triplets)
+            - 786 786 (repeating triplets)
+            - 457 456 (nearly sequential)
+            
+            #### 2-Digit Patterns
+            - 11 12 13 (incremental)
+            - 20 20 20 (repeating)
+            - 01 01 01 (alternating)
+            - 32 42 52 (stepping)
+            
+            #### Exceptional Cases
+            - Ending with 123/555/777/999
+            """)
+
+            # Test cases
+            debug_mode = st.checkbox("Show test cases", False)
+            if debug_mode:
+                test_numbers = [
+                    ("16109055580", False),  # 055580 → No pattern ✗
+                    ("123456", True),       # 6-digit ascending ✓
+                    ("444555", True),       # Double triplets ✓
+                    ("121122", True),       # Similar triplets ✓ 
+                    ("111213", True),       # Incremental pairs ✓
+                    ("202020", True),       # Repeating pairs ✓
+                    ("010101", True),       # Alternating pairs ✓
+                    ("324252", True),       # Stepping pairs ✓
+                    ("7900000123", True),   # Ends with 123 ✓
+                    ("123458", False),      # No pattern ✗
+                    ("112233", False),      # Not in our strict rules ✗
+                    ("555555", True)        # 6 identical digits ✓
+                ]
+                
+                st.markdown("### Strict Policy Validation")
+                for number, expected in test_numbers:
+                    is_fancy, pattern = is_fancy_number(number)
+                    result = "PASS" if is_fancy == expected else "FAIL"
+                    color = "green" if result == "PASS" else "red"
+                    st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
         else:
             st.error("System is currently locked. Access to fancy number checker is disabled.")
 
