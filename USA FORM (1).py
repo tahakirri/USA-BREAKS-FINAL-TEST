@@ -2117,6 +2117,11 @@ else:
 
     elif st.session_state.current_section == "fancy_number":
         if not is_killswitch_enabled():
+            st.title("📱 Fancy Number Checker")
+            
+            with st.form("fancy_number_form"):
+                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
+                submit = st.form_submit_button("Check Number")
                 
                 if submit and phone_number:
                     # Clean the phone number
