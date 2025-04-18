@@ -44,7 +44,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin')),
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
@@ -1807,25 +1807,37 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        nav_options = [
-            ("📋 Requests", "requests"),
-            ("☕ Breaks", "breaks"),
-            ("🖼️ HOLD", "hold"),
-            ("❌ Mistakes", "mistakes"),
-            ("💬 Chat", "chat"),
-            ("📱 Fancy Number", "fancy_number"),
-            ("⏰ Late Login", "late_login"),
-            ("📞 Quality Issues", "quality_issues"),
-            ("🔄 Mid-shift Issues", "midshift_issues")
-        ]
+        # Base navigation options for all roles
+        nav_options = []
         
-        # Add admin option for admin users
         if st.session_state.role == "admin":
-            nav_options.append(("⚙️ Admin", "admin"))
-        
-        # Add VIP Management for taha kirri
-        if st.session_state.username.lower() == "taha kirri":
-            nav_options.append(("⭐ VIP Management", "vip_management"))
+            nav_options.extend([
+                ("📋 Requests", "requests"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues"),
+                ("⚙️ Admin", "admin")
+            ])
+        elif st.session_state.role == "qa":
+            nav_options.extend([
+                ("📱 Fancy Number", "fancy_number"),
+                ("📞 Quality Issues", "quality_issues")
+            ])
+        else:  # agent role
+            nav_options.extend([
+                ("📋 Requests", "requests"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues")
+            ])
         
         for option, value in nav_options:
             if st.button(option, key=f"nav_{value}", use_container_width=True):
@@ -1976,38 +1988,10 @@ else:
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
-            # Add notification permission request
-            st.markdown("""
-            <div id="notification-container"></div>
-            <script>
-            // Check if notifications are supported
-            if ('Notification' in window) {
-                const container = document.getElementById('notification-container');
-                if (Notification.permission === 'default') {
-                    container.innerHTML = `
-                        <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;">
-                            <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
-                            <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
-                                Enable Notifications
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-
-            async function requestNotificationPermission() {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    document.getElementById('notification-container').style.display = 'none';
-                }
-            }
-            </script>
-            """, unsafe_allow_html=True)
-            
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user is VIP or taha kirri
+                # Check if user is VIP
                 is_vip = is_vip_user(st.session_state.username)
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
@@ -2017,33 +2001,25 @@ else:
                     with tab1:
                         st.subheader("Regular Chat")
                         messages = get_group_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                         for msg in reversed(messages):
                             msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
                             is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
                             st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
+                            <div style="background-color: {'#3b82f6' if is_mentioned else '#1F1F1F'};
+                                        padding: 1rem;
+                                        border-radius: 8px;
+                                        margin-bottom: 1rem;">
+                                <strong>{sender}</strong>: {message}<br>
+                                <small>{ts}</small>
                             </div>
                             """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
                         
                         with st.form("regular_chat_form", clear_on_submit=True):
                             message = st.text_input("Type your message...", key="regular_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_group_message(st.session_state.username, message)
-                                        st.rerun()
+                            if st.form_submit_button("Send"):
+                                if message:
+                                    send_group_message(st.session_state.username, message)
+                                    st.rerun()
                     
                     with tab2:
                         st.markdown("""
@@ -2054,64 +2030,46 @@ else:
                         """, unsafe_allow_html=True)
                         
                         vip_messages = get_vip_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                         for msg in reversed(vip_messages):
                             msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
                             is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
                             st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar" style="background-color: gold;">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content" style="background-color: #4a5568;">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
+                            <div style="background-color: {'#3b82f6' if is_mentioned else '#4a5568'};
+                                        padding: 1rem;
+                                        border-radius: 8px;
+                                        margin-bottom: 1rem;">
+                                <strong>{sender} ⭐</strong>: {message}<br>
+                                <small>{ts}</small>
                             </div>
                             """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
                         
                         with st.form("vip_chat_form", clear_on_submit=True):
                             message = st.text_input("Type your message...", key="vip_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_vip_message(st.session_state.username, message)
-                                        st.rerun()
-                else:
-                    # Regular chat only for non-VIP users
-                    st.subheader("Regular Chat")
-                    messages = get_group_messages()
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    for msg in reversed(messages):
-                        msg_id, sender, message, ts, mentions = msg
-                        is_sent = sender == st.session_state.username
-                        is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                        
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">
-                                {sender[0].upper()}
-                            </div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with st.form("chat_form", clear_on_submit=True):
-                        message = st.text_input("Type your message...", key="chat_input")
-                        col1, col2 = st.columns([5,1])
-                        with col2:
                             if st.form_submit_button("Send"):
                                 if message:
-                                    send_group_message(st.session_state.username, message)
+                                    send_vip_message(st.session_state.username, message)
                                     st.rerun()
+                else:
+                    messages = get_group_messages()
+                    for msg in reversed(messages):
+                        msg_id, sender, message, ts, mentions = msg
+                        is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
+                        st.markdown(f"""
+                        <div style="background-color: {'#3b82f6' if is_mentioned else '#1F1F1F'};
+                                    padding: 1rem;
+                                    border-radius: 8px;
+                                    margin-bottom: 1rem;">
+                            <strong>{sender}</strong>: {message}<br>
+                            <small>{ts}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with st.form("chat_form", clear_on_submit=True):
+                        message = st.text_input("Type your message...")
+                        if st.form_submit_button("Send"):
+                            if message:
+                                send_group_message(st.session_state.username, message)
+                                st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
 
@@ -2252,8 +2210,9 @@ else:
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
-        st.subheader("Late Login Records")
-        late_logins = get_late_logins()
+        st.subheader("🔍 Search Late Login Records")
+        search_query = st.text_input("Search late logins...")
+        late_logins = search_late_logins(search_query) if search_query else get_late_logins()
         
         if st.session_state.role == "admin":
             if late_logins:
@@ -2264,7 +2223,8 @@ else:
                         "Agent's Name": agent,
                         "Time of presence": presence,
                         "Time of log in": login_time,
-                        "Reason": reason
+                        "Reason": reason,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
@@ -2290,10 +2250,10 @@ else:
                 for login in user_logins:
                     _, agent, presence, login_time, reason, ts = login
                     data.append({
-                        "Agent's Name": agent,
                         "Time of presence": presence,
                         "Time of log in": login_time,
-                        "Reason": reason
+                        "Reason": reason,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
@@ -2334,10 +2294,11 @@ else:
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
-        st.subheader("Quality Issue Records")
-        quality_issues = get_quality_issues()
+        st.subheader("🔍 Search Quality Issues")
+        search_query = st.text_input("Search quality issues...")
+        quality_issues = search_quality_issues(search_query) if search_query else get_quality_issues()
         
-        if st.session_state.role == "admin":
+        if st.session_state.role in ["admin", "qa"]:
             if quality_issues:
                 data = []
                 for issue in quality_issues:
@@ -2347,23 +2308,25 @@ else:
                         "Type of issue": issue_type,
                         "Timing": timing,
                         "Mobile number": mobile,
-                        "Product": product
+                        "Product": product,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
                 
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name="quality_issues.csv",
-                    mime="text/csv"
-                )
-                
-                if st.button("Clear All Records"):
-                    clear_quality_issues()
-                    st.rerun()
+                if st.session_state.role == "admin":
+                    csv = df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download as CSV",
+                        data=csv,
+                        file_name="quality_issues.csv",
+                        mime="text/csv"
+                    )
+                    
+                    if st.button("Clear All Records"):
+                        clear_quality_issues()
+                        st.rerun()
             else:
                 st.info("No quality issue records found")
         else:
@@ -2373,11 +2336,11 @@ else:
                 for issue in user_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
                     data.append({
-                        "Agent's Name": agent,
                         "Type of issue": issue_type,
                         "Timing": timing,
                         "Mobile number": mobile,
-                        "Product": product
+                        "Product": product,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
@@ -2416,8 +2379,9 @@ else:
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
-        st.subheader("Mid-shift Issue Records")
-        midshift_issues = get_midshift_issues()
+        st.subheader("🔍 Search Mid-shift Issue Records")
+        search_query = st.text_input("Search mid-shift issues...")
+        midshift_issues = search_midshift_issues(search_query) if search_query else get_midshift_issues()
         
         if st.session_state.role == "admin":
             if midshift_issues:
@@ -2428,7 +2392,8 @@ else:
                         "Agent's Name": agent,
                         "Issue Type": issue_type,
                         "Start time": start_time,
-                        "End Time": end_time
+                        "End Time": end_time,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
@@ -2454,10 +2419,10 @@ else:
                 for issue in user_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
                     data.append({
-                        "Agent's Name": agent,
                         "Issue Type": issue_type,
                         "Start time": start_time,
-                        "End Time": end_time
+                        "End Time": end_time,
+                        "Timestamp": ts
                     })
                 
                 df = pd.DataFrame(data)
@@ -2579,16 +2544,14 @@ else:
         st.markdown("---")
         st.subheader("User Management")
         if not is_killswitch_enabled():
-            # Show add user form to all admins, but with different options
             with st.form("add_user"):
                 user = st.text_input("Username")
                 pwd = st.text_input("Password", type="password")
-                # Only show role selection to taha kirri, others can only create agent accounts
+                # Only show all role options to taha kirri
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin"])
+                    role = st.selectbox("Role", ["agent", "admin", "qa"])
                 else:
-                    role = "agent"  # Default role for accounts created by other admins
-                    st.info("Note: New accounts will be created as agent accounts.")
+                    role = st.selectbox("Role", ["agent", "qa"])  # Other admins can only create agent or QA accounts
                 
                 if st.form_submit_button("Add User"):
                     if user and pwd:
@@ -2601,16 +2564,19 @@ else:
         # Create a table-like display using columns
         if st.session_state.username.lower() == "taha kirri":
             # Full view for taha kirri
-            cols = st.columns([3, 1, 1])
+            cols = st.columns([3, 1, 1, 1])
             cols[0].write("**Username**")
             cols[1].write("**Role**")
-            cols[2].write("**Action**")
+            cols[2].write("**VIP Status**")
+            cols[3].write("**Action**")
             
             for uid, uname, urole in users:
-                cols = st.columns([3, 1, 1])
+                cols = st.columns([3, 1, 1, 1])
                 cols[0].write(uname)
                 cols[1].write(urole)
-                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
+                is_vip = is_vip_user(uname)
+                cols[2].write("⭐" if is_vip else "-")
+                if cols[3].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
                     delete_user(uid)
                     st.rerun()
         else:
@@ -2780,6 +2746,53 @@ def handle_message_check():
                 })
         return {"new_messages": bool(messages_data), "messages": messages_data}
     return {"new_messages": False, "messages": []}
+
+def search_quality_issues(query):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        query = f"%{query.lower()}%"
+        cursor.execute("""
+            SELECT * FROM quality_issues 
+            WHERE LOWER(agent_name) LIKE ? 
+            OR LOWER(issue_type) LIKE ? 
+            OR LOWER(mobile_number) LIKE ?
+            OR LOWER(product) LIKE ?
+            ORDER BY timestamp DESC
+        """, (query, query, query, query))
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def search_late_logins(query):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        query = f"%{query.lower()}%"
+        cursor.execute("""
+            SELECT * FROM late_logins 
+            WHERE LOWER(agent_name) LIKE ? 
+            OR LOWER(reason) LIKE ?
+            ORDER BY timestamp DESC
+        """, (query, query))
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
+def search_midshift_issues(query):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        query = f"%{query.lower()}%"
+        cursor.execute("""
+            SELECT * FROM midshift_issues 
+            WHERE LOWER(agent_name) LIKE ? 
+            OR LOWER(issue_type) LIKE ?
+            ORDER BY timestamp DESC
+        """, (query, query))
+        return cursor.fetchall()
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     inject_custom_css()
