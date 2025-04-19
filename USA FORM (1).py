@@ -2263,7 +2263,8 @@ else:
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
                 ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
+                ("🔄 Mid-shift Issues", "midshift_issues"),
+                ("📱 Fancy Number", "fancy_number")
             ])
         
         # Add admin option for admin users
