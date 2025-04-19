@@ -1541,31 +1541,60 @@ def inject_custom_css():
     </script>
     """, unsafe_allow_html=True)
 
-    # Always use dark mode colors
-    c = {
-        'bg': '#0f172a',
-        'sidebar': '#1e293b',
-        'card': '#1e293b',
-        'text': '#e2e8f0',
-        'text_secondary': '#94a3b8',
-        'border': '#334155',
-        'accent': '#60a5fa',
-        'accent_hover': '#3b82f6',
-        'muted': '#94a3b8',
-        'input_bg': '#1e293b',
-        'input_text': '#e2e8f0',
-        'my_message_bg': '#2563eb',
-        'other_message_bg': '#334155',
-        'hover_bg': '#334155',
-        'notification_bg': '#1e293b',
-        'notification_text': '#e2e8f0',
-        'button_bg': '#2563eb',
-        'button_text': '#ffffff',
-        'button_hover': '#1d4ed8',
-        'dropdown_bg': '#1e293b',
-        'dropdown_text': '#e2e8f0',
-        'dropdown_hover': '#334155'
+    # Define color schemes for both modes
+    colors = {
+        'dark': {
+            'bg': '#0f172a',
+            'sidebar': '#1e293b',
+            'card': '#1e293b',
+            'text': '#e2e8f0',
+            'text_secondary': '#94a3b8',
+            'border': '#334155',
+            'accent': '#60a5fa',
+            'accent_hover': '#3b82f6',
+            'muted': '#94a3b8',
+            'input_bg': '#1e293b',
+            'input_text': '#e2e8f0',
+            'my_message_bg': '#2563eb',
+            'other_message_bg': '#334155',
+            'hover_bg': '#334155',
+            'notification_bg': '#1e293b',
+            'notification_text': '#e2e8f0',
+            'button_bg': '#2563eb',
+            'button_text': '#ffffff',
+            'button_hover': '#1d4ed8',
+            'dropdown_bg': '#1e293b',
+            'dropdown_text': '#e2e8f0',
+            'dropdown_hover': '#334155'
+        },
+        'light': {
+            'bg': '#ffffff',
+            'sidebar': '#f8fafc',
+            'card': '#f8fafc',
+            'text': '#1e293b',
+            'text_secondary': '#475569',
+            'border': '#e2e8f0',
+            'accent': '#2563eb',
+            'accent_hover': '#1d4ed8',
+            'muted': '#64748b',
+            'input_bg': '#ffffff',
+            'input_text': '#1e293b',
+            'my_message_bg': '#3b82f6',
+            'other_message_bg': '#f1f5f9',
+            'hover_bg': '#f1f5f9',
+            'notification_bg': '#ffffff',
+            'notification_text': '#1e293b',
+            'button_bg': '#2563eb',
+            'button_text': '#ffffff',
+            'button_hover': '#1d4ed8',
+            'dropdown_bg': '#ffffff',
+            'dropdown_text': '#1e293b',
+            'dropdown_hover': '#f1f5f9'
+        }
     }
+
+    # Use the appropriate color scheme based on the session state
+    c = colors['dark'] if st.session_state.color_mode == 'dark' else colors['light']
     
     st.markdown(f"""
     <style>
@@ -1634,18 +1663,19 @@ def inject_custom_css():
         [data-testid="stSidebar"] {{
             background-color: {c['sidebar']};
             border-right: 1px solid {c['border']};
+            color: {c['text']};
         }}
         
         [data-testid="stSidebar"] .stButton > button {{
             width: 100%;
             text-align: left;
-            background-color: transparent;
-            color: {c['text']};
+            background-color: transparent !important;
+            color: {c['text']} !important;
             border: 1px solid transparent;
         }}
         
         [data-testid="stSidebar"] .stButton > button:hover {{
-            background-color: {c['hover_bg']};
+            background-color: {c['hover_bg']} !important;
             border-color: {c['accent']};
         }}
         
@@ -1656,6 +1686,7 @@ def inject_custom_css():
             padding: 1rem;
             border-radius: 0.5rem;
             margin-bottom: 1rem;
+            color: {c['text']};
         }}
         
         /* Chat Message Styling */
@@ -1726,6 +1757,56 @@ def inject_custom_css():
         .stDataFrame th {{
             color: {c['text']} !important;
             background-color: {c['dropdown_bg']} !important;
+        }}
+
+        /* Checkbox Styling */
+        .stCheckbox > label {{
+            color: {c['text']} !important;
+        }}
+        
+        .stCheckbox > div[role="checkbox"] {{
+            background-color: {c['input_bg']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        /* Date Input Styling */
+        .stDateInput > div > div {{
+            background-color: {c['input_bg']} !important;
+            color: {c['input_text']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        /* Expander Styling */
+        .streamlit-expanderHeader {{
+            background-color: {c['card']} !important;
+            color: {c['text']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        /* Tabs Styling */
+        .stTabs [data-baseweb="tab-list"] {{
+            background-color: {c['card']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        .stTabs [data-baseweb="tab"] {{
+            color: {c['text']} !important;
+        }}
+        
+        /* Theme Toggle Switch */
+        .theme-toggle {{
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            background-color: {c['card']};
+            border: 1px solid {c['border']};
+        }}
+        
+        .theme-toggle label {{
+            margin-right: 0.5rem;
+            color: {c['text']};
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -1826,6 +1907,7 @@ else:
 
     with st.sidebar:
         st.title(f"👋 Welcome, {st.session_state.username}")
+        add_theme_toggle()
         st.markdown("---")
         
         # Base navigation options available to all users
