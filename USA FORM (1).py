@@ -651,16 +651,11 @@ def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
     finally:
         conn.close()
 
-def get_quality_issues(username=None):
+def get_quality_issues():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        if username:
-            # If username is provided, only fetch issues for that user
-            cursor.execute("SELECT * FROM quality_issues WHERE agent_name = ? ORDER BY timestamp DESC", (username,))
-        else:
-            # If no username, fetch all issues (for admin/qa)
-            cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
+        cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
         return cursor.fetchall()
     except Exception as e:
         st.error(f"Error fetching quality issues: {str(e)}")
@@ -724,44 +719,6 @@ def clear_quality_issues():
         return True
     except Exception as e:
         st.error(f"Error clearing quality issues: {str(e)}")
-    finally:
-        conn.close()
-
-def search_quality_issues(query, username=None):
-    """Search quality issues with optional username filter"""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        query_param = f"%{query.lower()}%"
-        
-        if username:
-            # Search with username filter
-            cursor.execute("""
-                SELECT * FROM quality_issues 
-                WHERE agent_name = ? AND (
-                    LOWER(issue_type) LIKE ? 
-                    OR LOWER(timing) LIKE ? 
-                    OR LOWER(mobile_number) LIKE ? 
-                    OR LOWER(product) LIKE ?
-                )
-                ORDER BY timestamp DESC
-            """, (username, query_param, query_param, query_param, query_param))
-        else:
-            # Search without username filter (for admin/qa)
-            cursor.execute("""
-                SELECT * FROM quality_issues 
-                WHERE LOWER(agent_name) LIKE ? 
-                OR LOWER(issue_type) LIKE ? 
-                OR LOWER(timing) LIKE ? 
-                OR LOWER(mobile_number) LIKE ? 
-                OR LOWER(product) LIKE ?
-                ORDER BY timestamp DESC
-            """, (query_param, query_param, query_param, query_param, query_param))
-        
-        return cursor.fetchall()
-    except Exception as e:
-        st.error(f"Error searching quality issues: {str(e)}")
-        return []
     finally:
         conn.close()
 
@@ -2755,8 +2712,7 @@ else:
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
         
-        # Admin and agent can submit quality issues
-        if st.session_state.role in ["admin", "agent"] and not is_killswitch_enabled():
+        if not is_killswitch_enabled():
             with st.form("quality_issue_form"):
                 cols = st.columns(4)
                 issue_type = cols[0].selectbox("Type of issue", [
@@ -2783,74 +2739,98 @@ else:
                             product
                         )
                         st.success("Quality issue reported successfully!")
-                    except Exception as e:
-                        st.error(f"Error reporting quality issue: {str(e)}")
+                    except ValueError:
+                        st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
+        
+        st.subheader("Quality Issue Records")
+        quality_issues = get_quality_issues()
+        
+        # Allow both admin and QA roles to see all records and use search/filter
+        if st.session_state.role in ["admin", "qa"]:
+            # Search and date filter for admin and QA users
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+            with col2:
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="quality_issues_date")
             
-            # Determine user role and name
-            role = st.session_state.role
-            username = st.session_state.username
+            if search_query or date_filter:
+                filtered_issues = []
+                
+                for issue in quality_issues:
+                    matches_search = True
+                    matches_date = True
+                    
+                    if search_query:
+                        matches_search = (
+                            search_query.lower() in issue[1].lower() or  # Agent name
+                            search_query.lower() in issue[2].lower() or  # Issue type
+                            search_query in issue[3] or  # Timing
+                            search_query in issue[4] or  # Mobile number
+                            search_query.lower() in issue[5].lower()  # Product
+                        )
+                    
+                    if date_filter:
+                        try:
+                            record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == date_filter
+                        except:
+                            matches_date = False
+                    
+                    if matches_search and matches_date:
+                        filtered_issues.append(issue)
+                
+                quality_issues = filtered_issues
             
-            # Sidebar for filtering
-            st.sidebar.header("Quality Issues Filters")
-            
-            # Search functionality based on role
-            search_query = None
-            if role in ['admin', 'qa']:
-                search_query = st.sidebar.text_input("Search Quality Issues", placeholder="Search by agent, type, mobile number...")
-            
-            # Get quality issues based on role
-            if role == "agent":
-                quality_issues = get_quality_issues(username)
-            elif role in ["admin", "qa"]:
-                quality_issues = search_quality_issues(search_query) if search_query else get_quality_issues()
-            
-            # Display quality issues
             if quality_issues:
                 data = []
-                # Customize columns based on user role
-                if role == 'agent':
-                    for issue in quality_issues:
-                        _, issue_type, timing, mobile, product, ts = issue
-                        data.append({
-                            "Type of issue": issue_type,
-                            "Timing": timing,
-                            "Mobile number": mobile,
-                            "Product": product,
-                            "Reported At": ts
-                        })
-                else:  # admin or qa
-                    for issue in quality_issues:
-                        _, agent, issue_type, timing, mobile, product, ts = issue
-                        data.append({
-                            "Agent's Name": agent,
-                            "Type of issue": issue_type,
-                            "Timing": timing,
-                            "Mobile number": mobile,
-                            "Product": product,
-                            "Reported At": ts
-                        })
+                for issue in quality_issues:
+                    _, agent, issue_type, timing, mobile, product, ts = issue
+                    data.append({
+                        "Agent's Name": agent,
+                        "Type of issue": issue_type,
+                        "Timing": timing,
+                        "Mobile number": mobile,
+                        "Product": product,
+                        "Reported At": ts
+                    })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
                 
-                # Download and clear options for admin/QA
-                if role in ['admin', 'qa']:
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Download as CSV",
-                        data=csv,
-                        file_name="quality_issues.csv",
-                        mime="text/csv"
-                    )
-                    
-                    # Only admin can clear records
-                    if role == "admin" and st.button("Clear All Records"):
-                        clear_quality_issues()
-                        st.rerun()
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download as CSV",
+                    data=csv,
+                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
+                    mime="text/csv"
+                )
+                
+                # Only admin can clear records
+                if st.session_state.role == "admin" and st.button("Clear All Records"):
+                    clear_quality_issues()
+                    st.rerun()
             else:
                 st.info("No quality issue records found")
-        
-        quality_issues_section()
+        else:
+            # Regular users only see their own records without search
+            user_issues = [issue for issue in quality_issues if issue[1] == st.session_state.username]
+            if user_issues:
+                data = []
+                for issue in user_issues:
+                    _, agent, issue_type, timing, mobile, product, ts = issue
+                    data.append({
+                        "Type of issue": issue_type,
+                        "Timing": timing,
+                        "Mobile number": mobile,
+                        "Product": product,
+                        "Reported At": ts
+                    })
+                
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+            else:
+                st.info("You have no quality issue records")
 
     elif st.session_state.current_section == "midshift_issues":
         st.subheader("🔄 Mid-shift Technical Issue")
