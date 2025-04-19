@@ -2200,7 +2200,7 @@ else:
             st.session_state.authenticated = False
             st.rerun()
 
-    elif st.session_state.current_section == "fancy_number":
+    if st.session_state.current_section == "fancy_number":
         st.title(st.session_state.current_section.title())
         lycamobile_fancy_number_checker()
 
