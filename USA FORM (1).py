@@ -8,6 +8,13 @@ from PIL import Image
 import io
 import pandas as pd
 import json
+import pytz
+
+# Function to get current Casablanca time
+def get_casablanca_time():
+    """Get current time in Casablanca, Morocco timezone"""
+    morocco_tz = pytz.timezone('Africa/Casablanca')
+    return datetime.now(morocco_tz).strftime("%Y-%m-%d %H:%M:%S")
 
 # --------------------------
 # Database Functions
@@ -289,7 +296,7 @@ def add_request(agent_name, request_type, identifier, comment):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = get_casablanca_time()
         cursor.execute("""
             INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp) 
             VALUES (?, ?, ?, ?, ?)
@@ -359,7 +366,7 @@ def add_request_comment(request_id, user, comment):
         cursor.execute("""
             INSERT INTO request_comments (request_id, user, comment, timestamp)
             VALUES (?, ?, ?, ?)
-        """, (request_id, user, comment, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (request_id, user, comment, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -389,8 +396,7 @@ def add_mistake(team_leader, agent_name, ticket_id, error_description):
         cursor.execute("""
             INSERT INTO mistakes (team_leader, agent_name, ticket_id, error_description, timestamp) 
             VALUES (?, ?, ?, ?, ?)
-        """, (team_leader, agent_name, ticket_id, error_description,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (team_leader, agent_name, ticket_id, error_description, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -433,8 +439,7 @@ def send_group_message(sender, message):
         cursor.execute("""
             INSERT INTO group_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
-        """, (sender, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-             ','.join(mentions)))
+        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
         conn.commit()
         return True
     finally:
@@ -498,7 +503,7 @@ def add_hold_image(uploader, image_data):
         cursor.execute("""
             INSERT INTO hold_images (uploader, image_data, timestamp) 
             VALUES (?, ?, ?)
-        """, (uploader, image_data, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (uploader, image_data, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -581,8 +586,7 @@ def add_late_login(agent_name, presence_time, login_time, reason):
         cursor.execute("""
             INSERT INTO late_logins (agent_name, presence_time, login_time, reason, timestamp) 
             VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, presence_time, login_time, reason,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (agent_name, presence_time, login_time, reason, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -608,8 +612,7 @@ def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
         cursor.execute("""
             INSERT INTO quality_issues (agent_name, issue_type, timing, mobile_number, product, timestamp) 
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (agent_name, issue_type, timing, mobile_number, product,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (agent_name, issue_type, timing, mobile_number, product, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -637,12 +640,9 @@ def add_midshift_issue(agent_name, issue_type, start_time, end_time):
         cursor.execute("""
             INSERT INTO midshift_issues (agent_name, issue_type, start_time, end_time, timestamp) 
             VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, issue_type, start_time, end_time,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        """, (agent_name, issue_type, start_time, end_time, get_casablanca_time()))
         conn.commit()
         return True
-    except Exception as e:
-        st.error(f"Error adding mid-shift issue: {str(e)}")
     finally:
         conn.close()
 
@@ -722,8 +722,7 @@ def send_vip_message(sender, message):
         cursor.execute("""
             INSERT INTO vip_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
-        """, (sender, message, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-             ','.join(mentions)))
+        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
         conn.commit()
         return True
     finally:
@@ -1710,7 +1709,7 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 st.set_page_config(
-    page_title="Lyca Management System",
+    page_title="Request Management System",
     page_icon=":office:",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -1733,7 +1732,7 @@ init_break_session_state()
 if not st.session_state.authenticated:
     st.markdown("""
         <div class="login-container">
-            <h1 style="text-align: center; margin-bottom: 2rem;">🏢 Lyca Management System</h1>
+            <h1 style="text-align: center; margin-bottom: 2rem;">🏢 Request Management System</h1>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
@@ -2261,17 +2260,16 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date", key="late_login_date")
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="late_login_date")
             
             if search_query or date_filter:
                 filtered_logins = []
-                date_str = date_filter.strftime("%Y-%m-%d")
+                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for login in late_logins:
                     matches_search = True
                     matches_date = True
                     
-                    # Check search query
                     if search_query:
                         matches_search = (
                             search_query.lower() in login[1].lower() or  # Agent name
@@ -2280,10 +2278,9 @@ else:
                             search_query in login[3]     # Login time
                         )
                     
-                    # Check date
                     if date_filter:
-                        record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                        matches_date = record_date == date_filter
+                        record_date = convert_to_casablanca_date(login[5])
+                        matches_date = record_date == date_filter if record_date else False
                     
                     if matches_search and matches_date:
                         filtered_logins.append(login)
@@ -2379,17 +2376,16 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date", key="quality_issues_date")
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="quality_issues_date")
             
             if search_query or date_filter:
                 filtered_issues = []
-                date_str = date_filter.strftime("%Y-%m-%d")
+                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for issue in quality_issues:
                     matches_search = True
                     matches_date = True
                     
-                    # Check search query
                     if search_query:
                         matches_search = (
                             search_query.lower() in issue[1].lower() or  # Agent name
@@ -2399,10 +2395,9 @@ else:
                             search_query.lower() in issue[5].lower()  # Product
                         )
                     
-                    # Check date
                     if date_filter:
-                        record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                        matches_date = record_date == date_filter
+                        record_date = convert_to_casablanca_date(issue[6])
+                        matches_date = record_date == date_filter if record_date else False
                     
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
@@ -2498,17 +2493,16 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date", key="midshift_issues_date")
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="midshift_issues_date")
             
             if search_query or date_filter:
                 filtered_issues = []
-                date_str = date_filter.strftime("%Y-%m-%d")
+                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for issue in midshift_issues:
                     matches_search = True
                     matches_date = True
                     
-                    # Check search query
                     if search_query:
                         matches_search = (
                             search_query.lower() in issue[1].lower() or  # Agent name
@@ -2517,10 +2511,9 @@ else:
                             search_query in issue[4]     # End time
                         )
                     
-                    # Check date
                     if date_filter:
-                        record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
-                        matches_date = record_date == date_filter
+                        record_date = convert_to_casablanca_date(issue[5])
+                        matches_date = record_date == date_filter if record_date else False
                     
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
@@ -2890,6 +2883,22 @@ def handle_message_check():
         return {"new_messages": bool(messages_data), "messages": messages_data}
     return {"new_messages": False, "messages": []}
 
+def convert_to_casablanca_date(date_str):
+    """Convert a date string to Casablanca timezone"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        morocco_tz = pytz.timezone('Africa/Casablanca')
+        return pytz.UTC.localize(dt).astimezone(morocco_tz).date()
+    except:
+        return None
+
+def get_date_range_casablanca(date):
+    """Get start and end of day in Casablanca time"""
+    morocco_tz = pytz.timezone('Africa/Casablanca')
+    start = morocco_tz.localize(datetime.combine(date, time.min))
+    end = morocco_tz.localize(datetime.combine(date, time.max))
+    return start, end
+
 if __name__ == "__main__":
     inject_custom_css()
     
@@ -2898,4 +2907,4 @@ if __name__ == "__main__":
         st.json(handle_message_check())
         st.stop()
     
-    st.write("Lyca Management System")
+    st.write("Request Management System")
