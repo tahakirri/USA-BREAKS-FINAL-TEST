@@ -1676,8 +1676,54 @@ def inject_custom_css():
         .stDateInput label,
         div[data-baseweb="input"] label,
         .stMarkdown p,
-        .element-container label {{    
+        .element-container label,
+        .stDateInput div,
+        .stSelectbox div[data-baseweb="select"] div,
+        .streamlit-expanderHeader,
+        .stAlert p {{    
             color: {c['text']} !important;
+        }}
+        
+        /* Message Alerts */
+        .stAlert {{    
+            background-color: {c['card']} !important;
+            border: 1px solid {c['border']} !important;
+        }}
+        
+        /* Template Names and Headers */
+        .streamlit-expanderHeader,
+        .stMarkdown h1,
+        .stMarkdown h2,
+        .stMarkdown h3,
+        .stMarkdown h4,
+        .stMarkdown h5,
+        .stMarkdown h6,
+        .stMarkdown strong {{    
+            color: {c['text']} !important;
+        }}
+        
+        /* VIP Chat Text */
+        .vip-text,
+        .exclusive-text {{    
+            color: {c['text']} !important;
+            font-weight: 600;
+        }}
+        
+        /* Break Section */
+        .break-template {{    
+            color: {c['text']} !important;
+            background-color: {c['card']} !important;
+            border: 1px solid {c['border']} !important;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }}
+        
+        /* Date Filter */
+        .stDateInput input,
+        .stDateInput div[data-baseweb="input"] {{    
+            color: {c['text']} !important;
+            background-color: {c['input_bg']} !important;
         }}
         
         /* Placeholder text */
@@ -1713,6 +1759,39 @@ def inject_custom_css():
         [data-testid="stSidebar"] .stButton > button:hover {{
             background-color: {c['hover_bg']} !important;
             border-color: {c['accent']};
+        }}
+        
+        /* Notification and Alert styles */
+        .notification,
+        .stSuccess,
+        .stError,
+        .stWarning,
+        .stInfo {{    
+            background-color: {c['card']} !important;
+            color: {c['text']} !important;
+            padding: 1rem !important;
+            border-radius: 0.5rem !important;
+            margin-bottom: 1rem !important;
+            border: 1px solid {c['border']} !important;
+        }}
+        
+        .notification p,
+        .stSuccess p,
+        .stError p,
+        .stWarning p,
+        .stInfo p {{    
+            color: {c['text']} !important;
+        }}
+        
+        /* Empty state messages */
+        .empty-state {{    
+            color: {c['text']} !important;
+            background-color: {c['card']} !important;
+            border: 1px solid {c['border']} !important;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin: 2rem 0;
         }}
         
         /* Cards */
