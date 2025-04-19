@@ -1476,6 +1476,11 @@ def agent_break_dashboard():
 
 def is_vip_user(username):
     """Check if a user has VIP status"""
+    if not username:
+        return False
+    # taha kirri is always considered VIP
+    if username.lower() == "taha kirri":
+        return True
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -3190,20 +3195,45 @@ else:
             agent_break_dashboard()
 
     elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
+        # Only taha kirri can access VIP management
         st.title("⭐ VIP Management")
         
         # Get all users
         users = get_all_users()
         
-        # Create columns for better layout
-        col1, col2 = st.columns([3, 1])
+        # Create columns for layout
+        col1, col2 = st.columns([2, 1])
         
         with col1:
-            # Show all users with their current VIP status
-            vip_management()
+            # Create a DataFrame for better display
+            user_data = []
+            for user in users:
+                user_id, username, _, role, is_vip = user
+                user_data.append({
+                    "ID": user_id,
+                    "Username": username,
+                    "Role": role,
+                    "VIP Status": "⭐" if is_vip else "❌"
+                })
+            
+            df = pd.DataFrame(user_data)
+            st.dataframe(df)
         
         with col2:
-            # VIP management form
+            with st.form("vip_form"):
+                username = st.text_input("Enter username to toggle VIP status")
+                if st.form_submit_button("Toggle VIP Status"):
+                    if username:
+                        # Get current VIP status
+                        current_status = is_vip_user(username)
+                        # Toggle status
+                        if set_vip_status(username, not current_status):
+                            st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
+                            st.rerun()
+                        else:
+                            st.error("Error updating VIP status. Please check the username.")
+                    else:
+                        st.error("Please enter a username")
             with st.form("vip_management_form"):
                 st.write("### Update VIP Status")
                 selected_user = st.selectbox(
