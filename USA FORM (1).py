@@ -690,93 +690,108 @@ def clear_late_logins():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Create a confirmation modal
-    confirm = st.empty()
-    with confirm.container():
+    # Use session state to manage confirmation
+    if 'confirm_clear_late_logins' not in st.session_state:
+        st.session_state.confirm_clear_late_logins = True
+    
+    if st.session_state.confirm_clear_late_logins:
         st.warning("🚨 Are you absolutely sure you want to clear ALL late login records?")
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("Yes, I'm sure", key="confirm_clear_late_logins"):
+            if st.button("Yes, I'm sure", key="confirm_late_logins_yes"):
                 conn = get_db_connection()
                 try:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM late_logins")
                     conn.commit()
-                    confirm.success("Late login records cleared successfully!")
+                    st.success("Late login records cleared successfully!")
+                    st.session_state.confirm_clear_late_logins = False
                     return True
                 except Exception as e:
-                    confirm.error(f"Error clearing late login records: {str(e)}")
+                    st.error(f"Error clearing late login records: {str(e)}")
                     return False
                 finally:
                     conn.close()
         
         with col2:
-            if st.button("Cancel", key="cancel_clear_late_logins"):
-                confirm.empty()
+            if st.button("Cancel", key="confirm_late_logins_no"):
+                st.session_state.confirm_clear_late_logins = False
                 return False
+    
+    return False
 
 def clear_quality_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Create a confirmation modal
-    confirm = st.empty()
-    with confirm.container():
+    # Use session state to manage confirmation
+    if 'confirm_clear_quality_issues' not in st.session_state:
+        st.session_state.confirm_clear_quality_issues = True
+    
+    if st.session_state.confirm_clear_quality_issues:
         st.warning("🚨 Are you absolutely sure you want to clear ALL quality issue records?")
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("Yes, I'm sure", key="confirm_clear_quality_issues"):
+            if st.button("Yes, I'm sure", key="confirm_quality_issues_yes"):
                 conn = get_db_connection()
                 try:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM quality_issues")
                     conn.commit()
-                    confirm.success("Quality issue records cleared successfully!")
+                    st.success("Quality issue records cleared successfully!")
+                    st.session_state.confirm_clear_quality_issues = False
                     return True
                 except Exception as e:
-                    confirm.error(f"Error clearing quality issue records: {str(e)}")
+                    st.error(f"Error clearing quality issue records: {str(e)}")
                     return False
                 finally:
                     conn.close()
         
         with col2:
-            if st.button("Cancel", key="cancel_clear_quality_issues"):
-                confirm.empty()
+            if st.button("Cancel", key="confirm_quality_issues_no"):
+                st.session_state.confirm_clear_quality_issues = False
                 return False
+    
+    return False
 
 def clear_midshift_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Create a confirmation modal
-    confirm = st.empty()
-    with confirm.container():
+    # Use session state to manage confirmation
+    if 'confirm_clear_midshift_issues' not in st.session_state:
+        st.session_state.confirm_clear_midshift_issues = True
+    
+    if st.session_state.confirm_clear_midshift_issues:
         st.warning("🚨 Are you absolutely sure you want to clear ALL mid-shift issue records?")
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("Yes, I'm sure", key="confirm_clear_midshift_issues"):
+            if st.button("Yes, I'm sure", key="confirm_midshift_issues_yes"):
                 conn = get_db_connection()
                 try:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM midshift_issues")
                     conn.commit()
-                    confirm.success("Mid-shift issue records cleared successfully!")
+                    st.success("Mid-shift issue records cleared successfully!")
+                    st.session_state.confirm_clear_midshift_issues = False
                     return True
                 except Exception as e:
-                    confirm.error(f"Error clearing mid-shift issue records: {str(e)}")
+                    st.error(f"Error clearing mid-shift issue records: {str(e)}")
                     return False
                 finally:
                     conn.close()
         
         with col2:
-            if st.button("Cancel", key="cancel_clear_midshift_issues"):
-                confirm.empty()
+            if st.button("Cancel", key="confirm_midshift_issues_no"):
+                st.session_state.confirm_clear_midshift_issues = False
                 return False
+    
+    return False
 
 def send_vip_message(sender, message):
     """Send a message in the VIP-only chat"""
