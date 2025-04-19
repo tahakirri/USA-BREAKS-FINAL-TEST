@@ -2007,7 +2007,6 @@ else:
             ("requests", "📋 Requests"),
             ("mistakes", "❌ Mistakes"),
             ("chat", "💬 Chat"),
-            ("fancy_number", "📱 Fancy Number"),
             ("hold", "🖼️ HOLD Images"),
             ("late_login", "⏰ Late Login"),
             ("quality_issues", "📞 Quality Issues"),
@@ -2225,69 +2224,6 @@ else:
 
         else:
             st.error("System is currently locked. Access to chat is disabled.")
-
-    elif st.session_state.current_section == "fancy_number":
-        if not is_killswitch_enabled():
-            st.title("📱 Fancy Number Checker")
-            
-            with st.form("fancy_number_form"):
-                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
-                submit = st.form_submit_button("Check Number")
-                
-                if submit and phone_number:
-                    # Clean the phone number
-                    cleaned_number = ''.join(filter(str.isdigit, phone_number))
-                    
-                    if len(cleaned_number) != 10:
-                        st.error("Please enter a valid 10-digit phone number")
-                    else:
-                        # Check for patterns
-                        patterns = []
-                        
-                        # Check for repeating digits
-                        for i in range(10):
-                            if str(i) * 3 in cleaned_number:
-                                patterns.append(f"Contains triple {i}'s")
-                            if str(i) * 4 in cleaned_number:
-                                patterns.append(f"Contains quadruple {i}'s")
-                        
-                        # Check for sequential numbers (ascending and descending)
-                        for i in range(len(cleaned_number)-2):
-                            if (int(cleaned_number[i]) + 1 == int(cleaned_number[i+1]) and 
-                                int(cleaned_number[i+1]) + 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains ascending sequence")
-                            elif (int(cleaned_number[i]) - 1 == int(cleaned_number[i+1]) and 
-                                  int(cleaned_number[i+1]) - 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains descending sequence")
-                        
-                        # Check for palindrome patterns
-                        for i in range(len(cleaned_number)-3):
-                            segment = cleaned_number[i:i+4]
-                            if segment == segment[::-1]:
-                                patterns.append(f"Contains palindrome pattern: {segment}")
-                        
-                        # Check for repeated pairs
-                        for i in range(len(cleaned_number)-1):
-                            pair = cleaned_number[i:i+2]
-                            if cleaned_number.count(pair) > 1:
-                                patterns.append(f"Contains repeated pair: {pair}")
-                        
-                        # Format number in a readable way
-                        formatted_number = f"({cleaned_number[:3]}) {cleaned_number[3:6]}-{cleaned_number[6:]}"
-                        
-                        # Display results
-                        st.write("### Analysis Results")
-                        st.write(f"Formatted Number: {formatted_number}")
-                        
-                        if patterns:
-                            st.success("This is a fancy number! 🌟")
-                            st.write("Special patterns found:")
-                            for pattern in set(patterns):  # Using set to remove duplicates
-                                st.write(f"- {pattern}")
-                        else:
-                            st.info("This appears to be a regular number. No special patterns found.")
-        else:
-            st.error("System is currently locked. Access to fancy number checker is disabled.")
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
