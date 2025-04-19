@@ -73,18 +73,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
-                is_vip INTEGER DEFAULT 0
-            )
-        """)
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS vip_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sender TEXT,
-                message TEXT,
-                timestamp TEXT,
-                mentions TEXT
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa'))
             )
         """)
         
@@ -185,9 +174,9 @@ def init_db():
         
         # Create default admin account
         cursor.execute("""
-            INSERT OR IGNORE INTO users (username, password, role, is_vip) 
-            VALUES (?, ?, ?, ?)
-        """, ("taha kirri", hash_password("arise@99"), "admin", 1))
+            INSERT OR IGNORE INTO users (username, password, role) 
+            VALUES (?, ?, ?)
+        """, ("taha kirri", hash_password("arise@99"), "admin"))
         
         # Create other admin accounts
         admin_accounts = [
@@ -255,14 +244,11 @@ def init_db():
         
         for agent_name, workspace_id in agents:
             cursor.execute("""
-                INSERT OR IGNORE INTO users (username, password, role, is_vip) 
-                VALUES (?, ?, ?, ?)
-            """, (agent_name, hash_password(workspace_id), "agent", 0))
+                INSERT OR IGNORE INTO users (username, password, role) 
+                VALUES (?, ?, ?)
+            """, (agent_name, hash_password(workspace_id), "agent"))
         
-        # Ensure taha kirri has VIP status
-        cursor.execute("""
-            UPDATE users SET is_vip = 1 WHERE LOWER(username) = 'taha kirri'
-        """)
+
         
         conn.commit()
     finally:
@@ -1461,35 +1447,10 @@ def agent_break_dashboard():
                 st.success("Your breaks have been confirmed!")
                 st.rerun()
 
-def is_vip_user(username):
-    """Check if a user has VIP status"""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        return bool(result[0]) if result else False
-    finally:
-        conn.close()
-
-def set_vip_status(username, is_vip):
-    """Set or remove VIP status for a user"""
-    if not username:
-        return False
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET is_vip = ? WHERE username = ?", 
-                      (1 if is_vip else 0, username))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-
 # --------------------------
 # Streamlit App
 # --------------------------
-
+{{ ... }}
 # Add this at the beginning of the file, after the imports
 if 'color_mode' not in st.session_state:
     st.session_state.color_mode = 'dark'
@@ -2407,81 +2368,6 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user is VIP or taha kirri
-                is_vip = is_vip_user(st.session_state.username)
-                is_taha = st.session_state.username.lower() == "taha kirri"
-                
-                if is_vip or is_taha:
-                    tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
-                    
-                    with tab1:
-                        st.subheader("Regular Chat")
-                        messages = get_group_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                        for msg in reversed(messages):
-                            msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
-                            is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
-                            st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        with st.form("regular_chat_form", clear_on_submit=True):
-                            message = st.text_input("Type your message...", key="regular_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_group_message(st.session_state.username, message)
-                                        st.rerun()
-                    
-                    with tab2:
-                        st.markdown("""
-                        <div style='padding: 1rem; background-color: #2d3748; border-radius: 0.5rem; margin-bottom: 1rem;'>
-                            <h3 style='color: gold; margin: 0;'>⭐ VIP Chat</h3>
-                            <p style='color: #e2e8f0; margin: 0;'>Exclusive chat for VIP members</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        vip_messages = get_vip_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                        for msg in reversed(vip_messages):
-                            msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
-                            is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
-                            st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar" style="background-color: gold;">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content" style="background-color: #4a5568;">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        with st.form("vip_chat_form", clear_on_submit=True):
-                            message = st.text_input("Type your message...", key="vip_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_vip_message(st.session_state.username, message)
-                                        st.rerun()
-                else:
                     # Regular chat only for non-VIP users
                     st.subheader("Regular Chat")
                     messages = get_group_messages()
@@ -2514,69 +2400,6 @@ else:
                                     st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
-
-    elif st.session_state.current_section == "fancy_number":
-        if not is_killswitch_enabled():
-            st.title("📱 Fancy Number Checker")
-            
-            with st.form("fancy_number_form"):
-                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
-                submit = st.form_submit_button("Check Number")
-                
-                if submit and phone_number:
-                    # Clean the phone number
-                    cleaned_number = ''.join(filter(str.isdigit, phone_number))
-                    
-                    if len(cleaned_number) != 10:
-                        st.error("Please enter a valid 10-digit phone number")
-                    else:
-                        # Check for patterns
-                        patterns = []
-                        
-                        # Check for repeating digits
-                        for i in range(10):
-                            if str(i) * 3 in cleaned_number:
-                                patterns.append(f"Contains triple {i}'s")
-                            if str(i) * 4 in cleaned_number:
-                                patterns.append(f"Contains quadruple {i}'s")
-                        
-                        # Check for sequential numbers (ascending and descending)
-                        for i in range(len(cleaned_number)-2):
-                            if (int(cleaned_number[i]) + 1 == int(cleaned_number[i+1]) and 
-                                int(cleaned_number[i+1]) + 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains ascending sequence")
-                            elif (int(cleaned_number[i]) - 1 == int(cleaned_number[i+1]) and 
-                                  int(cleaned_number[i+1]) - 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains descending sequence")
-                        
-                        # Check for palindrome patterns
-                        for i in range(len(cleaned_number)-3):
-                            segment = cleaned_number[i:i+4]
-                            if segment == segment[::-1]:
-                                patterns.append(f"Contains palindrome pattern: {segment}")
-                        
-                        # Check for repeated pairs
-                        for i in range(len(cleaned_number)-1):
-                            pair = cleaned_number[i:i+2]
-                            if cleaned_number.count(pair) > 1:
-                                patterns.append(f"Contains repeated pair: {pair}")
-                        
-                        # Format number in a readable way
-                        formatted_number = f"({cleaned_number[:3]}) {cleaned_number[3:6]}-{cleaned_number[6:]}"
-                        
-                        # Display results
-                        st.write("### Analysis Results")
-                        st.write(f"Formatted Number: {formatted_number}")
-                        
-                        if patterns:
-                            st.success("This is a fancy number! 🌟")
-                            st.write("Special patterns found:")
-                            for pattern in set(patterns):  # Using set to remove duplicates
-                                st.write(f"- {pattern}")
-                        else:
-                            st.info("This appears to be a regular number. No special patterns found.")
-        else:
-            st.error("System is currently locked. Access to fancy number checker is disabled.")
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
