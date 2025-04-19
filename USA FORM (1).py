@@ -2253,44 +2253,43 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
         st.subheader("Late Login Records")
-        
-        # Add search and date filter
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date", key="late_login_date")
-        
         late_logins = get_late_logins()
         
-        if search_query or date_filter:
-            filtered_logins = []
-            date_str = date_filter.strftime("%Y-%m-%d")
-            
-            for login in late_logins:
-                matches_search = True
-                matches_date = True
-                
-                # Check search query
-                if search_query:
-                    matches_search = (
-                        search_query.lower() in login[1].lower() or  # Agent name
-                        search_query.lower() in login[4].lower() or  # Reason
-                        search_query in login[2] or  # Presence time
-                        search_query in login[3]     # Login time
-                    )
-                
-                # Check date
-                if date_filter:
-                    record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                    matches_date = record_date == date_filter
-                
-                if matches_search and matches_date:
-                    filtered_logins.append(login)
-            
-            late_logins = filtered_logins
-        
         if st.session_state.role == "admin":
+            # Search and date filter only for admin users
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
+            with col2:
+                date_filter = st.date_input("📅 Filter by date", key="late_login_date")
+            
+            if search_query or date_filter:
+                filtered_logins = []
+                date_str = date_filter.strftime("%Y-%m-%d")
+                
+                for login in late_logins:
+                    matches_search = True
+                    matches_date = True
+                    
+                    # Check search query
+                    if search_query:
+                        matches_search = (
+                            search_query.lower() in login[1].lower() or  # Agent name
+                            search_query.lower() in login[4].lower() or  # Reason
+                            search_query in login[2] or  # Presence time
+                            search_query in login[3]     # Login time
+                        )
+                    
+                    # Check date
+                    if date_filter:
+                        record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
+                        matches_date = record_date == date_filter
+                    
+                    if matches_search and matches_date:
+                        filtered_logins.append(login)
+                
+                late_logins = filtered_logins
+            
             if late_logins:
                 data = []
                 for login in late_logins:
@@ -2310,7 +2309,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d')}.csv",
+                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
@@ -2320,13 +2319,13 @@ else:
             else:
                 st.info("No late login records found")
         else:
+            # Regular users only see their own records without search
             user_logins = [login for login in late_logins if login[1] == st.session_state.username]
             if user_logins:
                 data = []
                 for login in user_logins:
                     _, agent, presence, login_time, reason, ts = login
                     data.append({
-                        "Agent's Name": agent,
                         "Time of presence": presence,
                         "Time of log in": login_time,
                         "Reason": reason,
@@ -2372,45 +2371,44 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
-        
-        # Add search and date filter
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date", key="quality_issues_date")
-        
         quality_issues = get_quality_issues()
         
-        if search_query or date_filter:
-            filtered_issues = []
-            date_str = date_filter.strftime("%Y-%m-%d")
-            
-            for issue in quality_issues:
-                matches_search = True
-                matches_date = True
-                
-                # Check search query
-                if search_query:
-                    matches_search = (
-                        search_query.lower() in issue[1].lower() or  # Agent name
-                        search_query.lower() in issue[2].lower() or  # Issue type
-                        search_query in issue[3] or  # Timing
-                        search_query in issue[4] or  # Mobile number
-                        search_query.lower() in issue[5].lower()  # Product
-                    )
-                
-                # Check date
-                if date_filter:
-                    record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                    matches_date = record_date == date_filter
-                
-                if matches_search and matches_date:
-                    filtered_issues.append(issue)
-            
-            quality_issues = filtered_issues
-        
         if st.session_state.role == "admin":
+            # Search and date filter only for admin users
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+            with col2:
+                date_filter = st.date_input("📅 Filter by date", key="quality_issues_date")
+            
+            if search_query or date_filter:
+                filtered_issues = []
+                date_str = date_filter.strftime("%Y-%m-%d")
+                
+                for issue in quality_issues:
+                    matches_search = True
+                    matches_date = True
+                    
+                    # Check search query
+                    if search_query:
+                        matches_search = (
+                            search_query.lower() in issue[1].lower() or  # Agent name
+                            search_query.lower() in issue[2].lower() or  # Issue type
+                            search_query in issue[3] or  # Timing
+                            search_query in issue[4] or  # Mobile number
+                            search_query.lower() in issue[5].lower()  # Product
+                        )
+                    
+                    # Check date
+                    if date_filter:
+                        record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
+                        matches_date = record_date == date_filter
+                    
+                    if matches_search and matches_date:
+                        filtered_issues.append(issue)
+                
+                quality_issues = filtered_issues
+            
             if quality_issues:
                 data = []
                 for issue in quality_issues:
@@ -2431,7 +2429,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d')}.csv",
+                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
@@ -2441,13 +2439,13 @@ else:
             else:
                 st.info("No quality issue records found")
         else:
+            # Regular users only see their own records without search
             user_issues = [issue for issue in quality_issues if issue[1] == st.session_state.username]
             if user_issues:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
                     data.append({
-                        "Agent's Name": agent,
                         "Type of issue": issue_type,
                         "Timing": timing,
                         "Mobile number": mobile,
@@ -2492,44 +2490,43 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
         st.subheader("Mid-shift Issue Records")
-        
-        # Add search and date filter
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date", key="midshift_issues_date")
-        
         midshift_issues = get_midshift_issues()
         
-        if search_query or date_filter:
-            filtered_issues = []
-            date_str = date_filter.strftime("%Y-%m-%d")
-            
-            for issue in midshift_issues:
-                matches_search = True
-                matches_date = True
-                
-                # Check search query
-                if search_query:
-                    matches_search = (
-                        search_query.lower() in issue[1].lower() or  # Agent name
-                        search_query.lower() in issue[2].lower() or  # Issue type
-                        search_query in issue[3] or  # Start time
-                        search_query in issue[4]     # End time
-                    )
-                
-                # Check date
-                if date_filter:
-                    record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
-                    matches_date = record_date == date_filter
-                
-                if matches_search and matches_date:
-                    filtered_issues.append(issue)
-            
-            midshift_issues = filtered_issues
-        
         if st.session_state.role == "admin":
+            # Search and date filter only for admin users
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
+            with col2:
+                date_filter = st.date_input("📅 Filter by date", key="midshift_issues_date")
+            
+            if search_query or date_filter:
+                filtered_issues = []
+                date_str = date_filter.strftime("%Y-%m-%d")
+                
+                for issue in midshift_issues:
+                    matches_search = True
+                    matches_date = True
+                    
+                    # Check search query
+                    if search_query:
+                        matches_search = (
+                            search_query.lower() in issue[1].lower() or  # Agent name
+                            search_query.lower() in issue[2].lower() or  # Issue type
+                            search_query in issue[3] or  # Start time
+                            search_query in issue[4]     # End time
+                        )
+                    
+                    # Check date
+                    if date_filter:
+                        record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
+                        matches_date = record_date == date_filter
+                    
+                    if matches_search and matches_date:
+                        filtered_issues.append(issue)
+                
+                midshift_issues = filtered_issues
+            
             if midshift_issues:
                 data = []
                 for issue in midshift_issues:
@@ -2549,7 +2546,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"midshift_issues_{date_filter.strftime('%Y-%m-%d')}.csv",
+                    file_name=f"midshift_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
@@ -2559,13 +2556,13 @@ else:
             else:
                 st.info("No mid-shift issue records found")
         else:
+            # Regular users only see their own records without search
             user_issues = [issue for issue in midshift_issues if issue[1] == st.session_state.username]
             if user_issues:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
                     data.append({
-                        "Agent's Name": agent,
                         "Issue Type": issue_type,
                         "Start time": start_time,
                         "End Time": end_time,
