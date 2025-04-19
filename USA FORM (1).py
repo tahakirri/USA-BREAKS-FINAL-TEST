@@ -3135,96 +3135,21 @@ else:
         st.markdown("---")
 
     elif st.session_state.current_section == "breaks":
-    elif st.session_state.current_section == "fancy":
-        st.title("📱 Lycamobile Fancy Number Checker")
-        phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
 
-        if st.button("Check Number"):
-            if not phone_input:
-                st.warning("Please enter a phone number")
-            else:
-                is_fancy, pattern = is_fancy_number(phone_input)
-                clean_number = re.sub(r'\D', '', phone_input)
-                last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
-                formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+        elif st.session_state.current_section == "fancy":
+            st.title("📱 Lycamobile Fancy Number Checker")
+            phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
 
-                if is_fancy:
-                    st.success(f"✨ Fancy Number Detected: {formatted_num} → {pattern}")
+            if st.button("Check Number"):
+                if not phone_input:
+                    st.warning("Please enter a phone number")
                 else:
-                    st.info(f"Standard Number: {formatted_num} → {pattern}")
+                    is_fancy, pattern = is_fancy_number(phone_input)
+                    clean_number = re.sub(r'\D', '', phone_input)
+                    last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+                    formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
 
-        if st.session_state.role == "admin":
-            admin_break_dashboard()
-        else:
-            agent_break_dashboard()
-
-def get_new_messages(last_check_time):
-    """Get new messages since last check"""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, sender, message, timestamp, mentions 
-            FROM group_messages 
-            WHERE timestamp > ?
-            ORDER BY timestamp DESC
-        """, (last_check_time,))
-        return cursor.fetchall()
-    finally:
-        conn.close()
-
-def handle_message_check():
-    if not st.session_state.authenticated:
-        return {"new_messages": False, "messages": []}
-    
-    current_time = datetime.now()
-    if 'last_message_check' not in st.session_state:
-        st.session_state.last_message_check = current_time
-    
-    new_messages = get_new_messages(st.session_state.last_message_check.strftime("%Y-%m-%d %H:%M:%S"))
-    st.session_state.last_message_check = current_time
-    
-    if new_messages:
-        messages_data = []
-        for msg in new_messages:
-            msg_id, sender, message, ts, mentions = msg
-            if sender != st.session_state.username:  # Don't notify about own messages
-                mentions_list = mentions.split(',') if mentions else []
-                if st.session_state.username in mentions_list:
-                    message = f"@{st.session_state.username} {message}"
-                messages_data.append({
-                    "sender": sender,
-                    "message": message
-                })
-        return {"new_messages": bool(messages_data), "messages": messages_data}
-    return {"new_messages": False, "messages": []}
-
-def convert_to_casablanca_date(date_str):
-    """Convert a date string to Casablanca timezone"""
-    try:
-        dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-        morocco_tz = pytz.timezone('Africa/Casablanca')
-        return pytz.UTC.localize(dt).astimezone(morocco_tz).date()
-    except:
-        return None
-
-def get_date_range_casablanca(date):
-    """Get start and end of day in Casablanca time"""
-    morocco_tz = pytz.timezone('Africa/Casablanca')
-    start = morocco_tz.localize(datetime.combine(date, time.min))
-    end = morocco_tz.localize(datetime.combine(date, time.max))
-    return start, end
-
-if __name__ == "__main__":
-    # Initialize color mode if not set
-    if 'color_mode' not in st.session_state:
-        st.session_state.color_mode = 'dark'
-        
-    inject_custom_css()
-    
-    # Add route for message checking
-    if st.query_params.get("check_messages"):
-        st.json(handle_message_check())
-        st.stop()
-    
-    st.write("Request Management System")
+                    if is_fancy:
+                        st.success(f"✨ Fancy Number Detected: {formatted_num} → {pattern}")
+                    else:
+                        st.info(f"Standard Number: {formatted_num} → {pattern}")
