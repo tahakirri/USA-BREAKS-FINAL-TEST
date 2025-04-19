@@ -1,10 +1,9 @@
 import streamlit as st
 import sqlite3
 import hashlib
-import pytz
-import re
 from datetime import datetime, time, timedelta
 import os
+import re
 from PIL import Image
 import io
 import pandas as pd
@@ -1986,34 +1985,6 @@ def inject_custom_css():
             margin-right: 0.5rem;
             color: {c['text']};
         }}
-        
-        /* Lycamobile Fancy Number Checker Styles */
-        .fancy-number {{
-            color: {c['accent']} !important;
-            font-weight: bold !important;
-        }}
-        
-        .normal-number {{
-            color: {c['text']} !important;
-        }}
-        
-        .result-box {{
-            padding: 15px !important;
-            border-radius: 5px !important;
-            margin: 10px 0 !important;
-        }}
-        
-        .fancy-result {{
-            background-color: {c['card']} !important;
-            border: 1px solid {c['accent']} !important;
-            color: {c['text']} !important;
-        }}
-        
-        .normal-result {{
-            background-color: {c['card']} !important;
-            border: 1px solid {c['border']} !important;
-            color: {c['text']} !important;
-        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -2137,7 +2108,6 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
-                ("📱 Fancy Number", "fancy_number"),
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2149,8 +2119,7 @@ else:
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
                 ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues"),
-                ("📱 Fancy Number", "fancy_number")
+                ("🔄 Mid-shift Issues", "midshift_issues")
             ])
         
         # Add admin option for admin users
@@ -2201,53 +2170,9 @@ else:
             st.session_state.authenticated = False
             st.rerun()
 
-    if st.session_state.current_section == "fancy_number":
-        st.title(st.session_state.current_section.title())
-        lycamobile_fancy_number_checker()
+    st.title(st.session_state.current_section.title())
 
     if st.session_state.current_section == "requests":
-
-        elif st.session_state.current_section == "fancy":
-            st.title("Lycamobile Fancy Number Checker")
-
-            def is_sequential(digits, step=1):
-                try:
-                    return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
-                except:
-                    return False
-
-            def is_fancy_number(phone_number):
-                clean_number = re.sub(r'\D', '', phone_number)
-                if len(clean_number) >= 6:
-                    last_six = clean_number[-6:]
-                else:
-                    return False, "Number too short (need at least 6 digits)"
-
-                patterns = []
-                if clean_number == "13322866688":
-                    patterns.append("Special VIP number (13322866688)")
-                if len(set(last_six)) == 1:
-                    patterns.append("All same digits")
-                if is_sequential(last_six):
-                    patterns.append("Sequential digits")
-                if last_six[:3] == last_six[-3:]:
-                    patterns.append("Mirror pattern")
-                if last_six[0] == last_six[1] == last_six[2] and last_six[3] == last_six[4] == last_six[5]:
-                    patterns.append("AAABBB pattern")
-
-                if patterns:
-                    return True, ", ".join(patterns)
-                else:
-                    return False, "No fancy pattern detected"
-
-            phone_number = st.text_input("Enter a phone number")
-            if phone_number:
-                is_fancy, reason = is_fancy_number(phone_number)
-                if is_fancy:
-                    st.success(f"✅ Fancy number detected: {reason}")
-                else:
-                    st.warning(f"⚠️ Not a fancy number: {reason}")
-
         if not is_killswitch_enabled():
             with st.expander("➕ Submit New Request"):
                 with st.form("request_form"):
@@ -3165,147 +3090,10 @@ if __name__ == "__main__":
         st.session_state.color_mode = 'dark'
         
     inject_custom_css()
-
-# Add Lycamobile Fancy Number Checker to main app
-def is_fancy_number(phone_number):
-    """Determine if a phone number is 'fancy' based on specific patterns.
-    Focuses on the last 6 digits of the phone number.
     
-    Returns:
-    - Tuple (is_fancy, pattern_description)
-    """
-    # Clean the phone number, keeping only digits
-    clean_number = re.sub(r'\D', '', phone_number)
+    # Add route for message checking
+    if st.query_params.get("check_messages"):
+        st.json(handle_message_check())
+        st.stop()
     
-    # Ensure we're working with at least 6 digits
-    if len(clean_number) < 6:
-        return False, "Number too short"
-    
-    # Always work with the last 6 digits
-    last_six = clean_number[-6:]
-    
-    # 6-Digit Patterns
-    if last_six == '123456':
-        return True, "Ascending sequence"
-    if last_six == '987654':
-        return True, "Descending sequence"
-    if last_six == '666666':
-        return True, "Repeating digits"
-    if last_six == '100001':
-        return True, "Palindrome"
-    if len(set(last_six)) == 1:
-        return True, "All identical digits"
-    
-    # 3-Digit Patterns
-    if last_six[:3] == last_six[3:]:
-        return True, "Double triplets"
-    
-    if last_six[:3] in ['444', '555', '666', '777', '888', '999']:
-        return True, "Repeating first triplet"
-    
-    # Incremental/Similar Patterns
-    if last_six in ['121122', '111213', '457456']:
-        return True, "Similar/Nearly sequential triplets"
-    
-    # 2-Digit Patterns
-    if last_six in ['111213', '202020', '010101']:
-        return True, "Incremental/Alternating pairs"
-    
-    # Exceptional Cases
-    if last_six.endswith('123') or last_six.endswith('555') or \
-       last_six.endswith('777') or last_six.endswith('999'):
-        return True, "Ends with special sequence"
-    
-    return False, "No special pattern detected"
-
-def lycamobile_fancy_number_checker():
-    st.title("📱 Lycamobile Fancy Number Checker")
-    st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
-
-    # Input and Check
-    phone_input = st.text_input("Enter Phone Number", 
-                              placeholder="e.g., 1555123456 or 44207123456")
-
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        if st.button("🔍 Check Number"):
-            if not phone_input:
-                st.warning("Please enter a phone number")
-            else:
-                is_fancy, pattern = is_fancy_number(phone_input)
-                clean_number = re.sub(r'\D', '', phone_input)
-                
-                # Extract last 6 digits for display
-                last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
-                formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
-
-                if is_fancy:
-                    st.markdown(f"""
-                    <div class="result-box fancy-result">
-                        <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
-                        <p>FANCY NUMBER DETECTED!</p>
-                        <p><strong>Pattern:</strong> {pattern}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    <div class="result-box normal-result">
-                        <h3><span class="normal-number">{formatted_num}</span></h3>
-                        <p>Standard phone number</p>
-                        <p><strong>Reason:</strong> {pattern}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-    # Policy Information
-    with col2:
-        st.markdown("""
-        ### Lycamobile Fancy Number Policy
-        **Qualifying Patterns (last 6 digits only):**
-        
-        #### 6-Digit Patterns
-        - 123456 (ascending)
-        - 987654 (descending)
-        - 666666 (repeating)
-        - 100001 (palindrome)
-        
-        #### 3-Digit Patterns  
-        - 444 555 (double triplets)
-        - 121 122 (similar triplets)
-        - 786 786 (repeating triplets)
-        - 457 456 (nearly sequential)
-        
-        #### 2-Digit Patterns
-        - 11 12 13 (incremental)
-        - 20 20 20 (repeating)
-        - 01 01 01 (alternating)
-        - 32 42 52 (stepping)
-        
-        #### Exceptional Cases
-        - Ending with 123/555/777/999
-        """)
-
-    # Test cases (optional debug section)
-    debug_mode = st.checkbox("Show test cases", False)
-    if debug_mode:
-        st.subheader("Test Cases")
-        test_numbers = [
-            ("16109055580", False),  # 055580 → No pattern ✗
-            ("123456", True),       # 6-digit ascending ✓
-            ("444555", True),       # Double triplets ✓
-            ("121122", True),       # Similar triplets ✓ 
-            ("111213", True),       # Incremental pairs ✓
-            ("202020", True),       # Repeating pairs ✓
-            ("010101", True),       # Alternating pairs ✓
-            ("324252", True),       # Stepping pairs ✓
-            ("7900000123", True),   # Ends with 123 ✓
-            ("123458", False),      # No pattern ✗
-            ("112233", False),      # Not in our strict rules ✗
-            ("555555", True)        # 6 identical digits ✓
-        ]
-        
-        for number, expected in test_numbers:
-            is_fancy, pattern = is_fancy_number(number)
-            result = "PASS" if is_fancy == expected else "FAIL"
-            color = "green" if result == "PASS" else "red"
-            st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
-
+    st.write("Request Management System")
