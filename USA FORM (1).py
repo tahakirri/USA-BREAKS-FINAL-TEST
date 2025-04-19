@@ -2450,7 +2450,7 @@ else:
                             </div>
                             <div class="message-content">
                                 <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
+                                <div class="message-meta">{sender} - {ts}</div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
