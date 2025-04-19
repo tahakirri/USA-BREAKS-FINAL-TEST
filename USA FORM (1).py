@@ -2908,52 +2908,46 @@ def handle_message_check():
     return {"new_messages": False, "messages": []}
 
 def get_late_logins_by_date(start_date=None, end_date=None):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        if start_date and end_date:
-            cursor.execute("""
-                SELECT * FROM late_logins 
-                WHERE DATE(timestamp) BETWEEN DATE(?) AND DATE(?)
-                ORDER BY timestamp DESC
-            """, (start_date, end_date))
-        else:
-            cursor.execute("SELECT * FROM late_logins ORDER BY timestamp DESC")
-        return cursor.fetchall()
-    finally:
-        conn.close()
+    late_logins = get_late_logins()
+    if start_date and end_date:
+        filtered_logins = []
+        for login in late_logins:
+            try:
+                login_date = datetime.strptime(login[5][:10], "%Y-%m-%d").date()
+                if start_date <= login_date <= end_date:
+                    filtered_logins.append(login)
+            except:
+                continue
+        return filtered_logins
+    return late_logins
 
 def get_quality_issues_by_date(start_date=None, end_date=None):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        if start_date and end_date:
-            cursor.execute("""
-                SELECT * FROM quality_issues 
-                WHERE DATE(timestamp) BETWEEN DATE(?) AND DATE(?)
-                ORDER BY timestamp DESC
-            """, (start_date, end_date))
-        else:
-            cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
-        return cursor.fetchall()
-    finally:
-        conn.close()
+    quality_issues = get_quality_issues()
+    if start_date and end_date:
+        filtered_issues = []
+        for issue in quality_issues:
+            try:
+                issue_date = datetime.strptime(issue[6][:10], "%Y-%m-%d").date()
+                if start_date <= issue_date <= end_date:
+                    filtered_issues.append(issue)
+            except:
+                continue
+        return filtered_issues
+    return quality_issues
 
 def get_midshift_issues_by_date(start_date=None, end_date=None):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        if start_date and end_date:
-            cursor.execute("""
-                SELECT * FROM midshift_issues 
-                WHERE DATE(timestamp) BETWEEN DATE(?) AND DATE(?)
-                ORDER BY timestamp DESC
-            """, (start_date, end_date))
-        else:
-            cursor.execute("SELECT * FROM midshift_issues ORDER BY timestamp DESC")
-        return cursor.fetchall()
-    finally:
-        conn.close()
+    midshift_issues = get_midshift_issues()
+    if start_date and end_date:
+        filtered_issues = []
+        for issue in midshift_issues:
+            try:
+                issue_date = datetime.strptime(issue[5][:10], "%Y-%m-%d").date()
+                if start_date <= issue_date <= end_date:
+                    filtered_issues.append(issue)
+            except:
+                continue
+        return filtered_issues
+    return midshift_issues
 
 def search_late_logins(query):
     conn = get_db_connection()
