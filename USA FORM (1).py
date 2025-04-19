@@ -1704,6 +1704,20 @@ def inject_custom_css():
             background-color: {c['input_bg']} !important;
             color: {c['input_text']} !important;
             border-color: {c['border']} !important;
+            caret-color: {c['text']} !important;
+        }}
+        
+        /* Input focus and selection */
+        .stTextInput input:focus,
+        .stTextArea textarea:focus,
+        .stNumberInput input:focus {{    
+            border-color: {c['accent']} !important;
+            box-shadow: 0 0 0 1px {c['accent']} !important;
+        }}
+        
+        ::selection {{    
+            background-color: {c['accent']} !important;
+            color: #ffffff !important;
         }}
         
         /* Input Labels and Text */
@@ -1953,9 +1967,12 @@ def inject_custom_css():
         /* Buttons */
         .stButton button,
         button[kind="primary"],
-        .stDownloadButton button {{    
+        .stDownloadButton button,
+        div[data-testid="stForm"] button,
+        button[data-testid="baseButton-secondary"],
+        .stButton > button {{    
             background-color: {c['button_bg']} !important;
-            color: {c['button_text']} !important;
+            color: #ffffff !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
             border-radius: 0.375rem !important;
@@ -1965,9 +1982,34 @@ def inject_custom_css():
         
         .stButton button:hover,
         button[kind="primary"]:hover,
-        .stDownloadButton button:hover {{    
+        .stDownloadButton button:hover,
+        div[data-testid="stForm"] button:hover,
+        button[data-testid="baseButton-secondary"]:hover,
+        .stButton > button:hover {{    
             background-color: {c['button_hover']} !important;
             transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }}
+        
+        /* Secondary Buttons */
+        .secondary-button,
+        button[data-testid="baseButton-secondary"],
+        div[data-baseweb="button"] {{    
+            background-color: {c['button_bg']} !important;
+            color: #ffffff !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.375rem !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease-in-out !important;
+        }}
+        
+        .secondary-button:hover,
+        button[data-testid="baseButton-secondary"]:hover,
+        div[data-baseweb="button"]:hover {{    
+            background-color: {c['button_hover']} !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
         }}
         
         /* VIP Button */
