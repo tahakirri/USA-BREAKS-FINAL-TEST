@@ -191,7 +191,10 @@ def init_db():
         # Create other admin accounts
         admin_accounts = [
             ("taha kirri", "arise@99"),
-            ("ADMIN1", "p@ssWord"),
+            ("Issam Samghini", "admin@2025"),
+            ("Loubna Fellah", "admin@99"),
+            ("Youssef Kamal", "admin@006"),
+            ("Fouad Fathi", "admin@55")
         ]
         
         for username, password in admin_accounts:
@@ -202,7 +205,51 @@ def init_db():
         
         # Create agent accounts
         agents = [
-            ("agent test", "agentpass"),
+            ("Karabila Younes", "30866"),
+            ("Kaoutar Mzara", "30514"),
+            ("Ben Tahar Chahid", "30864"),
+            ("Cherbassi Khadija", "30868"),
+            ("Lekhmouchi Kamal", "30869"),
+            ("Said Kilani", "30626"),
+            ("AGLIF Rachid", "30830"),
+            ("Yacine Adouha", "30577"),
+            ("Manal Elanbi", "30878"),
+            ("Jawad Ouassaddine", "30559"),
+            ("Kamal Elhaouar", "30844"),
+            ("Hoummad Oubella", "30702"),
+            ("Zouheir Essafi", "30703"),
+            ("Anwar Atifi", "30781"),
+            ("Said Elgaouzi", "30782"),
+            ("HAMZA SAOUI", "30716"),
+            ("Ibtissam Mazhari", "30970"),
+            ("Imad Ghazali", "30971"),
+            ("Jamila Lahrech", "30972"),
+            ("Nassim Ouazzani Touhami", "30973"),
+            ("Salaheddine Chaggour", "30974"),
+            ("Omar Tajani", "30711"),
+            ("Nizar Remz", "30728"),
+            ("Abdelouahed Fettah", "30693"),
+            ("Amal Bouramdane", "30675"),
+            ("Fatima Ezzahrae Oubaalla", "30513"),
+            ("Redouane Bertal", "30643"),
+            ("Abdelouahab Chenani", "30789"),
+            ("Imad El Youbi", "30797"),
+            ("Youssef Hammouda", "30791"),
+            ("Anas Ouassifi", "30894"),
+            ("SALSABIL ELMOUSS", "30723"),
+            ("Hicham Khalafa", "30712"),
+            ("Ghita Adib", "30710"),
+            ("Aymane Msikila", "30722"),
+            ("Marouane Boukhadda", "30890"),
+            ("Hamid Boulatouan", "30899"),
+            ("Bouchaib Chafiqi", "30895"),
+            ("Houssam Gouaalla", "30891"),
+            ("Abdellah Rguig", "30963"),
+            ("Abdellatif Chatir", "30964"),
+            ("Abderrahman Oueto", "30965"),
+            ("Fatiha Lkamel", "30967"),
+            ("Abdelhamid Jaber", "30708"),
+            ("Yassine Elkanouni", "30735")
         ]
         
         for agent_name, workspace_id in agents:
@@ -434,16 +481,29 @@ def get_all_users():
 
 def add_user(username, password, role):
     if is_killswitch_enabled():
-        st.error("System is currently locked. Please contact the developer.")
+        st.error('System is currently locked. Please contact the developer.')
         return False
         
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                      (username, hash_password(password), role))
+        # Check if user already exists
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            st.error(f'User "{username}" already exists. Please choose a different username.')
+            return False
+        
+        # If user doesn't exist, proceed with insertion
+        cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+                       (username, hash_password(password), role))
         conn.commit()
+        st.success(f'User "{username}" successfully created!')
         return True
+    except sqlite3.IntegrityError:
+        st.error(f'An error occurred while creating user "{username}". Please try again.')
+        return False
     finally:
         conn.close()
 
