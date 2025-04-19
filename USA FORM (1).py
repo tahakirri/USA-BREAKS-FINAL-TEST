@@ -10,11 +10,33 @@ import pandas as pd
 import json
 import pytz
 
-# Function to get current Casablanca time
+# --------------------------
+# Timezone Utility Functions
+# --------------------------
+
 def get_casablanca_time():
     """Get current time in Casablanca, Morocco timezone"""
     morocco_tz = pytz.timezone('Africa/Casablanca')
     return datetime.now(morocco_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+def convert_to_casablanca_date(date_str):
+    """Convert a date string to Casablanca timezone"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        morocco_tz = pytz.timezone('Africa/Casablanca')
+        return dt.date()  # Simplified since stored times are already in Casablanca time
+    except:
+        return None
+
+def get_date_range_casablanca(date):
+    """Get start and end of day in Casablanca time"""
+    try:
+        start = datetime.combine(date, time.min)
+        end = datetime.combine(date, time.max)
+        return start, end
+    except Exception as e:
+        st.error(f"Error processing date: {str(e)}")
+        return None, None
 
 # --------------------------
 # Database Functions
@@ -2264,7 +2286,6 @@ else:
             
             if search_query or date_filter:
                 filtered_logins = []
-                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for login in late_logins:
                     matches_search = True
@@ -2279,8 +2300,11 @@ else:
                         )
                     
                     if date_filter:
-                        record_date = convert_to_casablanca_date(login[5])
-                        matches_date = record_date == date_filter if record_date else False
+                        try:
+                            record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == date_filter
+                        except:
+                            matches_date = False
                     
                     if matches_search and matches_date:
                         filtered_logins.append(login)
@@ -2380,7 +2404,6 @@ else:
             
             if search_query or date_filter:
                 filtered_issues = []
-                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for issue in quality_issues:
                     matches_search = True
@@ -2396,8 +2419,11 @@ else:
                         )
                     
                     if date_filter:
-                        record_date = convert_to_casablanca_date(issue[6])
-                        matches_date = record_date == date_filter if record_date else False
+                        try:
+                            record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == date_filter
+                        except:
+                            matches_date = False
                     
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
@@ -2497,7 +2523,6 @@ else:
             
             if search_query or date_filter:
                 filtered_issues = []
-                start_date, end_date = get_date_range_casablanca(date_filter) if date_filter else (None, None)
                 
                 for issue in midshift_issues:
                     matches_search = True
@@ -2512,8 +2537,11 @@ else:
                         )
                     
                     if date_filter:
-                        record_date = convert_to_casablanca_date(issue[5])
-                        matches_date = record_date == date_filter if record_date else False
+                        try:
+                            record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == date_filter
+                        except:
+                            matches_date = False
                     
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
