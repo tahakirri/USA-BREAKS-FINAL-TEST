@@ -2121,7 +2121,8 @@ else:
                 ("📞 Quality Issues", "quality_issues"),
                 ("🔄 Mid-shift Issues", "midshift_issues")
             ])
-        
+        if st.sidebar.button("🔍 Fancy Number Checker"):
+    st.session_state.current_section = "fancy"
         # Add admin option for admin users
         if st.session_state.role == "admin":
             nav_options.append(("⚙️ Admin", "admin"))
