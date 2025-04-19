@@ -1907,7 +1907,18 @@ else:
 
     with st.sidebar:
         st.title(f"👋 Welcome, {st.session_state.username}")
-        add_theme_toggle()
+        
+        # Theme toggle
+        st.markdown("### 🎨 Theme Settings")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.write("🌙" if st.session_state.color_mode == 'dark' else "☀️")
+        with col2:
+            if st.toggle("Light Mode", value=st.session_state.color_mode == 'light'):
+                st.session_state.color_mode = 'light'
+            else:
+                st.session_state.color_mode = 'dark'
+            st.rerun()
         st.markdown("---")
         
         # Base navigation options available to all users
@@ -3082,6 +3093,10 @@ def get_date_range_casablanca(date):
     return start, end
 
 if __name__ == "__main__":
+    # Initialize color mode if not set
+    if 'color_mode' not in st.session_state:
+        st.session_state.color_mode = 'dark'
+        
     inject_custom_css()
     
     # Add route for message checking
