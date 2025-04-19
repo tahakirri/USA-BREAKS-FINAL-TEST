@@ -707,13 +707,15 @@ def clear_late_logins():
                 cursor.execute("VACUUM")
                 conn.commit()
                 
-                # Clear any related session state or display elements
-                if 'late_logins' in st.session_state:
-                    del st.session_state.late_logins
+                # Comprehensive clearing of session state
+                keys_to_clear = [
+                    'late_logins', 'late_logins_table', 'late_logins_df', 
+                    'display_late_logins', 'current_late_logins'
+                ]
                 
-                # Clear any associated display tables or elements
-                if 'late_logins_table' in st.session_state:
-                    del st.session_state.late_logins_table
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 
                 st.success("🟢 ALL late login records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
@@ -753,13 +755,15 @@ def clear_quality_issues():
                 cursor.execute("VACUUM")
                 conn.commit()
                 
-                # Clear any related session state or display elements
-                if 'quality_issues' in st.session_state:
-                    del st.session_state.quality_issues
+                # Comprehensive clearing of session state
+                keys_to_clear = [
+                    'quality_issues', 'quality_issues_table', 'quality_issues_df', 
+                    'display_quality_issues', 'current_quality_issues'
+                ]
                 
-                # Clear any associated display tables or elements
-                if 'quality_issues_table' in st.session_state:
-                    del st.session_state.quality_issues_table
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 
                 st.success("🟢 ALL quality issue records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
@@ -799,13 +803,15 @@ def clear_midshift_issues():
                 cursor.execute("VACUUM")
                 conn.commit()
                 
-                # Clear any related session state or display elements
-                if 'midshift_issues' in st.session_state:
-                    del st.session_state.midshift_issues
+                # Comprehensive clearing of session state
+                keys_to_clear = [
+                    'midshift_issues', 'midshift_issues_table', 'midshift_issues_df', 
+                    'display_midshift_issues', 'current_midshift_issues'
+                ]
                 
-                # Clear any associated display tables or elements
-                if 'midshift_issues_table' in st.session_state:
-                    del st.session_state.midshift_issues_table
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 
                 st.success("🟢 ALL mid-shift issue records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
