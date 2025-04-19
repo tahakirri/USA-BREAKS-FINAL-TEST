@@ -1618,11 +1618,6 @@ def inject_custom_css():
     st.markdown(f"""
     <style>
         /* Global Styles */
-        /* Force sidebar background */
-        section[data-testid="stSidebar"] {
-            background-color: {c['sidebar']} !important;
-        }
-
         .stApp {{
             background-color: {c['bg']};
             color: {c['text']};
@@ -1649,7 +1644,6 @@ def inject_custom_css():
         .stSelectbox [data-baseweb="select"],
         .stSelectbox [data-baseweb="select"] div,
         .stSelectbox [data-baseweb="select"] input,
-        .stSelectbox [data-baseweb="popover"] ul,
         .stSelectbox [data-baseweb="select"] span,
         .stDateInput input,
         .stDateInput div[data-baseweb="calendar"] {{
@@ -1657,11 +1651,12 @@ def inject_custom_css():
             color: {c['text']} !important;
             border-color: {c['border']} !important;
         }}
-        
-        .stSelectbox [data-baseweb="select"] {{    
-            border: 1px solid {c['border']} !important;
-        }}
-        
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Rest of the CSS remains the same
+    st.markdown(f"""
+    <style>
         .stSelectbox [data-baseweb="select"]:hover {{    
             border-color: {c['accent']} !important;
         }}
@@ -1989,9 +1984,6 @@ def inject_custom_css():
         .theme-toggle label {{
             margin-right: 0.5rem;
             color: {c['text']};
-        }}
-    </style>
-    """, unsafe_allow_html=True)
 
 st.set_page_config(
     page_title="Request Management System",
@@ -2017,7 +2009,7 @@ init_break_session_state()
 if not st.session_state.authenticated:
     st.markdown("""
         <div class="login-container">
-            <h1 style="text-align: center; margin-bottom: 2rem;">🏢 Request Management System</h1>
+            <h1 style="text-align: center; margin-bottom: 2rem;">&#127970; Request Management System</h1>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
@@ -2047,14 +2039,14 @@ else:
     if is_killswitch_enabled():
         st.markdown("""
         <div class="killswitch-active">
-            <h3>⚠️ SYSTEM LOCKED ⚠️</h3>
+            <h3>&#9888; SYSTEM LOCKED &#9888;</h3>
             <p>The system is currently in read-only mode.</p>
         </div>
         """, unsafe_allow_html=True)
     elif is_chat_killswitch_enabled():
         st.markdown("""
         <div class="chat-killswitch-active">
-            <h3>⚠️ CHAT LOCKED ⚠️</h3>
+            <h3>&#9888; CHAT LOCKED &#9888;</h3>
             <p>The chat functionality is currently disabled.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2113,6 +2105,7 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
+                ("📱 Fancy Number", "fancy_number"),
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2176,6 +2169,106 @@ else:
             st.rerun()
 
     st.title(st.session_state.current_section.title())
+
+    if st.session_state.current_section == "fancy_number":
+        st.markdown("""
+        <style>
+            .fancy-number { color: #00ff00; font-weight: bold; }
+            .normal-number { color: #ffffff; }
+            .result-box { padding: 15px; border-radius: 5px; margin: 10px 0; }
+            .fancy-result { background-color: #1e3d1e; border: 1px solid #00ff00; }
+            .normal-result { background-color: #3d1e1e; border: 1px solid #ff0000; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.header("📱 Lycamobile Fancy Number Checker")
+        st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
+
+        # Input and Check
+        phone_input = st.text_input("Enter Phone Number", 
+                                  placeholder="e.g., 1555123456 or 44207123456")
+
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if st.button("🔍 Check Number"):
+                if not phone_input:
+                    st.warning("Please enter a phone number")
+                else:
+                    is_fancy, pattern = is_fancy_number(phone_input)
+                    clean_number = re.sub(r'\D', '', phone_input)
+                    
+                    # Extract last 6 digits for display
+                    last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+                    formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+
+                    if is_fancy:
+                        st.markdown(f"""
+                        <div class="result-box fancy-result">
+                            <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                            <p>FANCY NUMBER DETECTED!</p>
+                            <p><strong>Pattern:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div class="result-box normal-result">
+                            <h3><span class="normal-number">{formatted_num}</span></h3>
+                            <p>Standard phone number</p>
+                            <p><strong>Reason:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("""
+            ### Lycamobile Fancy Number Policy
+            **Qualifying Patterns (last 6 digits only):**
+            
+            #### 6-Digit Patterns
+            - 123456 (ascending)
+            - 987654 (descending)
+            - 666666 (repeating)
+            - 100001 (palindrome)
+            
+            #### 3-Digit Patterns  
+            - 444 555 (double triplets)
+            - 121 122 (similar triplets)
+            - 786 786 (repeating triplets)
+            - 457 456 (nearly sequential)
+            
+            #### 2-Digit Patterns
+            - 11 12 13 (incremental)
+            - 20 20 20 (repeating)
+            - 01 01 01 (alternating)
+            - 32 42 52 (stepping)
+            
+            #### Exceptional Cases
+            - Ending with 123/555/777/999
+            """)
+
+        # Test cases (optional debug section)
+        debug_mode = st.checkbox("Show test cases", False)
+        if debug_mode:
+            st.subheader("Test Cases")
+            test_numbers = [
+                ("16109055580", False),  # 055580 → No pattern ✗
+                ("123456", True),       # 6-digit ascending ✓
+                ("444555", True),       # Double triplets ✓
+                ("121122", True),       # Similar triplets ✓ 
+                ("111213", True),       # Incremental pairs ✓
+                ("202020", True),       # Repeating pairs ✓
+                ("010101", True),       # Alternating pairs ✓
+                ("324252", True),       # Stepping pairs ✓
+                ("7900000123", True),   # Ends with 123 ✓
+                ("123458", False),      # No pattern ✗
+                ("112233", False),      # Not in our strict rules ✗
+                ("555555", True)        # 6 identical digits ✓
+            ]
+            
+            for number, expected in test_numbers:
+                is_fancy, pattern = is_fancy_number(number)
+                result = "PASS" if is_fancy == expected else "FAIL"
+                color = "green" if result == "PASS" else "red"
+                st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
 
     if st.session_state.current_section == "requests":
         if not is_killswitch_enabled():
@@ -3000,11 +3093,10 @@ else:
                     key="admin_select"
                 )
                 new_admin_pwd = st.text_input("New Password", type="password", key="admin_pwd")
-                
                 if st.form_submit_button("Reset Password"):
                     if selected_admin and new_admin_pwd:
                         if reset_password(selected_admin, new_admin_pwd):
-                            st.success(f"Password reset for {selected_admin}")
+                            st.success(f"Password reset for {selected_admin}");
                             st.rerun()
         
         # All admins can reset agent passwords
@@ -3021,7 +3113,7 @@ else:
             if st.form_submit_button("Reset Password"):
                 if selected_agent and new_agent_pwd:
                     if reset_password(selected_agent, new_agent_pwd):
-                        st.success(f"Password reset for {selected_agent}")
+                        st.success(f"Password reset for {selected_agent}");
                         st.rerun()
         
         st.markdown("---")
