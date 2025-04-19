@@ -1640,14 +1640,17 @@ def inject_custom_css():
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
         
-        /* Dropdown styling */
+        /* Dropdown and Date Picker Styling */
         .stSelectbox [data-baseweb="select"],
         .stSelectbox [data-baseweb="select"] div,
         .stSelectbox [data-baseweb="select"] input,
         .stSelectbox [data-baseweb="popover"] ul,
-        .stSelectbox [data-baseweb="select"] span {{    
+        .stSelectbox [data-baseweb="select"] span,
+        .stDateInput input,
+        .stDateInput div[data-baseweb="calendar"] {{
             background-color: {c['input_bg']} !important;
             color: {c['text']} !important;
+            border-color: {c['border']} !important;
         }}
         
         .stSelectbox [data-baseweb="select"] {{    
