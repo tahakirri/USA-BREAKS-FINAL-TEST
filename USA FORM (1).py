@@ -564,6 +564,24 @@ def get_hold_images():
     finally:
         conn.close()
 
+def clear_hold_images():
+    if is_killswitch_enabled():
+        st.error("System is currently locked. Please contact the developer.")
+        return False
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM hold_images")
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+def clear_all_requests():
+    if is_killswitch_enabled():
+        st.error("System is currently locked. Please contact the developer.")
+        return False
         
     conn = get_db_connection()
     try:
@@ -689,145 +707,49 @@ def clear_late_logins():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-    
-    # Confirmation mechanism for late logins
-    st.warning("🚨 PERMANENT DELETION WARNING")
-    st.markdown("### Late Login Records Clearance")
-    st.markdown("**Are you sure you want to PERMANENTLY delete ALL late login records?**")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🗑️ Yes, Delete All"):
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                # Clear late logins table
-                cursor.execute("DELETE FROM late_logins")
-                cursor.execute("VACUUM")
-                conn.commit()
-                
-                # Comprehensive clearing of session state
-                keys_to_clear = [
-                    'late_logins', 'late_logins_table', 'late_logins_df', 
-                    'display_late_logins', 'current_late_logins'
-                ]
-                
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                
-                st.success("🟢 ALL late login records have been PERMANENTLY deleted!")
-                st.experimental_rerun()
-                return True
-            except Exception as e:
-                st.error(f"❌ Error clearing late login records: {str(e)}")
-                return False
-            finally:
-                conn.close()
-    
-    with col2:
-        if st.button("🚫 No, Cancel"):
-            st.experimental_rerun()
-    
-    # Prevent further page rendering
-    st.stop()
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM late_logins")
+        conn.commit()
+        return True
+    except Exception as e:
+        st.error(f"Error clearing late logins: {str(e)}")
+    finally:
+        conn.close()
 
 def clear_quality_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-    
-    # Confirmation mechanism for quality issues
-    st.warning("🚨 PERMANENT DELETION WARNING")
-    st.markdown("### Quality Issue Records Clearance")
-    st.markdown("**Are you sure you want to PERMANENTLY delete ALL quality issue records?**")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🗑️ Yes, Delete All"):
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                # Clear quality issues table
-                cursor.execute("DELETE FROM quality_issues")
-                cursor.execute("VACUUM")
-                conn.commit()
-                
-                # Comprehensive clearing of session state
-                keys_to_clear = [
-                    'quality_issues', 'quality_issues_table', 'quality_issues_df', 
-                    'display_quality_issues', 'current_quality_issues'
-                ]
-                
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                
-                st.success("🟢 ALL quality issue records have been PERMANENTLY deleted!")
-                st.experimental_rerun()
-                return True
-            except Exception as e:
-                st.error(f"❌ Error clearing quality issue records: {str(e)}")
-                return False
-            finally:
-                conn.close()
-    
-    with col2:
-        if st.button("🚫 No, Cancel"):
-            st.experimental_rerun()
-    
-    # Prevent further page rendering
-    st.stop()
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM quality_issues")
+        conn.commit()
+        return True
+    except Exception as e:
+        st.error(f"Error clearing quality issues: {str(e)}")
+    finally:
+        conn.close()
 
 def clear_midshift_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-    
-    # Confirmation mechanism for midshift issues
-    st.warning("🚨 PERMANENT DELETION WARNING")
-    st.markdown("### Mid-Shift Issue Records Clearance")
-    st.markdown("**Are you sure you want to PERMANENTLY delete ALL mid-shift issue records?**")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🗑️ Yes, Delete All"):
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                # Clear midshift issues table
-                cursor.execute("DELETE FROM midshift_issues")
-                cursor.execute("VACUUM")
-                conn.commit()
-                
-                # Comprehensive clearing of session state
-                keys_to_clear = [
-                    'midshift_issues', 'midshift_issues_table', 'midshift_issues_df', 
-                    'display_midshift_issues', 'current_midshift_issues'
-                ]
-                
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                
-                st.success("🟢 ALL mid-shift issue records have been PERMANENTLY deleted!")
-                st.experimental_rerun()
-                return True
-            except Exception as e:
-                st.error(f"❌ Error clearing mid-shift issue records: {str(e)}")
-                return False
-            finally:
-                conn.close()
-    
-    with col2:
-        if st.button("🚫 No, Cancel"):
-            st.experimental_rerun()
-    
-    # Prevent further page rendering
-    st.stop()
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM midshift_issues")
+        conn.commit()
+        return True
+    except Exception as e:
+        st.error(f"Error clearing mid-shift issues: {str(e)}")
+    finally:
+        conn.close()
 
 def send_vip_message(sender, message):
     """Send a message in the VIP-only chat"""
