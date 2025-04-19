@@ -38,10 +38,20 @@ def init_db():
     try:
         cursor = conn.cursor()
         
-        # Drop existing users table to update schema
+        # Drop all existing tables to ensure clean schema
         cursor.execute("DROP TABLE IF EXISTS users")
+        cursor.execute("DROP TABLE IF EXISTS vip_messages")
+        cursor.execute("DROP TABLE IF EXISTS requests")
+        cursor.execute("DROP TABLE IF EXISTS request_comments")
+        cursor.execute("DROP TABLE IF EXISTS mistakes")
+        cursor.execute("DROP TABLE IF EXISTS group_messages")
+        cursor.execute("DROP TABLE IF EXISTS hold_images")
+        cursor.execute("DROP TABLE IF EXISTS late_logins")
+        cursor.execute("DROP TABLE IF EXISTS quality_issues")
+        cursor.execute("DROP TABLE IF EXISTS midshift_issues")
+        cursor.execute("DROP TABLE IF EXISTS system_settings")
         
-        # Create tables if they don't exist
+        # Create users table with updated role options
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +62,118 @@ def init_db():
             )
         """)
         
+        # Create other necessary tables
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vip_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender TEXT,
+                message TEXT,
+                timestamp TEXT,
+                mentions TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_name TEXT,
+                request_type TEXT,
+                identifier TEXT,
+                comment TEXT,
+                timestamp TEXT,
+                completed INTEGER DEFAULT 0
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS request_comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_id INTEGER,
+                user TEXT,
+                comment TEXT,
+                timestamp TEXT,
+                FOREIGN KEY (request_id) REFERENCES requests (id)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mistakes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_leader TEXT,
+                agent_name TEXT,
+                ticket_id TEXT,
+                error_description TEXT,
+                timestamp TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS group_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender TEXT,
+                message TEXT,
+                timestamp TEXT,
+                mentions TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hold_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uploader TEXT,
+                image_data BLOB,
+                timestamp TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS late_logins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_name TEXT,
+                presence_time TEXT,
+                login_time TEXT,
+                reason TEXT,
+                timestamp TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS quality_issues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_name TEXT,
+                issue_type TEXT,
+                timing TEXT,
+                mobile_number TEXT,
+                product TEXT,
+                timestamp TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS midshift_issues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                agent_name TEXT,
+                issue_type TEXT,
+                start_time TEXT,
+                end_time TEXT,
+                timestamp TEXT
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                killswitch_enabled INTEGER DEFAULT 0,
+                chat_killswitch_enabled INTEGER DEFAULT 0
+            )
+        """)
+        
+        # Insert system settings if not exists
+        cursor.execute("""
+            INSERT OR IGNORE INTO system_settings (id, killswitch_enabled, chat_killswitch_enabled)
+            VALUES (1, 0, 0)
+        """)
+        
         # Create default admin account
         cursor.execute("""
             INSERT OR IGNORE INTO users (username, password, role, is_vip) 
@@ -60,7 +182,6 @@ def init_db():
         
         # Create other admin accounts
         admin_accounts = [
-            ("taha kirri", "arise@99"),
             ("Issam Samghini", "admin@2025"),
             ("Loubna Fellah", "admin@99"),
             ("Youssef Kamal", "admin@006"),
@@ -134,6 +255,9 @@ def init_db():
         """)
         
         conn.commit()
+    except Exception as e:
+        st.error(f"Database initialization error: {str(e)}")
+        conn.rollback()
     finally:
         conn.close()
 
@@ -361,13 +485,23 @@ def add_user(username, password, role):
         st.error("System is currently locked. Please contact the developer.")
         return False
         
+    if role not in ['agent', 'admin', 'qa']:
+        st.error("Invalid role specified")
+        return False
+        
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                      (username, hash_password(password), role))
+        cursor.execute("INSERT INTO users (username, password, role, is_vip) VALUES (?, ?, ?, ?)",
+                      (username, hash_password(password), role, 0))
         conn.commit()
         return True
+    except sqlite3.IntegrityError:
+        st.error("Username already exists")
+        return False
+    except Exception as e:
+        st.error(f"Error adding user: {str(e)}")
+        return False
     finally:
         conn.close()
 
