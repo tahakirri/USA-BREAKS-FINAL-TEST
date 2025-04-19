@@ -2230,6 +2230,18 @@ else:
                     st.rerun()
         st.markdown("---")
         
+        st.sidebar.button("📊 Breaks", 
+            on_click=lambda: setattr(st.session_state, 'current_section', 'breaks'),
+            use_container_width=True
+        )
+        
+        st.sidebar.button("📱 Fancy Number", 
+            on_click=lambda: setattr(st.session_state, 'current_section', 'fancy_number'),
+            use_container_width=True
+        )
+        
+        st.sidebar.markdown("---")
+        
         # Base navigation options available to all users
         nav_options = []
         
@@ -2422,25 +2434,8 @@ else:
                                 Enable Notifications
                             </button>
                         </div>
-                    `;
+                    `);
                 }
-            }
-
-            async function requestNotificationPermission() {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    document.getElementById('notification-container').style.display = 'none';
-                }
-            }
-            </script>
-            """, unsafe_allow_html=True)
-            
-            if is_chat_killswitch_enabled():
-                st.warning("Chat functionality is currently disabled by the administrator.")
-            else:
-
-                    # Regular chat only for non-VIP users
-                    st.subheader("Regular Chat")
                     messages = get_group_messages()
                     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                     for msg in reversed(messages):
@@ -2462,20 +2457,6 @@ else:
                     st.markdown('</div>', unsafe_allow_html=True)
                     
                     with st.form("chat_form", clear_on_submit=True):
-                        message = st.text_input("Type your message...", key="chat_input")
-                        col1, col2 = st.columns([5,1])
-                        with col2:
-                            if st.form_submit_button("Send"):
-                                if message:
-                                    send_group_message(st.session_state.username, message)
-                                    st.rerun()
-        else:
-            st.error("System is currently locked. Access to chat is disabled.")
-
-
-
-    elif st.session_state.current_section == "hold":
-        if not is_killswitch_enabled():
             st.subheader("🖼️ HOLD Images")
             
             # Only show upload option to admin users
@@ -2632,6 +2613,36 @@ else:
                 st.dataframe(df)
             else:
                 st.info("You have no late login records")
+
+    elif st.session_state.current_section == "fancy_number":
+        st.subheader("📱 Lycamobile Fancy Number Checker")
+        
+        st.markdown("""
+        ### Check if your phone number is a Fancy Number!
+        
+        A Fancy Number is a phone number with a special pattern in its last 6 digits.
+        Patterns include:
+        - Sequential numbers (e.g., 123456)
+        - Palindrome numbers (e.g., 123321)
+        - Repeated digits (e.g., 111111)
+        - Special combinations
+        """)
+        
+        phone_number = st.text_input("Enter Phone Number", placeholder="e.g., +1 (123) 456-7890")
+        
+        if st.button("Check Fancy Number"):
+            if phone_number:
+                try:
+                    is_fancy = is_fancy_number(phone_number)
+                    if is_fancy:
+                        st.success(f"🎉 Congratulations! {phone_number} is a Fancy Number!")
+                        st.balloons()
+                    else:
+                        st.info(f"🤔 {phone_number} is not a Fancy Number.")
+                except Exception as e:
+                    st.error(f"Error checking number: {e}")
+            else:
+                st.warning("Please enter a phone number.")
 
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
@@ -3155,15 +3166,6 @@ else:
             admin_break_dashboard()
         else:
             agent_break_dashboard()
-        cursor.execute("""
-            SELECT id, sender, message, timestamp, mentions 
-            FROM group_messages 
-            WHERE timestamp > ?
-            ORDER BY timestamp DESC
-        """, (last_check_time,))
-        return cursor.fetchall()
-    finally:
-        conn.close()
 
 def handle_message_check():
     if not st.session_state.authenticated:
