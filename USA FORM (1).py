@@ -3080,12 +3080,12 @@ else:
             with st.form("add_user"):
                 user = st.text_input("Username")
                 pwd = st.text_input("Password", type="password")
-                # Only show role selection to taha kirri, others can only create agent accounts
-                if st.session_state.username.lower() == "taha kirri":
+                # Allow all admin users to create admin and QA accounts
+                if st.session_state.role == 'admin':
                     role = st.selectbox("Role", ["agent", "admin", "qa"])
                 else:
-                    role = "agent"  # Default role for accounts created by other admins
-                    st.info("Note: New accounts will be created as agent accounts.")
+                    role = "agent"  # Default role for accounts created by non-admin users
+                    st.info("Note: You can only create agent accounts.")
                 
                 if st.form_submit_button("Add User"):
                     if user and pwd:
