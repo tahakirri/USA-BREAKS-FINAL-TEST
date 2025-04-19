@@ -1573,31 +1573,31 @@ def inject_custom_css():
         },
         'light': {
             'bg': '#ffffff',
-            'sidebar': '#fff5f5',  # Lighter red background
+            'sidebar': '#fff5f5',  # Light red background
             'card': '#fff5f5',
             'text': '#1a202c',
             'text_secondary': '#4a5568',
-            'border': '#fecaca',  # Lighter red border
-            'accent': '#f56565',  # Lighter red accent
-            'accent_hover': '#e53e3e',
+            'border': '#feb2b2',  # Light red border
+            'accent': '#e53e3e',  # Red accent
+            'accent_hover': '#c53030',
             'muted': '#4a5568',  # Darker muted text for better contrast
             'input_bg': '#ffffff',
             'input_text': '#1a202c',
-            'my_message_bg': '#f56565',
+            'my_message_bg': '#e53e3e',
             'other_message_bg': '#fff5f5',
             'hover_bg': '#fed7d7',
             'notification_bg': '#ffffff',
             'notification_text': '#1a202c',
-            'button_bg': '#f56565',
+            'button_bg': '#e53e3e',
             'button_text': '#ffffff',
-            'button_hover': '#e53e3e',
+            'button_hover': '#c53030',
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#1a202c',
             'dropdown_hover': '#fed7d7',
-            'table_header': '#fee2e2',  # Even lighter red for table headers
+            'table_header': '#fecaca',  # Slightly darker red background for headers
             'table_row_even': '#ffffff',
             'table_row_odd': '#fff5f5',
-            'table_border': '#fecaca'
+            'table_border': '#feb2b2'
         }
     }
 
@@ -1926,6 +1926,46 @@ def inject_custom_css():
             margin-top: 0.25rem;
         }}
         
+        .message-avatar {{
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: {c['accent']};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1rem;
+        }}
+        
+        /* Table Styling */
+        .stDataFrame {{
+            background-color: {c['card']} !important;
+            border: 1px solid {c['table_border']} !important;
+            border-radius: 0.5rem !important;
+            overflow: hidden !important;
+        }}
+        
+        .stDataFrame td {{
+            color: {c['text']} !important;
+            border-color: {c['table_border']} !important;
+            background-color: {c['table_row_even']} !important;
+        }}
+        
+        .stDataFrame tr:nth-child(odd) td {{
+            background-color: {c['table_row_odd']} !important;
+        }}
+        
+        .stDataFrame th {{
+            color: {c['text']} !important;
+            background-color: {c['table_header']} !important;
+            border-color: {c['table_border']} !important;
+            font-weight: 600 !important;
+        }}
+        
+        /* Buttons */
+        .stButton button,
         button[kind="primary"],
         .stDownloadButton button,
         div[data-testid="stForm"] button,
@@ -2020,48 +2060,6 @@ def inject_custom_css():
         
         .stTabs [data-baseweb="tab"] {{
             color: {c['text']} !important;
-        }}
-        
-        /* Login form */
-        .stForm,
-        form[data-testid="stForm"],
-        .login-container {{    
-            max-width: 500px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background-color: {c['card']} !important;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid {c['border']} !important;
-        }}
-        
-        /* Login form inputs */
-        .stForm input,
-        form[data-testid="stForm"] input,
-        .login-container input {{    
-            background-color: #ffffff !important;
-            color: {c['text']} !important;
-            border: 1px solid {c['border']} !important;
-            border-radius: 0.375rem !important;
-            padding: 0.5rem 1rem !important;
-        }}
-        
-        /* Login form labels */
-        .stForm label,
-        form[data-testid="stForm"] label,
-        .login-container label {{    
-            color: {c['text']} !important;
-            font-weight: 500 !important;
-            margin-bottom: 0.5rem !important;
-        }}
-        
-        /* Login form focus states */
-        .stForm input:focus,
-        form[data-testid="stForm"] input:focus,
-        .login-container input:focus {{    
-            border-color: {c['accent']} !important;
-            box-shadow: 0 0 0 1px {c['accent']} !important;
-            background-color: #ffffff !important;
         }}
         
         /* Theme Toggle Switch */
