@@ -1620,7 +1620,7 @@ def inject_custom_css():
         /* Global Styles */
         /* Force sidebar background */
         section[data-testid="stSidebar"] {
-            background-color: %(sidebar)s !important;
+            background-color: {c['sidebar']} !important;
         }
 
         .stApp {{
