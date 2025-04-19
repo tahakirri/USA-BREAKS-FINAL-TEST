@@ -733,7 +733,8 @@ def send_vip_message(sender, message):
         st.error("Chat is currently locked. Please contact the developer.")
         return False
     
-    if not is_vip_user(sender) and sender.lower() != "taha kirri":
+    # Check if sender is VIP or taha kirri
+    if not (is_vip_user(sender) or sender.lower() == "taha kirri"):
         st.error("Only VIP users can send messages in this chat.")
         return False
         
@@ -741,10 +742,16 @@ def send_vip_message(sender, message):
     try:
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
+        # Only allow mentioning VIP users or taha kirri
+        valid_mentions = []
+        for mention in mentions:
+            if is_vip_user(mention) or mention.lower() == "taha kirri":
+                valid_mentions.append(mention)
+        
         cursor.execute("""
             INSERT INTO vip_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+        """, (sender, message, get_casablanca_time(), ','.join(valid_mentions)))
         conn.commit()
         return True
     finally:
@@ -752,6 +759,12 @@ def send_vip_message(sender, message):
 
 def get_vip_messages():
     """Get messages from the VIP-only chat"""
+    # Only VIP users and taha kirri can view VIP messages
+    if not ('username' in st.session_state and 
+            (is_vip_user(st.session_state.username) or 
+             st.session_state.username.lower() == "taha kirri")):
+        return []
+    
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1474,7 +1487,7 @@ def is_vip_user(username):
 
 def set_vip_status(username, is_vip):
     """Set or remove VIP status for a user"""
-    if not username:
+    if not username or ('username' not in st.session_state or st.session_state.username.lower() != "taha kirri"):
         return False
     conn = get_db_connection()
     try:
@@ -3187,18 +3200,7 @@ else:
         
         with col1:
             # Show all users with their current VIP status
-            st.markdown("### Current VIP Status")
-            user_data = []
-            for user_id, username, role in users:
-                is_vip = is_vip_user(username)
-                user_data.append({
-                    "Username": username,
-                    "Role": role,
-                    "Status": "⭐ VIP" if is_vip else "Regular User"
-                })
-            
-            df = pd.DataFrame(user_data)
-            st.dataframe(df, use_container_width=True)
+            vip_management()
         
         with col2:
             # VIP management form
