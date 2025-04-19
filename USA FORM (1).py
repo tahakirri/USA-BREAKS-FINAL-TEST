@@ -2254,17 +2254,41 @@ else:
         
         st.subheader("Late Login Records")
         
-        # Add search functionality
-        search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
+        # Add search and date filter
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
+        with col2:
+            date_filter = st.date_input("📅 Filter by date", key="late_login_date")
+        
         late_logins = get_late_logins()
         
-        if search_query:
-            # Filter records based on search query
-            late_logins = [login for login in late_logins if 
-                         search_query.lower() in login[1].lower() or  # Agent name
-                         search_query.lower() in login[4].lower() or  # Reason
-                         search_query in login[2] or  # Presence time
-                         search_query in login[3]]  # Login time
+        if search_query or date_filter:
+            filtered_logins = []
+            date_str = date_filter.strftime("%Y-%m-%d")
+            
+            for login in late_logins:
+                matches_search = True
+                matches_date = True
+                
+                # Check search query
+                if search_query:
+                    matches_search = (
+                        search_query.lower() in login[1].lower() or  # Agent name
+                        search_query.lower() in login[4].lower() or  # Reason
+                        search_query in login[2] or  # Presence time
+                        search_query in login[3]     # Login time
+                    )
+                
+                # Check date
+                if date_filter:
+                    record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
+                    matches_date = record_date == date_filter
+                
+                if matches_search and matches_date:
+                    filtered_logins.append(login)
+            
+            late_logins = filtered_logins
         
         if st.session_state.role == "admin":
             if late_logins:
@@ -2286,7 +2310,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name="late_logins.csv",
+                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d')}.csv",
                     mime="text/csv"
                 )
                 
@@ -2349,18 +2373,42 @@ else:
         
         st.subheader("Quality Issue Records")
         
-        # Add search functionality
-        search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+        # Add search and date filter
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+        with col2:
+            date_filter = st.date_input("📅 Filter by date", key="quality_issues_date")
+        
         quality_issues = get_quality_issues()
         
-        if search_query:
-            # Filter records based on search query
-            quality_issues = [issue for issue in quality_issues if 
-                            search_query.lower() in issue[1].lower() or  # Agent name
-                            search_query.lower() in issue[2].lower() or  # Issue type
-                            search_query in issue[3] or  # Timing
-                            search_query in issue[4] or  # Mobile number
-                            search_query.lower() in issue[5].lower()]  # Product
+        if search_query or date_filter:
+            filtered_issues = []
+            date_str = date_filter.strftime("%Y-%m-%d")
+            
+            for issue in quality_issues:
+                matches_search = True
+                matches_date = True
+                
+                # Check search query
+                if search_query:
+                    matches_search = (
+                        search_query.lower() in issue[1].lower() or  # Agent name
+                        search_query.lower() in issue[2].lower() or  # Issue type
+                        search_query in issue[3] or  # Timing
+                        search_query in issue[4] or  # Mobile number
+                        search_query.lower() in issue[5].lower()  # Product
+                    )
+                
+                # Check date
+                if date_filter:
+                    record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
+                    matches_date = record_date == date_filter
+                
+                if matches_search and matches_date:
+                    filtered_issues.append(issue)
+            
+            quality_issues = filtered_issues
         
         if st.session_state.role == "admin":
             if quality_issues:
@@ -2383,7 +2431,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name="quality_issues.csv",
+                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d')}.csv",
                     mime="text/csv"
                 )
                 
@@ -2445,17 +2493,41 @@ else:
         
         st.subheader("Mid-shift Issue Records")
         
-        # Add search functionality
-        search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
+        # Add search and date filter
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
+        with col2:
+            date_filter = st.date_input("📅 Filter by date", key="midshift_issues_date")
+        
         midshift_issues = get_midshift_issues()
         
-        if search_query:
-            # Filter records based on search query
-            midshift_issues = [issue for issue in midshift_issues if 
-                             search_query.lower() in issue[1].lower() or  # Agent name
-                             search_query.lower() in issue[2].lower() or  # Issue type
-                             search_query in issue[3] or  # Start time
-                             search_query in issue[4]]  # End time
+        if search_query or date_filter:
+            filtered_issues = []
+            date_str = date_filter.strftime("%Y-%m-%d")
+            
+            for issue in midshift_issues:
+                matches_search = True
+                matches_date = True
+                
+                # Check search query
+                if search_query:
+                    matches_search = (
+                        search_query.lower() in issue[1].lower() or  # Agent name
+                        search_query.lower() in issue[2].lower() or  # Issue type
+                        search_query in issue[3] or  # Start time
+                        search_query in issue[4]     # End time
+                    )
+                
+                # Check date
+                if date_filter:
+                    record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
+                    matches_date = record_date == date_filter
+                
+                if matches_search and matches_date:
+                    filtered_issues.append(issue)
+            
+            midshift_issues = filtered_issues
         
         if st.session_state.role == "admin":
             if midshift_issues:
@@ -2477,7 +2549,7 @@ else:
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name="midshift_issues.csv",
+                    file_name=f"midshift_issues_{date_filter.strftime('%Y-%m-%d')}.csv",
                     mime="text/csv"
                 )
                 
