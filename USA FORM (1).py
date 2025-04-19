@@ -1617,7 +1617,7 @@ def inject_custom_css():
             background-color: {c['button_bg']} !important;
             color: {c['button_text']} !important;
             border: none !important;
-            border-radius: 0.5rem !important;
+            border-radius: 1rem !important;
             padding: 0.5rem 1rem !important;
             font-weight: 500 !important;
             transition: all 0.2s ease-in-out !important;
@@ -1847,7 +1847,7 @@ def inject_custom_css():
             background-color: {c['card']} !important;
             color: {c['text']} !important;
             padding: 1rem !important;
-            border-radius: 0.5rem !important;
+            border-radius: 1rem !important;
             margin-bottom: 1rem !important;
             border: 1px solid {c['border']} !important;
         }}
@@ -1943,7 +1943,7 @@ def inject_custom_css():
         .stDataFrame {{
             background-color: {c['card']} !important;
             border: 1px solid {c['table_border']} !important;
-            border-radius: 0.5rem !important;
+            border-radius: 1rem !important;
             overflow: hidden !important;
         }}
         
@@ -1975,7 +1975,7 @@ def inject_custom_css():
             color: #ffffff !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
-            border-radius: 0.375rem !important;
+            border-radius: 0.75rem !important;
             font-weight: 600 !important;
             transition: all 0.2s ease-in-out !important;
         }}
@@ -1999,7 +1999,7 @@ def inject_custom_css():
             color: #ffffff !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
-            border-radius: 0.375rem !important;
+            border-radius: 0.75rem !important;
             font-weight: 600 !important;
             transition: all 0.2s ease-in-out !important;
         }}
@@ -2018,7 +2018,7 @@ def inject_custom_css():
             color: #ffffff !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
-            border-radius: 0.375rem !important;
+            border-radius: 0.75rem !important;
             font-weight: 600 !important;
             transition: all 0.2s ease-in-out !important;
         }}
