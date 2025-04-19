@@ -1534,6 +1534,22 @@ def is_fancy_number(phone_number):
     # Consecutive descending (654321)
     if is_sequential(last_six, -1):
         patterns.append("6-digit descending sequence")
+    
+    # More flexible ascending/descending patterns (like 141516)
+    def is_flexible_sequential(digits, step=1):
+        digits = [int(d) for d in digits]
+        for i in range(1, len(digits)):
+            if digits[i] - digits[i-1] != step:
+                return False
+        return True
+    
+    # Check for flexible ascending (e.g., 141516)
+    if is_flexible_sequential(last_six, 1):
+        patterns.append("Flexible ascending sequence (e.g., 141516)")
+    
+    # Check for flexible descending
+    if is_flexible_sequential(last_six, -1):
+        patterns.append("Flexible descending sequence")
         
     # Palindrome (100001)
     if last_six == last_six[::-1]:
@@ -1602,6 +1618,8 @@ def is_fancy_number(phone_number):
             "6 identical digits",
             "6-digit ascending sequence",
             "6-digit descending sequence",
+            "Flexible ascending sequence",
+            "Flexible descending sequence",
             "6-digit palindrome",
             "Double triplets (444555)",
             "Similar triplets (121122)",
