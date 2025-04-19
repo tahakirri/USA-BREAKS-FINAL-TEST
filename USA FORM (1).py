@@ -3271,7 +3271,7 @@ def lycamobile_fancy_number_checker():
 
 
 # --------------------------
-# Lycamobile Fancy Number Checker (added to the bottom)
+# Lycamobile Fancy Number Checker (defined properly)
 # --------------------------
 
 def lycamobile_fancy_number_checker():
@@ -3317,5 +3317,6 @@ def lycamobile_fancy_number_checker():
         else:
             st.warning(f"⚠️ Not a fancy number: {reason}")
 
-# Optionally call the checker
-# lycamobile_fancy_number_checker()
+# Secure entry point
+if __name__ == "__main__":
+    lycamobile_fancy_number_checker()
