@@ -2249,29 +2249,22 @@ else:
                             reason
                         )
                         st.success("Late login reported successfully!")
-                        st.rerun()
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
         st.subheader("Late Login Records")
         
-        # Search and filter options
-        col1, col2 = st.columns([2, 2])
-        with col1:
-            search_query = st.text_input("🔍 Search records...", key="late_login_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date range", value=(datetime.now().date(), datetime.now().date()), key="late_login_date")
+        # Add search functionality
+        search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
+        late_logins = get_late_logins()
         
-        # Get filtered data
-        if len(date_filter) == 2:
-            start_date, end_date = date_filter
-            late_logins = get_late_logins_by_date(start_date, end_date)
-        else:
-            late_logins = get_late_logins()
-        
-        # Apply search if query exists
         if search_query:
-            late_logins = search_late_logins(search_query)
+            # Filter records based on search query
+            late_logins = [login for login in late_logins if 
+                         search_query.lower() in login[1].lower() or  # Agent name
+                         search_query.lower() in login[4].lower() or  # Reason
+                         search_query in login[2] or  # Presence time
+                         search_query in login[3]]  # Login time
         
         if st.session_state.role == "admin":
             if late_logins:
@@ -2283,24 +2276,17 @@ else:
                         "Time of presence": presence,
                         "Time of log in": login_time,
                         "Reason": reason,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
                 
-                # Download filtered data
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label=download_label,
+                    label="Download as CSV",
                     data=csv,
-                    file_name=f"late_logins_{datetime.now().strftime('%Y%m%d')}.csv",
+                    file_name="late_logins.csv",
                     mime="text/csv"
                 )
                 
@@ -2320,26 +2306,11 @@ else:
                         "Time of presence": presence,
                         "Time of log in": login_time,
                         "Reason": reason,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
-                # Download filtered data for user
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label=download_label,
-                    data=csv,
-                    file_name=f"my_late_logins_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
             else:
                 st.info("You have no late login records")
 
@@ -2373,29 +2344,23 @@ else:
                             product
                         )
                         st.success("Quality issue reported successfully!")
-                        st.rerun()
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
         
-        # Search and filter options
-        col1, col2 = st.columns([2, 2])
-        with col1:
-            search_query = st.text_input("🔍 Search records...", key="quality_issues_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date range", value=(datetime.now().date(), datetime.now().date()), key="quality_issues_date")
+        # Add search functionality
+        search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+        quality_issues = get_quality_issues()
         
-        # Get filtered data
-        if len(date_filter) == 2:
-            start_date, end_date = date_filter
-            quality_issues = get_quality_issues_by_date(start_date, end_date)
-        else:
-            quality_issues = get_quality_issues()
-        
-        # Apply search if query exists
         if search_query:
-            quality_issues = search_quality_issues(search_query)
+            # Filter records based on search query
+            quality_issues = [issue for issue in quality_issues if 
+                            search_query.lower() in issue[1].lower() or  # Agent name
+                            search_query.lower() in issue[2].lower() or  # Issue type
+                            search_query in issue[3] or  # Timing
+                            search_query in issue[4] or  # Mobile number
+                            search_query.lower() in issue[5].lower()]  # Product
         
         if st.session_state.role == "admin":
             if quality_issues:
@@ -2408,24 +2373,17 @@ else:
                         "Timing": timing,
                         "Mobile number": mobile,
                         "Product": product,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
                 
-                # Download filtered data
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label=download_label,
+                    label="Download as CSV",
                     data=csv,
-                    file_name=f"quality_issues_{datetime.now().strftime('%Y%m%d')}.csv",
+                    file_name="quality_issues.csv",
                     mime="text/csv"
                 )
                 
@@ -2446,26 +2404,11 @@ else:
                         "Timing": timing,
                         "Mobile number": mobile,
                         "Product": product,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
-                # Download filtered data for user
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label=download_label,
-                    data=csv,
-                    file_name=f"my_quality_issues_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
             else:
                 st.info("You have no quality issue records")
 
@@ -2497,29 +2440,22 @@ else:
                             end_time
                         )
                         st.success("Mid-shift issue reported successfully!")
-                        st.rerun()
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
         st.subheader("Mid-shift Issue Records")
         
-        # Search and filter options
-        col1, col2 = st.columns([2, 2])
-        with col1:
-            search_query = st.text_input("🔍 Search records...", key="midshift_issues_search")
-        with col2:
-            date_filter = st.date_input("📅 Filter by date range", value=(datetime.now().date(), datetime.now().date()), key="midshift_issues_date")
+        # Add search functionality
+        search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
+        midshift_issues = get_midshift_issues()
         
-        # Get filtered data
-        if len(date_filter) == 2:
-            start_date, end_date = date_filter
-            midshift_issues = get_midshift_issues_by_date(start_date, end_date)
-        else:
-            midshift_issues = get_midshift_issues()
-        
-        # Apply search if query exists
         if search_query:
-            midshift_issues = search_midshift_issues(search_query)
+            # Filter records based on search query
+            midshift_issues = [issue for issue in midshift_issues if 
+                             search_query.lower() in issue[1].lower() or  # Agent name
+                             search_query.lower() in issue[2].lower() or  # Issue type
+                             search_query in issue[3] or  # Start time
+                             search_query in issue[4]]  # End time
         
         if st.session_state.role == "admin":
             if midshift_issues:
@@ -2531,24 +2467,17 @@ else:
                         "Issue Type": issue_type,
                         "Start time": start_time,
                         "End Time": end_time,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
                 
-                # Download filtered data
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
                 csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
-                    label=download_label,
+                    label="Download as CSV",
                     data=csv,
-                    file_name=f"midshift_issues_{datetime.now().strftime('%Y%m%d')}.csv",
+                    file_name="midshift_issues.csv",
                     mime="text/csv"
                 )
                 
@@ -2568,26 +2497,11 @@ else:
                         "Issue Type": issue_type,
                         "Start time": start_time,
                         "End Time": end_time,
-                        "Timestamp": ts
+                        "Reported At": ts
                     })
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
-                # Download filtered data for user
-                if len(date_filter) == 2:
-                    start_date, end_date = date_filter
-                    download_label = f"Download {start_date} to {end_date} (CSV)"
-                else:
-                    download_label = "Download All (CSV)"
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label=download_label,
-                    data=csv,
-                    file_name=f"my_midshift_issues_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
             else:
                 st.info("You have no mid-shift issue records")
 
@@ -2906,131 +2820,6 @@ def handle_message_check():
                 })
         return {"new_messages": bool(messages_data), "messages": messages_data}
     return {"new_messages": False, "messages": []}
-
-def get_late_logins_by_date(start_date=None, end_date=None):
-    try:
-        late_logins = get_late_logins()
-        if not late_logins:
-            return []
-            
-        if not start_date or not end_date:
-            return late_logins
-            
-        filtered_logins = []
-        for login in late_logins:
-            try:
-                # Handle potential empty timestamp
-                if not login[5]:
-                    continue
-                    
-                login_date = datetime.strptime(login[5][:10], "%Y-%m-%d").date()
-                if start_date <= login_date <= end_date:
-                    filtered_logins.append(login)
-            except (ValueError, IndexError, TypeError):
-                continue
-        return filtered_logins
-    except Exception as e:
-        st.error(f"Error filtering late logins: {str(e)}")
-        return []
-
-def get_quality_issues_by_date(start_date=None, end_date=None):
-    try:
-        quality_issues = get_quality_issues()
-        if not quality_issues:
-            return []
-            
-        if not start_date or not end_date:
-            return quality_issues
-            
-        filtered_issues = []
-        for issue in quality_issues:
-            try:
-                # Handle potential empty timestamp
-                if not issue[6]:
-                    continue
-                    
-                issue_date = datetime.strptime(issue[6][:10], "%Y-%m-%d").date()
-                if start_date <= issue_date <= end_date:
-                    filtered_issues.append(issue)
-            except (ValueError, IndexError, TypeError):
-                continue
-        return filtered_issues
-    except Exception as e:
-        st.error(f"Error filtering quality issues: {str(e)}")
-        return []
-
-def get_midshift_issues_by_date(start_date=None, end_date=None):
-    try:
-        midshift_issues = get_midshift_issues()
-        if not midshift_issues:
-            return []
-            
-        if not start_date or not end_date:
-            return midshift_issues
-            
-        filtered_issues = []
-        for issue in midshift_issues:
-            try:
-                # Handle potential empty timestamp
-                if not issue[5]:
-                    continue
-                    
-                issue_date = datetime.strptime(issue[5][:10], "%Y-%m-%d").date()
-                if start_date <= issue_date <= end_date:
-                    filtered_issues.append(issue)
-            except (ValueError, IndexError, TypeError):
-                continue
-        return filtered_issues
-    except Exception as e:
-        st.error(f"Error filtering midshift issues: {str(e)}")
-        return []
-
-def search_late_logins(query):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        query = f"%{query.lower()}%"
-        cursor.execute("""
-            SELECT * FROM late_logins 
-            WHERE LOWER(agent_name) LIKE ? 
-            OR LOWER(reason) LIKE ?
-            ORDER BY timestamp DESC
-        """, (query, query))
-        return cursor.fetchall()
-    finally:
-        conn.close()
-
-def search_quality_issues(query):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        query = f"%{query.lower()}%"
-        cursor.execute("""
-            SELECT * FROM quality_issues 
-            WHERE LOWER(agent_name) LIKE ? 
-            OR LOWER(issue_type) LIKE ?
-            OR LOWER(mobile_number) LIKE ?
-            OR LOWER(product) LIKE ?
-            ORDER BY timestamp DESC
-        """, (query, query, query, query))
-        return cursor.fetchall()
-    finally:
-        conn.close()
-
-def search_midshift_issues(query):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        query = f"%{query.lower()}%"
-        cursor.execute("""
-            SELECT * FROM midshift_issues 
-            WHERE LOWER(agent_name) LIKE ? 
-            OR LOWER(issue_type) LIKE ?
-            ORDER BY timestamp DESC
-        """, (query, query))
-        return cursor.fetchall()
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     inject_custom_css()
