@@ -2986,78 +2986,68 @@ else:
         
         st.subheader("🧹 Data Management")
         
-        with st.expander("❌ Clear All Requests"):
-            with st.form("clear_requests_form"):
-                st.warning("This will permanently delete ALL requests and their comments!")
-                if st.form_submit_button("Clear All Requests"):
-                    if clear_all_requests():
-                        st.success("All requests deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All Mistakes"):
-            with st.form("clear_mistakes_form"):
-                st.warning("This will permanently delete ALL mistakes!")
-                if st.form_submit_button("Clear All Mistakes"):
-                    if clear_all_mistakes():
-                        st.success("All mistakes deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All Chat Messages"):
-            with st.form("clear_chat_form"):
-                st.warning("This will permanently delete ALL chat messages!")
-                if st.form_submit_button("Clear All Chat"):
-                    if clear_all_group_messages():
-                        st.success("All chat messages deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All HOLD Images"):
-            with st.form("clear_hold_form"):
-                st.warning("This will permanently delete ALL HOLD images!")
-                if st.form_submit_button("Clear All HOLD Images"):
-                    if clear_hold_images():
-                        st.success("All HOLD images deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All Late Logins"):
-            with st.form("clear_late_logins_form"):
-                st.warning("This will permanently delete ALL late login records!")
-                if st.form_submit_button("Clear All Late Logins"):
-                    if clear_late_logins():
-                        st.success("All late login records deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All Quality Issues"):
-            with st.form("clear_quality_issues_form"):
-                st.warning("This will permanently delete ALL quality issue records!")
-                if st.form_submit_button("Clear All Quality Issues"):
-                    if clear_quality_issues():
-                        st.success("All quality issue records deleted!")
-                        st.rerun()
-
-        with st.expander("❌ Clear All Mid-shift Issues"):
-            with st.form("clear_midshift_issues_form"):
-                st.warning("This will permanently delete ALL mid-shift issue records!")
-                if st.form_submit_button("Clear All Mid-shift Issues"):
-                    if clear_midshift_issues():
-                        st.success("All mid-shift issue records deleted!")
-                        st.rerun()
-
-        with st.expander("💣 Clear ALL Data"):
-            with st.form("nuclear_form"):
-                st.error("THIS WILL DELETE EVERYTHING IN THE SYSTEM!")
-                if st.form_submit_button("🚨 Execute Full System Wipe"):
+        with st.form("data_clear_form"):
+            clear_options = {
+                "Requests": clear_all_requests,
+                "Mistakes": clear_all_mistakes,
+                "Chat Messages": clear_all_group_messages,
+                "HOLD Images": clear_hold_images,
+                "Late Logins": clear_late_logins,
+                "Quality Issues": clear_quality_issues,
+                "Mid-shift Issues": clear_midshift_issues,
+                "ALL System Data": lambda: all([
+                    clear_all_requests(),
+                    clear_all_mistakes(),
+                    clear_all_group_messages(),
+                    clear_hold_images(),
+                    clear_late_logins(),
+                    clear_quality_issues(),
+                    clear_midshift_issues()
+                ])
+            }
+            
+            # Dropdown for selecting what to clear
+            selected_clear_option = st.selectbox(
+                "Select Data to Clear", 
+                list(clear_options.keys()),
+                help="Choose the type of data you want to permanently delete"
+            )
+            
+            # Warning based on selected option
+            warning_messages = {
+                "Requests": "This will permanently delete ALL requests and their comments!",
+                "Mistakes": "This will permanently delete ALL mistakes!",
+                "Chat Messages": "This will permanently delete ALL chat messages!",
+                "HOLD Images": "This will permanently delete ALL HOLD images!",
+                "Late Logins": "This will permanently delete ALL late login records!",
+                "Quality Issues": "This will permanently delete ALL quality issue records!",
+                "Mid-shift Issues": "This will permanently delete ALL mid-shift issue records!",
+                "ALL System Data": "🚨 THIS WILL DELETE EVERYTHING IN THE SYSTEM! 🚨"
+            }
+            
+            # Display appropriate warning
+            if selected_clear_option == "ALL System Data":
+                st.error(warning_messages[selected_clear_option])
+            else:
+                st.warning(warning_messages[selected_clear_option])
+            
+            # Confirmation checkbox for destructive actions
+            confirm_clear = st.checkbox(f"I understand and want to clear {selected_clear_option}")
+            
+            # Submit button
+            if st.form_submit_button("Clear Data"):
+                if confirm_clear:
                     try:
-                        clear_all_requests()
-                        clear_all_mistakes()
-                        clear_all_group_messages()
-                        clear_hold_images()
-                        clear_late_logins()
-                        clear_quality_issues()
-                        clear_midshift_issues()
-                        st.success("All system data deleted!")
-                        st.rerun()
+                        # Call the corresponding clear function
+                        if clear_options[selected_clear_option]():
+                            st.success(f"{selected_clear_option} deleted successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Deletion failed. Please try again.")
                     except Exception as e:
                         st.error(f"Error during deletion: {str(e)}")
+                else:
+                    st.warning("Please confirm the deletion by checking the checkbox.")
         
         st.markdown("---")
         st.subheader("User Management")
