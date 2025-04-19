@@ -1710,7 +1710,7 @@ def inject_custom_css():
     """, unsafe_allow_html=True)
 
 st.set_page_config(
-    page_title="Request Management System",
+    page_title="Lyca Management System",
     page_icon=":office:",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -1733,7 +1733,7 @@ init_break_session_state()
 if not st.session_state.authenticated:
     st.markdown("""
         <div class="login-container">
-            <h1 style="text-align: center; margin-bottom: 2rem;">🏢 Request Management System</h1>
+            <h1 style="text-align: center; margin-bottom: 2rem;">🏢 Lyca Management System</h1>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
@@ -2898,4 +2898,4 @@ if __name__ == "__main__":
         st.json(handle_message_check())
         st.stop()
     
-    st.write("Request Management System")
+    st.write("Lyca Management System")
