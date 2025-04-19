@@ -1550,8 +1550,8 @@ def inject_custom_css():
             'text': '#e2e8f0',
             'text_secondary': '#94a3b8',
             'border': '#334155',
-            'accent': '#60a5fa',
-            'accent_hover': '#3b82f6',
+            'accent': '#2563eb',  # Bright blue
+            'accent_hover': '#1d4ed8',
             'muted': '#94a3b8',
             'input_bg': '#1e293b',
             'input_text': '#e2e8f0',
@@ -1565,31 +1565,39 @@ def inject_custom_css():
             'button_hover': '#1d4ed8',
             'dropdown_bg': '#1e293b',
             'dropdown_text': '#e2e8f0',
-            'dropdown_hover': '#334155'
+            'dropdown_hover': '#334155',
+            'table_header': '#1e293b',
+            'table_row_even': '#1e293b',
+            'table_row_odd': '#0f172a',
+            'table_border': '#334155'
         },
         'light': {
             'bg': '#ffffff',
-            'sidebar': '#f8fafc',
-            'card': '#f8fafc',
-            'text': '#1e293b',
-            'text_secondary': '#475569',
-            'border': '#e2e8f0',
-            'accent': '#2563eb',
-            'accent_hover': '#1d4ed8',
-            'muted': '#64748b',
+            'sidebar': '#fff5f5',  # Light red background
+            'card': '#fff5f5',
+            'text': '#1a202c',
+            'text_secondary': '#4a5568',
+            'border': '#feb2b2',  # Light red border
+            'accent': '#e53e3e',  # Red accent
+            'accent_hover': '#c53030',
+            'muted': '#718096',
             'input_bg': '#ffffff',
-            'input_text': '#1e293b',
-            'my_message_bg': '#3b82f6',
-            'other_message_bg': '#f1f5f9',
-            'hover_bg': '#f1f5f9',
+            'input_text': '#1a202c',
+            'my_message_bg': '#e53e3e',
+            'other_message_bg': '#fff5f5',
+            'hover_bg': '#fed7d7',
             'notification_bg': '#ffffff',
-            'notification_text': '#1e293b',
-            'button_bg': '#2563eb',
+            'notification_text': '#1a202c',
+            'button_bg': '#e53e3e',
             'button_text': '#ffffff',
-            'button_hover': '#1d4ed8',
+            'button_hover': '#c53030',
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#1e293b',
-            'dropdown_hover': '#f1f5f9'
+            'dropdown_text': '#1a202c',
+            'dropdown_hover': '#fed7d7',
+            'table_header': '#fff5f5',
+            'table_row_even': '#ffffff',
+            'table_row_odd': '#fff5f5',
+            'table_border': '#feb2b2'
         }
     }
 
@@ -1748,17 +1756,45 @@ def inject_custom_css():
         /* Table Styling */
         .stDataFrame {{
             background-color: {c['card']} !important;
+            border: 1px solid {c['table_border']} !important;
+            border-radius: 0.5rem !important;
+            overflow: hidden !important;
         }}
         
         .stDataFrame td {{
             color: {c['text']} !important;
+            border-color: {c['table_border']} !important;
+            background-color: {c['table_row_even']} !important;
+        }}
+        
+        .stDataFrame tr:nth-child(odd) td {{
+            background-color: {c['table_row_odd']} !important;
         }}
         
         .stDataFrame th {{
             color: {c['text']} !important;
-            background-color: {c['dropdown_bg']} !important;
+            background-color: {c['table_header']} !important;
+            border-color: {c['table_border']} !important;
+            font-weight: 600 !important;
         }}
-
+        
+        /* Download button styling */
+        .stDownloadButton button {{
+            background-color: {c['button_bg']} !important;
+            color: {c['button_text']} !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.5rem !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease-in-out !important;
+        }}
+        
+        .stDownloadButton button:hover {{
+            background-color: {c['button_hover']} !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }}
+        
         /* Checkbox Styling */
         .stCheckbox > label {{
             color: {c['text']} !important;
@@ -1909,14 +1945,19 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         
         # Theme toggle
-        if st.toggle("Light Mode", value=st.session_state.color_mode == 'light', key='theme_toggle'):
-            if st.session_state.color_mode != 'light':
-                st.session_state.color_mode = 'light'
-                st.rerun()
-        else:
-            if st.session_state.color_mode != 'dark':
-                st.session_state.color_mode = 'dark'
-                st.rerun()
+        col1, col2 = st.columns([1, 6])
+        with col1:
+            current_icon = "🌙" if st.session_state.color_mode == 'dark' else "☀️"
+            st.write(current_icon)
+        with col2:
+            if st.toggle("", value=st.session_state.color_mode == 'light', key='theme_toggle', label_visibility="collapsed"):
+                if st.session_state.color_mode != 'light':
+                    st.session_state.color_mode = 'light'
+                    st.rerun()
+            else:
+                if st.session_state.color_mode != 'dark':
+                    st.session_state.color_mode = 'dark'
+                    st.rerun()
         st.markdown("---")
         
         # Base navigation options available to all users
