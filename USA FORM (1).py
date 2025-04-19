@@ -1659,12 +1659,40 @@ def inject_custom_css():
             background-color: {c['dropdown_hover']} !important;
         }}
         
-        /* Input Fields */
+        /* Input Fields and Labels */
         .stTextInput input, 
-        .stTextArea textarea {{
+        .stTextArea textarea,
+        .stNumberInput input {{    
             background-color: {c['input_bg']} !important;
             color: {c['input_text']} !important;
             border-color: {c['border']} !important;
+        }}
+        
+        /* Input Labels and Text */
+        .stTextInput label,
+        .stTextArea label,
+        .stNumberInput label,
+        .stSelectbox label,
+        .stDateInput label,
+        div[data-baseweb="input"] label,
+        .stMarkdown p,
+        .element-container label {{    
+            color: {c['text']} !important;
+        }}
+        
+        /* Placeholder text */
+        .stTextInput input::placeholder,
+        .stTextArea textarea::placeholder,
+        .stNumberInput input::placeholder {{    
+            color: {c['text_secondary']} !important;
+        }}
+        
+        /* Input focus state */
+        .stTextInput input:focus,
+        .stTextArea textarea:focus,
+        .stNumberInput input:focus {{    
+            border-color: {c['accent']} !important;
+            box-shadow: 0 0 0 1px {c['accent']} !important;
         }}
         
         /* Sidebar */
@@ -1780,21 +1808,40 @@ def inject_custom_css():
             font-weight: 600 !important;
         }}
         
-        /* Download button styling */
-        .stDownloadButton button {{
+        /* Buttons */
+        .stButton button,
+        button[kind="primary"],
+        .stDownloadButton button {{    
             background-color: {c['button_bg']} !important;
             color: {c['button_text']} !important;
             border: none !important;
             padding: 0.5rem 1rem !important;
-            border-radius: 0.5rem !important;
-            font-weight: 500 !important;
+            border-radius: 0.375rem !important;
+            font-weight: 600 !important;
             transition: all 0.2s ease-in-out !important;
         }}
         
-        .stDownloadButton button:hover {{
+        .stButton button:hover,
+        button[kind="primary"]:hover,
+        .stDownloadButton button:hover {{    
             background-color: {c['button_hover']} !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px) !important;
+        }}
+        
+        /* VIP Button */
+        .vip-button {{    
+            background-color: {c['accent']} !important;
+            color: #ffffff !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.375rem !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease-in-out !important;
+        }}
+        
+        .vip-button:hover {{    
+            background-color: {c['accent_hover']} !important;
+            transform: translateY(-1px) !important;
         }}
         
         /* Checkbox Styling */
