@@ -651,11 +651,16 @@ def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
     finally:
         conn.close()
 
-def get_quality_issues():
+def get_quality_issues(username=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
+        if username:
+            # If username is provided, only fetch issues for that user
+            cursor.execute("SELECT * FROM quality_issues WHERE agent_name = ? ORDER BY timestamp DESC", (username,))
+        else:
+            # If no username, fetch all issues (for admin/qa)
+            cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
         return cursor.fetchall()
     except Exception as e:
         st.error(f"Error fetching quality issues: {str(e)}")
@@ -719,6 +724,44 @@ def clear_quality_issues():
         return True
     except Exception as e:
         st.error(f"Error clearing quality issues: {str(e)}")
+    finally:
+        conn.close()
+
+def search_quality_issues(query, username=None):
+    """Search quality issues with optional username filter"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        query_param = f"%{query.lower()}%"
+        
+        if username:
+            # Search with username filter
+            cursor.execute("""
+                SELECT * FROM quality_issues 
+                WHERE agent_name = ? AND (
+                    LOWER(issue_type) LIKE ? 
+                    OR LOWER(timing) LIKE ? 
+                    OR LOWER(mobile_number) LIKE ? 
+                    OR LOWER(product) LIKE ?
+                )
+                ORDER BY timestamp DESC
+            """, (username, query_param, query_param, query_param, query_param))
+        else:
+            # Search without username filter (for admin/qa)
+            cursor.execute("""
+                SELECT * FROM quality_issues 
+                WHERE LOWER(agent_name) LIKE ? 
+                OR LOWER(issue_type) LIKE ? 
+                OR LOWER(timing) LIKE ? 
+                OR LOWER(mobile_number) LIKE ? 
+                OR LOWER(product) LIKE ?
+                ORDER BY timestamp DESC
+            """, (query_param, query_param, query_param, query_param, query_param))
+        
+        return cursor.fetchall()
+    except Exception as e:
+        st.error(f"Error searching quality issues: {str(e)}")
+        return []
     finally:
         conn.close()
 
@@ -2714,18 +2757,22 @@ else:
         
         if not is_killswitch_enabled():
             with st.form("quality_issue_form"):
-                cols = st.columns(4)
-                issue_type = cols[0].selectbox("Type of issue", [
-                    "Blocage Physical Avaya",
-                    "Hold Than Call Drop",
-                    "Call Drop From Workspace",
-                    "Wrong Space Frozen"
+                cols = st.columns(3)
+                issue_type = cols[0].selectbox("Type of Issue", [
+                    "Call Quality",
+                    "Connection Issues",
+                    "Audio Problems",
+                    "Dropped Calls",
+                    "Other"
                 ])
                 timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
-                mobile_number = cols[2].text_input("Mobile number")
-                product = cols[3].selectbox("Product", [
-                    "LM_CS_LMUSA_EN",
-                    "LM_CS_LMUSA_ES"
+                mobile_number = cols[2].text_input("Mobile Number", placeholder="+1 (123) 456-7890")
+                product = st.selectbox("Product", [
+                    "Lycamobile",
+                    "Mint Mobile",
+                    "Ultra Mobile",
+                    "Boost Mobile",
+                    "Other"
                 ])
                 
                 if st.form_submit_button("Submit"):
@@ -2745,12 +2792,11 @@ else:
         st.subheader("Quality Issue Records")
         quality_issues = get_quality_issues()
         
-        # Allow both admin and QA roles to see all records and use search/filter
-        if st.session_state.role in ["admin", "qa"]:
-            # Search and date filter for admin and QA users
+        if st.session_state.role == "admin":
+            # Search and date filter only for admin users
             col1, col2 = st.columns([2, 1])
             with col1:
-                search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
+                search_query = st.text_input("🔍 Search quality issue records...", key="quality_issues_search")
             with col2:
                 date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="quality_issues_date")
             
@@ -2806,8 +2852,7 @@ else:
                     mime="text/csv"
                 )
                 
-                # Only admin can clear records
-                if st.session_state.role == "admin" and st.button("Clear All Records"):
+                if st.button("Clear All Records"):
                     clear_quality_issues()
                     st.rerun()
             else:
