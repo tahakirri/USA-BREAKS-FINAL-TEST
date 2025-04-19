@@ -1088,7 +1088,7 @@ def agent_break_dashboard():
         template_name = None
         for break_type in ['lunch', 'early_tea', 'late_tea']:
             if break_type in bookings and isinstance(bookings[break_type], dict):
-                template_name = bookings[break_type].get('template')
+                template_name = bookings[break_type].get('template', 'Unknown')
                 break
         
         if template_name:
@@ -1764,8 +1764,96 @@ def inject_custom_css():
             margin-right: 0.5rem;
             color: {c['text']};
         }}
+        
+        /* Fancy Number Checker Styles */
+        .fancy-number {{ color: #00ff00; font-weight: bold; }}
+        .normal-number {{ color: #ffffff; }}
+        .result-box {{
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+            border: 1px solid;
+        }}
+        .fancy-result {{
+            background-color: {c['success_bg'] if 'success_bg' in c else '#1e3d1e'}; 
+            border-color: {c['success_border'] if 'success_border' in c else '#00ff00'}; 
+            color: {c['success_text'] if 'success_text' in c else '#E0E0E0'}; 
+        }}
+        .normal-result {{
+            background-color: {c['error_bg'] if 'error_bg' in c else '#3d1e1e'}; 
+            border-color: {c['error_border'] if 'error_border' in c else '#ff0000'}; 
+            color: {c['error_text'] if 'error_text' in c else '#E0E0E0'}; 
+        }}
+        .result-box h3 {{ margin-top: 0; }}
     </style>
     """, unsafe_allow_html=True)
+
+# --------------------------
+# Fancy Number Checker Functions
+# --------------------------
+
+def is_sequential(digits, step=1):
+    """Check if digits form a sequential pattern with given step"""
+    try:
+        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
+    except:
+        return False
+
+def is_fancy_number(phone_number):
+    clean_number = re.sub(r'\D', '', phone_number)
+    
+    if len(clean_number) >= 6:
+        last_six = clean_number[-6:]
+        last_three = clean_number[-3:]
+    else:
+        return False, "Number too short (need at least 6 digits)"
+    
+    patterns = []
+    
+    if clean_number == "13322866688": patterns.append("Special VIP number (13322866688)")
+    
+    if (len(last_six) == 6 and last_six[0] == last_six[5] and last_six[1] == last_six[2] == last_six[3] and last_six[4] == last_six[0] and last_six[0] != last_six[1]):
+        patterns.append("ABBBAA pattern (e.g., 566655)")
+
+    if (len(last_six) >= 5):
+        first_five = last_six[:5]
+        if (first_five[0] == first_five[4] and first_five[1] == first_five[2] == first_five[3] and first_five[0] != first_five[1]):
+             patterns.append("ABBBA pattern in first 5 (e.g., 23332x)")
+        last_five = last_six[1:]
+        if (last_five[0] == last_five[4] and last_five[1] == last_five[2] == last_five[3] and last_five[0] != last_five[1]):
+             patterns.append("ABBBA pattern in last 5 (e.g., x23332)")
+
+    if len(set(last_six)) == 1: patterns.append("6 identical digits")
+    if is_sequential(last_six, 1): patterns.append("6-digit ascending sequence")
+    if is_sequential(last_six, -1): patterns.append("6-digit descending sequence")
+    if last_six == last_six[::-1]: patterns.append("6-digit palindrome")
+    
+    first_triple = last_six[:3]; second_triple = last_six[3:]
+    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple: patterns.append("Double triplets (444555)")
+    # Rule interpretation: e.g., 11x 22x where last digits match -> 112 332
+    if len(first_triple) == 3 and len(second_triple) == 3 and first_triple[0] == first_triple[1] and second_triple[0] == second_triple[1] and first_triple[2] == second_triple[2]: patterns.append("Similar triplets (121122)") 
+    if first_triple == second_triple: patterns.append("Repeating triplets (786786)")
+    try: 
+      if abs(int(first_triple) - int(second_triple)) == 1: patterns.append("Nearly sequential triplets (457456)")
+    except ValueError: pass
+
+    try: 
+        pairs = [last_six[i:i+2] for i in range(0, 6, 2)] # 3 pairs: 0-1, 2-3, 4-5
+        pair_ints = [int(p) for p in pairs]
+
+        if len(pair_ints) == 3 and all(pair_ints[i] == pair_ints[i-1] + 1 for i in range(1, 3)):
+             patterns.append("Incremental pairs (111213)")
+        if len(pairs) == 3 and pairs[0] == pairs[1] == pairs[2]: 
+             patterns.append("Repeating pairs (202020)")
+        if len(pairs) == 3 and (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, 3)) and pairs[0][1] == pairs[1][1] == pairs[2][1]):
+             patterns.append("Stepping pairs (324252)")
+    except (ValueError, IndexError): pass
+
+    exceptional_triplets = ['123', '555', '777', '999']
+    if last_three in exceptional_triplets: patterns.append(f"Exceptional case (ends in {last_three})")
+    
+    unique_patterns = sorted(list(set(patterns)))
+    return bool(unique_patterns), ", ".join(unique_patterns) if unique_patterns else "No qualifying fancy pattern"
 
 st.set_page_config(
     page_title="Request Management System",
@@ -2691,6 +2779,71 @@ else:
             admin_break_dashboard()
         else:
             agent_break_dashboard()
+
+    elif st.session_state.current_section == "fancy_number":
+        if not is_killswitch_enabled():
+            st.title("📱 Lycamobile Fancy Number Checker")
+            st.subheader("Analyzes last 6 digits for qualifying patterns")
+
+            col1, col2 = st.columns([1, 1]) 
+
+            with col1:
+                phone_input = st.text_input("Enter Phone Number", 
+                                          placeholder="e.g., 1555123456 or 442071234567")
+
+                if st.button("🔍 Check Number"):
+                    if not phone_input:
+                        st.warning("Please enter a phone number")
+                    else:
+                        is_fancy, pattern = is_fancy_number(phone_input)
+                        clean_number = re.sub(r'\D', '', phone_input)
+                        last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+                        formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+
+                        result_html = ""
+                        if is_fancy:
+                            result_html = f"""
+                            <div class="result-box fancy-result">
+                                <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                                <p>FANCY NUMBER DETECTED!</p>
+                                <p><strong>Pattern(s):</strong> {pattern}</p>
+                            </div>
+                            """
+                        else:
+                             result_html = f"""
+                            <div class="result-box normal-result">
+                                <h3><span class="normal-number">{formatted_num}</span></h3>
+                                <p>Standard phone number</p>
+                                <p><strong>Reason:</strong> {pattern}</p>
+                            </div>
+                            """
+                        st.markdown(result_html, unsafe_allow_html=True)
+
+            # Policy Information in the second column
+            with col2:
+                st.markdown("""
+                #### Qualifying Patterns (last 6 digits)
+                **6-Digit:**
+                - `123456` (ascending)
+                - `987654` (descending)
+                - `666666` (repeating)
+                - `100001` (palindrome)
+                **3-Digit Pairs:**
+                - `444555` (double triplets)
+                - `121122` (similar triplets)
+                - `786786` (repeating triplets)
+                - `457456` (nearly sequential)
+                **2-Digit Sequences:**
+                - `111213` (incremental pairs)
+                - `202020` (repeating pairs)
+                - `324252` (stepping pairs)
+                **Ends With:**
+                - `123`, `555`, `777`, `999`
+                **Special:**
+                - `13322866688` (full number)
+                """)
+        else:
+            st.error("System is currently locked. Access to fancy number checker is disabled.")
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
