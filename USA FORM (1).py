@@ -3096,7 +3096,7 @@ else:
                 pwd = st.text_input("Password", type="password")
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin"])
+                    role = st.selectbox("Role", ["agent", "admin", "qa"])
                 else:
                     role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
