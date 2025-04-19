@@ -564,24 +564,6 @@ def get_hold_images():
     finally:
         conn.close()
 
-def clear_hold_images():
-    if is_killswitch_enabled():
-        st.error("System is currently locked. Please contact the developer.")
-        return False
-        
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM hold_images")
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-
-def clear_all_requests():
-    if is_killswitch_enabled():
-        st.error("System is currently locked. Please contact the developer.")
-        return False
         
     conn = get_db_connection()
     try:
