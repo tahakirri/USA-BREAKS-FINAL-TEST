@@ -3097,3 +3097,22 @@ if __name__ == "__main__":
         st.stop()
     
     st.write("Request Management System")
+
+
+
+# --------------------------
+# Fancy Number Checker Section
+# --------------------------
+
+import streamlit as st
+import re
+
+def is_sequential(digits, step=1):
+    ...
+# (Truncated for brevity)
+...
+    for number, expected in test_numbers:
+        is_fancy, pattern = is_fancy_number(number)
+        result = "PASS" if is_fancy == expected else "FAIL"
+        color = "green" if result == "PASS" else "red"
+        st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
