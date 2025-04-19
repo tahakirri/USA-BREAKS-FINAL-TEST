@@ -3136,7 +3136,7 @@ else:
 
     elif st.session_state.current_section == "breaks":
 
-        elif st.session_state.current_section == "fancy":
+    elif st.session_state.current_section == "fancy":
             st.title("📱 Lycamobile Fancy Number Checker")
             phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
 
