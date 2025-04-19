@@ -1,9 +1,10 @@
 import streamlit as st
 import sqlite3
 import hashlib
+import pytz
+import re
 from datetime import datetime, time, timedelta
 import os
-import re
 from PIL import Image
 import io
 import pandas as pd
@@ -3123,6 +3124,7 @@ if __name__ == "__main__":
         
     inject_custom_css()
 
+# Add Lycamobile Fancy Number Checker to main app
 def is_fancy_number(phone_number):
     """Determine if a phone number is 'fancy' based on specific patterns.
     Focuses on the last 6 digits of the phone number.
@@ -3174,7 +3176,6 @@ def is_fancy_number(phone_number):
     
     return False, "No special pattern detected"
 
-# Add Lycamobile Fancy Number Checker to main app
 def lycamobile_fancy_number_checker():
     st.title("📱 Lycamobile Fancy Number Checker")
     st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
