@@ -1481,7 +1481,12 @@ def is_vip_user(username):
         cursor = conn.cursor()
         cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
         result = cursor.fetchone()
-        return bool(result[0]) if result else False
+        # Convert to Python boolean and ensure it's properly interpreted
+        is_vip = bool(result[0]) if result and result[0] is not None else False
+        return is_vip
+    except Exception as e:
+        print(f"Error checking VIP status: {e}")
+        return False
     finally:
         conn.close()
 
@@ -1492,10 +1497,20 @@ def set_vip_status(username, is_vip):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # Ensure we're using 1 or 0 for SQLite boolean values
+        vip_value = 1 if is_vip else 0
         cursor.execute("UPDATE users SET is_vip = ? WHERE username = ?", 
-                      (1 if is_vip else 0, username))
+                      (vip_value, username))
         conn.commit()
+        # Verify the update was successful
+        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        if result is None:
+            return False
         return True
+    except Exception as e:
+        print(f"Error setting VIP status: {e}")
+        return False
     finally:
         conn.close()
 
@@ -2462,16 +2477,13 @@ else:
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
                 # Get user VIP status directly from the database
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT is_vip FROM users WHERE username = ?", (st.session_state.username,))
-                    result = cursor.fetchone()
-                    is_vip = bool(result[0]) if result else False
-                finally:
-                    conn.close()
-                
+                is_vip = is_vip_user(st.session_state.username)
                 is_taha = st.session_state.username.lower() == "taha kirri"
+                
+                # Debug information to help troubleshoot
+                st.sidebar.markdown(f"**Debug Info:**")
+                st.sidebar.markdown(f"User: {st.session_state.username}")
+                st.sidebar.markdown(f"VIP Status: {'✅' if is_vip else '❌'}")
                 
                 # Check if user is VIP or taha kirri
                 if is_vip or is_taha:
