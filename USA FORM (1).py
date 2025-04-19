@@ -3267,3 +3267,55 @@ def lycamobile_fancy_number_checker():
             color = "green" if result == "PASS" else "red"
             st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
 
+
+
+
+# --------------------------
+# Lycamobile Fancy Number Checker (added to the bottom)
+# --------------------------
+
+def lycamobile_fancy_number_checker():
+    import streamlit as st
+    import re
+
+    def is_sequential(digits, step=1):
+        try:
+            return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
+        except:
+            return False
+
+    def is_fancy_number(phone_number):
+        clean_number = re.sub(r'\D', '', phone_number)
+        if len(clean_number) >= 6:
+            last_six = clean_number[-6:]
+        else:
+            return False, "Number too short (need at least 6 digits)"
+
+        patterns = []
+        if clean_number == "13322866688":
+            patterns.append("Special VIP number (13322866688)")
+        if len(set(last_six)) == 1:
+            patterns.append("All same digits")
+        if is_sequential(last_six):
+            patterns.append("Sequential digits")
+        if last_six[:3] == last_six[-3:]:
+            patterns.append("Mirror pattern")
+        if last_six[0] == last_six[1] == last_six[2] and last_six[3] == last_six[4] == last_six[5]:
+            patterns.append("AAABBB pattern")
+
+        if patterns:
+            return True, ", ".join(patterns)
+        else:
+            return False, "No fancy pattern detected"
+
+    st.title("Lycamobile Fancy Number Checker")
+    phone_number = st.text_input("Enter a phone number")
+    if phone_number:
+        is_fancy, reason = is_fancy_number(phone_number)
+        if is_fancy:
+            st.success(f"✅ Fancy number detected: {reason}")
+        else:
+            st.warning(f"⚠️ Not a fancy number: {reason}")
+
+# Optionally call the checker
+# lycamobile_fancy_number_checker()
