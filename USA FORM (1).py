@@ -1476,11 +1476,6 @@ def agent_break_dashboard():
 
 def is_vip_user(username):
     """Check if a user has VIP status"""
-    if not username:
-        return False
-    # taha kirri is always considered VIP
-    if username.lower() == "taha kirri":
-        return True
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -2429,6 +2424,7 @@ else:
                 is_vip = is_vip_user(st.session_state.username)
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
+                # Make sure to check is_vip properly
                 if is_vip or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
@@ -3195,61 +3191,11 @@ else:
             agent_break_dashboard()
 
     elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
-        # Only taha kirri can access VIP management
-        st.title("⭐ VIP Management")
+        # Call the vip_management function directly
+        vip_management()
         
-        # Get all users
+        # Get all users for statistics
         users = get_all_users()
-        
-        # Create columns for layout
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            # Create a DataFrame for better display
-            user_data = []
-            for user in users:
-                user_id, username, _, role, is_vip = user
-                user_data.append({
-                    "ID": user_id,
-                    "Username": username,
-                    "Role": role,
-                    "VIP Status": "⭐" if is_vip else "❌"
-                })
-            
-            df = pd.DataFrame(user_data)
-            st.dataframe(df)
-        
-        with col2:
-            with st.form("vip_form"):
-                username = st.text_input("Enter username to toggle VIP status")
-                if st.form_submit_button("Toggle VIP Status"):
-                    if username:
-                        # Get current VIP status
-                        current_status = is_vip_user(username)
-                        # Toggle status
-                        if set_vip_status(username, not current_status):
-                            st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
-                            st.rerun()
-                        else:
-                            st.error("Error updating VIP status. Please check the username.")
-                    else:
-                        st.error("Please enter a username")
-            with st.form("vip_management_form"):
-                st.write("### Update VIP Status")
-                selected_user = st.selectbox(
-                    "Select User",
-                    [user[1] for user in users if user[1].lower() != "taha kirri"],
-                    format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-                )
-                
-                if selected_user:
-                    current_vip = is_vip_user(selected_user)
-                    make_vip = st.checkbox("Grant VIP Access", value=current_vip)
-                    
-                    if st.form_submit_button("Update"):
-                        if set_vip_status(selected_user, make_vip):
-                            st.success(f"Updated VIP status for {selected_user}")
-                            st.rerun()
         
         # Add VIP Statistics
         st.markdown("---")
@@ -3283,61 +3229,46 @@ else:
         else:
             st.info("No VIP messages yet")
 
-    # VIP Management Section
-    def vip_management():
-        st.title("⭐ VIP Management")
-        
-        # Only taha kirri can access this section
-        if st.session_state.username.lower() != "taha kirri":
-            st.error("Access denied. Only Taha Kirri can access this section.")
-            return
-        
-        st.markdown("### Create New User")
-        
-        with st.form("create_user_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            role = st.selectbox("Role", ["agent", "admin", "qa"])
-            submit = st.form_submit_button("Create User")
-            
-            if submit:
-                if not username or not password:
-                    st.error("Please fill in all fields.")
-                    return
-                
-                # Check if user already exists
-                conn = get_db_connection()
-                cur = conn.cursor()
-                cur.execute("SELECT username FROM users WHERE username = ?", (username,))
-                if cur.fetchone():
-                    st.error("Username already exists.")
-                    conn.close()
-                    return
-                
-                # Create new user
-                cur.execute(
-                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                    (username, password, role)
-                )
-                conn.commit()
-                conn.close()
-                st.success(f"User {username} created successfully with role: {role}")
-        
-        st.markdown("### Manage Existing Users")
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT username, role FROM users")
-        users = cur.fetchall()
-        conn.close()
-        
-        if not users:
-            st.info("No users found.")
-            return
-        
-        # Display users in a table
-        user_df = pd.DataFrame(users, columns=["Username", "Role"])
-        st.dataframe(user_df, use_container_width=True)
+# VIP Management Section
+def vip_management():
+    # Only allow access to taha kirri
+    if st.session_state.username.lower() != "taha kirri":
+        st.error("Access denied. Only Taha Kirri can manage VIP status.")
+        return
+    
+    st.title("⭐ VIP Management")
+    
+    # Get all users
+    users = get_all_users()
+    
+    # Create a DataFrame for better display
+    user_data = []
+    for user in users:
+        user_id, username, _, role, is_vip = user
+        user_data.append({
+            "ID": user_id,
+            "Username": username,
+            "Role": role,
+            "VIP Status": "⭐" if is_vip else "❌"
+        })
+    
+    df = pd.DataFrame(user_data)
+    st.dataframe(df)
+    
+    with st.form("vip_form"):
+        username = st.text_input("Enter username to toggle VIP status")
+        if st.form_submit_button("Toggle VIP Status"):
+            if username:
+                # Get current VIP status
+                current_status = is_vip_user(username)
+                # Toggle status
+                if set_vip_status(username, not current_status):
+                    st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
+                    st.rerun()
+                else:
+                    st.error("Error updating VIP status. Please check the username.")
+            else:
+                st.error("Please enter a username")
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
