@@ -1867,6 +1867,17 @@ def inject_custom_css():
         
         /* Template text styles */
         div[data-testid="stMarkdownContainer"] p strong,
+
+        /* Extended message duration */
+        .stAlert {{    
+            transition: opacity 0.5s ease-in-out;
+            animation: fadeOut 10s forwards;
+        }}
+
+        @keyframes fadeOut {{
+            0%, 90% {{ opacity: 1; }}
+            100% {{ opacity: 0; display: none; }}
+        }}
         div[data-testid="stMarkdownContainer"] p em,
         div[data-testid="stMarkdownContainer"] p {{    
             color: {c['text']} !important;
