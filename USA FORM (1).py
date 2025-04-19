@@ -14,119 +14,6 @@ import pytz
 # Timezone Utility Functions
 # --------------------------
 
-
-def is_sequential(digits, step=1):
-    try:
-        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
-    except:
-        return False
-
-def is_fancy_number(phone_number):
-    clean_number = re.sub(r'\D', '', phone_number)
-    
-    if len(clean_number) >= 6:
-        last_six = clean_number[-6:]
-        last_three = clean_number[-3:]
-    else:
-        return False, "Number too short (need at least 6 digits)"
-    
-    patterns = []
-    
-    if clean_number == "13322866688":
-        patterns.append("Special VIP number (13322866688)")
-    
-    if (len(last_six) == 6 and 
-        last_six[0] == last_six[5] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[4] == last_six[0] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBAA pattern (e.g., 566655)")
-    
-    if (len(last_six) >= 5 and 
-        last_six[0] == last_six[4] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBA pattern (e.g., 233322)")
-    
-    if len(set(last_six)) == 1:
-        patterns.append("6 identical digits")
-    
-    if is_sequential(last_six, 1):
-        patterns.append("6-digit ascending sequence")
-        
-    if is_sequential(last_six, -1):
-        patterns.append("6-digit descending sequence")
-        
-    if last_six == last_six[::-1]:
-        patterns.append("6-digit palindrome")
-    
-    first_triple = last_six[:3]
-    second_triple = last_six[3:]
-    
-    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple:
-        patterns.append("Double triplets (444555)")
-    
-    if (first_triple[0] == first_triple[1] and 
-        second_triple[0] == second_triple[1] and 
-        first_triple[2] == second_triple[2]):
-        patterns.append("Similar triplets (121122)")
-    
-    if first_triple == second_triple:
-        patterns.append("Repeating triplets (786786)")
-    
-    try:
-        if abs(int(first_triple) - int(second_triple)) == 1:
-            patterns.append("Nearly sequential triplets (457456)")
-        
-        pairs = [last_six[i:i+2] for i in range(0, 5, 1)]
-        if all(int(pairs[i]) == int(pairs[i-1]) + 1 for i in range(1, len(pairs))):
-            patterns.append("Incremental pairs (111213)")
-
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Repeating pairs (202020)")
-
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Alternating pairs (010101)")
-
-        if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
-            all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
-            patterns.append("Stepping pairs (324252)")
-    except:
-        pass
-
-    exceptional_triplets = ['123', '555', '777', '999']
-    if last_three in exceptional_triplets:
-        patterns.append(f"Exceptional case ({last_three})")
-
-    valid_patterns = []
-    for p in patterns:
-        if any(rule in p for rule in [
-            "Special VIP number",
-            "ABBBAA pattern",
-            "ABBBA pattern",
-            "6 identical digits",
-            "6-digit ascending sequence",
-            "6-digit descending sequence",
-            "6-digit palindrome",
-            "Double triplets (444555)",
-            "Similar triplets (121122)",
-            "Repeating triplets (786786)",
-            "Nearly sequential triplets (457456)",
-            "Incremental pairs (111213)",
-            "Repeating pairs (202020)",
-            "Alternating pairs (010101)",
-            "Stepping pairs (324252)",
-            "Exceptional case"
-        ]):
-            valid_patterns.append(p)
-    
-    return bool(valid_patterns), ", ".join(valid_patterns) if valid_patterns else "No qualifying fancy pattern"
-
-
 def get_casablanca_time():
     """Get current time in Casablanca, Morocco timezone"""
     morocco_tz = pytz.timezone('Africa/Casablanca')
@@ -3135,21 +3022,78 @@ else:
         st.markdown("---")
 
     elif st.session_state.current_section == "breaks":
+        if st.session_state.role == "admin":
+            admin_break_dashboard()
+        else:
+            agent_break_dashboard()
 
-    elif st.session_state.current_section == "fancy":
-            st.title("📱 Lycamobile Fancy Number Checker")
-            phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
+def get_new_messages(last_check_time):
+    """Get new messages since last check"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, sender, message, timestamp, mentions 
+            FROM group_messages 
+            WHERE timestamp > ?
+            ORDER BY timestamp DESC
+        """, (last_check_time,))
+        return cursor.fetchall()
+    finally:
+        conn.close()
 
-            if st.button("Check Number"):
-                if not phone_input:
-                    st.warning("Please enter a phone number")
-                else:
-                    is_fancy, pattern = is_fancy_number(phone_input)
-                    clean_number = re.sub(r'\D', '', phone_input)
-                    last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
-                    formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+def handle_message_check():
+    if not st.session_state.authenticated:
+        return {"new_messages": False, "messages": []}
+    
+    current_time = datetime.now()
+    if 'last_message_check' not in st.session_state:
+        st.session_state.last_message_check = current_time
+    
+    new_messages = get_new_messages(st.session_state.last_message_check.strftime("%Y-%m-%d %H:%M:%S"))
+    st.session_state.last_message_check = current_time
+    
+    if new_messages:
+        messages_data = []
+        for msg in new_messages:
+            msg_id, sender, message, ts, mentions = msg
+            if sender != st.session_state.username:  # Don't notify about own messages
+                mentions_list = mentions.split(',') if mentions else []
+                if st.session_state.username in mentions_list:
+                    message = f"@{st.session_state.username} {message}"
+                messages_data.append({
+                    "sender": sender,
+                    "message": message
+                })
+        return {"new_messages": bool(messages_data), "messages": messages_data}
+    return {"new_messages": False, "messages": []}
 
-                    if is_fancy:
-                        st.success(f"✨ Fancy Number Detected: {formatted_num} → {pattern}")
-                    else:
-                        st.info(f"Standard Number: {formatted_num} → {pattern}")
+def convert_to_casablanca_date(date_str):
+    """Convert a date string to Casablanca timezone"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        morocco_tz = pytz.timezone('Africa/Casablanca')
+        return pytz.UTC.localize(dt).astimezone(morocco_tz).date()
+    except:
+        return None
+
+def get_date_range_casablanca(date):
+    """Get start and end of day in Casablanca time"""
+    morocco_tz = pytz.timezone('Africa/Casablanca')
+    start = morocco_tz.localize(datetime.combine(date, time.min))
+    end = morocco_tz.localize(datetime.combine(date, time.max))
+    return start, end
+
+if __name__ == "__main__":
+    # Initialize color mode if not set
+    if 'color_mode' not in st.session_state:
+        st.session_state.color_mode = 'dark'
+        
+    inject_custom_css()
+    
+    # Add route for message checking
+    if st.query_params.get("check_messages"):
+        st.json(handle_message_check())
+        st.stop()
+    
+    st.write("Request Management System")
