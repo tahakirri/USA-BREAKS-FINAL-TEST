@@ -1499,6 +1499,47 @@ def set_vip_status(username, is_vip):
     finally:
         conn.close()
 
+# VIP Management Section
+def vip_management():
+    # Only allow access to taha kirri
+    if st.session_state.username.lower() != "taha kirri":
+        st.error("Access denied. Only Taha Kirri can manage VIP status.")
+        return
+    
+    st.title("⭐ VIP Management")
+    
+    # Get all users
+    users = get_all_users()
+    
+    # Create a DataFrame for better display
+    user_data = []
+    for user in users:
+        user_id, username, _, role, is_vip = user
+        user_data.append({
+            "ID": user_id,
+            "Username": username,
+            "Role": role,
+            "VIP Status": "⭐" if is_vip else "❌"
+        })
+    
+    df = pd.DataFrame(user_data)
+    st.dataframe(df)
+    
+    with st.form("vip_form"):
+        username = st.text_input("Enter username to toggle VIP status")
+        if st.form_submit_button("Toggle VIP Status"):
+            if username:
+                # Get current VIP status
+                current_status = is_vip_user(username)
+                # Toggle status
+                if set_vip_status(username, not current_status):
+                    st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
+                    st.rerun()
+                else:
+                    st.error("Error updating VIP status. Please check the username.")
+            else:
+                st.error("Please enter a username")
+
 # --------------------------
 # Streamlit App
 # --------------------------
@@ -3229,46 +3270,7 @@ else:
         else:
             st.info("No VIP messages yet")
 
-# VIP Management Section
-def vip_management():
-    # Only allow access to taha kirri
-    if st.session_state.username.lower() != "taha kirri":
-        st.error("Access denied. Only Taha Kirri can manage VIP status.")
-        return
-    
-    st.title("⭐ VIP Management")
-    
-    # Get all users
-    users = get_all_users()
-    
-    # Create a DataFrame for better display
-    user_data = []
-    for user in users:
-        user_id, username, _, role, is_vip = user
-        user_data.append({
-            "ID": user_id,
-            "Username": username,
-            "Role": role,
-            "VIP Status": "⭐" if is_vip else "❌"
-        })
-    
-    df = pd.DataFrame(user_data)
-    st.dataframe(df)
-    
-    with st.form("vip_form"):
-        username = st.text_input("Enter username to toggle VIP status")
-        if st.form_submit_button("Toggle VIP Status"):
-            if username:
-                # Get current VIP status
-                current_status = is_vip_user(username)
-                # Toggle status
-                if set_vip_status(username, not current_status):
-                    st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
-                    st.rerun()
-                else:
-                    st.error("Error updating VIP status. Please check the username.")
-            else:
-                st.error("Please enter a username")
+
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
