@@ -480,7 +480,7 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, is_vip FROM users")
+        cursor.execute("SELECT id, username, role FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -733,8 +733,7 @@ def send_vip_message(sender, message):
         st.error("Chat is currently locked. Please contact the developer.")
         return False
     
-    # Check if sender is VIP or taha kirri
-    if not (is_vip_user(sender) or sender.lower() == "taha kirri"):
+    if not is_vip_user(sender) and sender.lower() != "taha kirri":
         st.error("Only VIP users can send messages in this chat.")
         return False
         
@@ -742,16 +741,10 @@ def send_vip_message(sender, message):
     try:
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
-        # Only allow mentioning VIP users or taha kirri
-        valid_mentions = []
-        for mention in mentions:
-            if is_vip_user(mention) or mention.lower() == "taha kirri":
-                valid_mentions.append(mention)
-        
         cursor.execute("""
             INSERT INTO vip_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(valid_mentions)))
+        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
         conn.commit()
         return True
     finally:
@@ -759,12 +752,6 @@ def send_vip_message(sender, message):
 
 def get_vip_messages():
     """Get messages from the VIP-only chat"""
-    # Only VIP users and taha kirri can view VIP messages
-    if not ('username' in st.session_state and 
-            (is_vip_user(st.session_state.username) or 
-             st.session_state.username.lower() == "taha kirri")):
-        return []
-    
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1481,79 +1468,23 @@ def is_vip_user(username):
         cursor = conn.cursor()
         cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
         result = cursor.fetchone()
-        # Convert to Python boolean and ensure it's properly interpreted
-        is_vip = bool(result[0]) if result and result[0] is not None else False
-        return is_vip
-    except Exception as e:
-        print(f"Error checking VIP status: {e}")
-        return False
+        return bool(result[0]) if result else False
     finally:
         conn.close()
 
 def set_vip_status(username, is_vip):
     """Set or remove VIP status for a user"""
-    if not username or ('username' not in st.session_state or st.session_state.username.lower() != "taha kirri"):
+    if not username:
         return False
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        # Ensure we're using 1 or 0 for SQLite boolean values
-        vip_value = 1 if is_vip else 0
         cursor.execute("UPDATE users SET is_vip = ? WHERE username = ?", 
-                      (vip_value, username))
+                      (1 if is_vip else 0, username))
         conn.commit()
-        # Verify the update was successful
-        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        if result is None:
-            return False
         return True
-    except Exception as e:
-        print(f"Error setting VIP status: {e}")
-        return False
     finally:
         conn.close()
-
-# VIP Management Section
-def vip_management():
-    # Only allow access to taha kirri
-    if st.session_state.username.lower() != "taha kirri":
-        st.error("Access denied. Only Taha Kirri can manage VIP status.")
-        return
-    
-    st.title("⭐ VIP Management")
-    
-    # Get all users
-    users = get_all_users()
-    
-    # Create a DataFrame for better display
-    user_data = []
-    for user in users:
-        user_id, username, role, is_vip = user  # Corrected unpacking to match the actual structure
-        user_data.append({
-            "ID": user_id,
-            "Username": username,
-            "Role": role,
-            "VIP Status": "⭐" if is_vip else "❌"
-        })
-    
-    df = pd.DataFrame(user_data)
-    st.dataframe(df)
-    
-    with st.form("vip_form"):
-        username = st.text_input("Enter username to toggle VIP status")
-        if st.form_submit_button("Toggle VIP Status"):
-            if username:
-                # Get current VIP status
-                current_status = is_vip_user(username)
-                # Toggle status
-                if set_vip_status(username, not current_status):
-                    st.success(f"VIP status for {username} has been {'removed' if current_status else 'granted'}!")
-                    st.rerun()
-                else:
-                    st.error("Error updating VIP status. Please check the username.")
-            else:
-                st.error("Please enter a username")
 
 # --------------------------
 # Streamlit App
@@ -2476,16 +2407,10 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Get user VIP status directly from the database
+                # Check if user is VIP or taha kirri
                 is_vip = is_vip_user(st.session_state.username)
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
-                # Debug information to help troubleshoot
-                st.sidebar.markdown(f"**Debug Info:**")
-                st.sidebar.markdown(f"User: {st.session_state.username}")
-                st.sidebar.markdown(f"VIP Status: {'✅' if is_vip else '❌'}")
-                
-                # Check if user is VIP or taha kirri
                 if is_vip or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
@@ -3184,29 +3109,32 @@ else:
         st.subheader("Existing Users")
         users = get_all_users()
         
-        # Create a dataframe display for better visualization
-        user_data = []
-        for user in users:
-            uid, uname, role, is_vip = user  # Correctly unpack user data
-            user_data.append({
-                "ID": uid,
-                "Username": uname,
-                "Role": role,
-                "VIP": "⭐" if is_vip else ""
-            })
-        
-        df = pd.DataFrame(user_data)
-        st.dataframe(df)
-        
-        # Add delete functionality
+        # Create a table-like display using columns
         if st.session_state.username.lower() == "taha kirri":
-            with st.form("delete_user_form"):
-                user_to_delete = st.selectbox("Select user to delete", [u[1] for u in users])
-                user_id = next((u[0] for u in users if u[1] == user_to_delete), None)
-                
-                if st.form_submit_button("Delete User") and user_id and not is_killswitch_enabled():
-                    delete_user(user_id)
-                    st.success(f"User {user_to_delete} deleted successfully!")
+            # Full view for taha kirri
+            cols = st.columns([3, 1, 1])
+            cols[0].write("**Username**")
+            cols[1].write("**Role**")
+            cols[2].write("**Action**")
+            
+            for uid, uname, urole in users:
+                cols = st.columns([3, 1, 1])
+                cols[0].write(uname)
+                cols[1].write(urole)
+                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
+                    delete_user(uid)
+                    st.rerun()
+        else:
+            # Limited view for other admins
+            cols = st.columns([4, 1])
+            cols[0].write("**Username**")
+            cols[1].write("**Action**")
+            
+            for uid, uname, urole in users:
+                cols = st.columns([4, 1])
+                cols[0].write(uname)
+                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
+                    delete_user(uid)
                     st.rerun()
 
         st.subheader("⭐ VIP User Management")
@@ -3249,18 +3177,54 @@ else:
             agent_break_dashboard()
 
     elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
-        # Call the vip_management function directly
-        vip_management()
+        st.title("⭐ VIP Management")
         
-        # Get all users for statistics
+        # Get all users
         users = get_all_users()
+        
+        # Create columns for better layout
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Show all users with their current VIP status
+            st.markdown("### Current VIP Status")
+            user_data = []
+            for user_id, username, role in users:
+                is_vip = is_vip_user(username)
+                user_data.append({
+                    "Username": username,
+                    "Role": role,
+                    "Status": "⭐ VIP" if is_vip else "Regular User"
+                })
+            
+            df = pd.DataFrame(user_data)
+            st.dataframe(df, use_container_width=True)
+        
+        with col2:
+            # VIP management form
+            with st.form("vip_management_form"):
+                st.write("### Update VIP Status")
+                selected_user = st.selectbox(
+                    "Select User",
+                    [user[1] for user in users if user[1].lower() != "taha kirri"],
+                    format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
+                )
+                
+                if selected_user:
+                    current_vip = is_vip_user(selected_user)
+                    make_vip = st.checkbox("Grant VIP Access", value=current_vip)
+                    
+                    if st.form_submit_button("Update"):
+                        if set_vip_status(selected_user, make_vip):
+                            st.success(f"Updated VIP status for {selected_user}")
+                            st.rerun()
         
         # Add VIP Statistics
         st.markdown("---")
         st.subheader("VIP Statistics")
         
         total_users = len(users)
-        vip_users = sum(1 for user in users if user[3])  # Use the is_vip field directly from the query
+        vip_users = sum(1 for user in users if is_vip_user(user[1]))
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -3287,7 +3251,61 @@ else:
         else:
             st.info("No VIP messages yet")
 
-
+    # VIP Management Section
+    def vip_management():
+        st.title("⭐ VIP Management")
+        
+        # Only taha kirri can access this section
+        if st.session_state.username.lower() != "taha kirri":
+            st.error("Access denied. Only Taha Kirri can access this section.")
+            return
+        
+        st.markdown("### Create New User")
+        
+        with st.form("create_user_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            role = st.selectbox("Role", ["agent", "admin", "qa"])
+            submit = st.form_submit_button("Create User")
+            
+            if submit:
+                if not username or not password:
+                    st.error("Please fill in all fields.")
+                    return
+                
+                # Check if user already exists
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT username FROM users WHERE username = ?", (username,))
+                if cur.fetchone():
+                    st.error("Username already exists.")
+                    conn.close()
+                    return
+                
+                # Create new user
+                cur.execute(
+                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                    (username, password, role)
+                )
+                conn.commit()
+                conn.close()
+                st.success(f"User {username} created successfully with role: {role}")
+        
+        st.markdown("### Manage Existing Users")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT username, role FROM users")
+        users = cur.fetchall()
+        conn.close()
+        
+        if not users:
+            st.info("No users found.")
+            return
+        
+        # Display users in a table
+        user_df = pd.DataFrame(users, columns=["Username", "Role"])
+        st.dataframe(user_df, use_container_width=True)
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
