@@ -1477,11 +1477,15 @@ def is_vip_user(username):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT is_vip FROM users WHERE LOWER(username) = LOWER(?)", (username,))
         result = cursor.fetchone()
         return bool(result[0]) if result else False
     finally:
         conn.close()
+
+def can_access_vip_features(username):
+    """Check if a user can access VIP features"""
+    return username.lower() == "taha kirri" or is_vip_user(username)
 
 def set_vip_status(username, is_vip):
     """Set or remove VIP status for a user"""
@@ -1880,7 +1884,7 @@ else:
                 ("🔄 Mid-shift Issues", "midshift_issues")
             ]
         
-        # Add VIP Management for taha kirri only
+        # Only show VIP Management to Taha Kirri
         if st.session_state.username.lower() == "taha kirri":
             nav_options.append(("⭐ VIP Management", "vip_management"))
         
@@ -2036,10 +2040,10 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user is VIP or taha kirri
-                is_taha = st.session_state.username.lower() == "taha kirri"
+                # Check if user can access VIP features
+                has_vip_access = can_access_vip_features(st.session_state.username)
                 
-                if st.session_state.get("is_vip", False) or is_taha:
+                if has_vip_access:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
                     with tab1:
@@ -2656,102 +2660,39 @@ else:
         st.markdown("---")
         st.subheader("User Management")
         if not is_killswitch_enabled():
-            # Show add user form to all admins, but with different options
-            with st.form("add_user"):
-                user = st.text_input("Username")
-                pwd = st.text_input("Password", type="password")
+            # Show add user form to all admins
+            with st.form("add_user_form", clear_on_submit=True):  # Changed form key and added clear_on_submit
+                col1, col2 = st.columns(2)
+                with col1:
+                    user = st.text_input("Username", key="new_user_name")
+                with col2:
+                    pwd = st.text_input("Password", type="password", key="new_user_pwd")
+                
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin", "qa"])
+                    role = st.selectbox("Role", ["agent", "admin", "qa"], key="new_user_role")
                 else:
-                    role = "agent"  # Default role for accounts created by other admins
+                    role = "agent"
                     st.info("Note: New accounts will be created as agent accounts.")
                 
-                if st.form_submit_button("Add User"):
+                submitted = st.form_submit_button("Add User")
+                if submitted:
                     if user and pwd:
-                        add_user(user, pwd, role)
-                        st.rerun()
-        
+                        try:
+                            if add_user(user, pwd, role):
+                                st.success(f"Successfully created {role} account for {user}")
+                                st.rerun()
+                            else:
+                                st.error("Failed to create user account")
+                        except Exception as e:
+                            st.error(f"Error creating user: {str(e)}")
+                    else:
+                        st.error("Please provide both username and password")
+
         st.subheader("Existing Users")
         users = get_all_users()
         
         # Create a table-like display using columns
-        if st.session_state.username.lower() == "taha kirri":
-            # Full view for taha kirri
-            cols = st.columns([3, 1, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Role**")
-            cols[2].write("**Action**")
-            
-            for uid, uname, urole in users:
-                cols = st.columns([3, 1, 1])
-                cols[0].write(uname)
-                cols[1].write(urole)
-                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
-        else:
-            # Limited view for other admins
-            cols = st.columns([4, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Action**")
-            
-            for uid, uname, urole in users:
-                cols = st.columns([4, 1])
-                cols[0].write(uname)
-                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
-
-        st.subheader("⭐ VIP User Management")
-        
-        # Get all users
-        users = get_all_users()
-        
-        with st.form("vip_management"):
-            selected_user = st.selectbox(
-                "Select User",
-                [user[1] for user in users],
-                format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-            )
-            
-            if selected_user:
-                current_vip = is_vip_user(selected_user)
-                make_vip = st.checkbox("VIP Status", value=current_vip)
-                
-                if st.form_submit_button("Update VIP Status"):
-                    if set_vip_status(selected_user, make_vip):
-                        st.success(f"Updated VIP status for {selected_user}")
-                        # Force database refresh
-                        conn = get_db_connection()
-                        try:
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT is_vip FROM users WHERE username = ?", (selected_user,))
-                            new_status = cursor.fetchone()
-                            if new_status:
-                                st.write(f"New VIP status: {'VIP' if new_status[0] else 'Regular User'}")
-                        finally:
-                            conn.close()
-                        st.rerun()
-        
-        st.markdown("---")
-
-    elif st.session_state.current_section == "breaks":
-        if st.session_state.role == "admin":
-            admin_break_dashboard()
-        else:
-            agent_break_dashboard()
-
-    elif st.session_state.current_section == "vip_management":
-        if st.session_state.username.lower() != "taha kirri":
-            st.error("Access denied. Only Taha Kirri can manage VIP status.")
-            st.stop()
-        
-        st.title("⭐ VIP Management")
-        
-        # Get all users
-        users = get_all_users()
-        
         # Create columns for better layout
         col1, col2 = st.columns([3, 1])
         
@@ -2820,6 +2761,53 @@ else:
             st.dataframe(pd.DataFrame(message_data))
         else:
             st.info("No VIP messages yet")
+
+    elif st.session_state.current_section == "vip_management":
+        if st.session_state.username.lower() != "taha kirri":
+            st.error("Access denied. Only Taha Kirri can manage VIP status.")
+            st.stop()
+        
+        st.title("⭐ VIP Management")
+        
+        # Get all users
+        users = get_all_users()
+        
+        # Create columns for better layout
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Show all users with their current VIP status
+            st.markdown("### Current VIP Status")
+            user_data = []
+            for user_id, username, role in users:
+                is_vip = is_vip_user(username)
+                user_data.append({
+                    "Username": username,
+                    "Role": role,
+                    "Status": "⭐ VIP" if is_vip else "Regular User"
+                })
+            
+            df = pd.DataFrame(user_data)
+            st.dataframe(df, use_container_width=True)
+        
+        with col2:
+            # VIP management form
+            with st.form("vip_management_form"):
+                st.write("### Update VIP Status")
+                selected_user = st.selectbox(
+                    "Select User",
+                    [user[1] for user in users if user[1].lower() != "taha kirri"],
+                    format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
+                )
+                
+                if selected_user:
+                    current_vip = is_vip_user(selected_user)
+                    make_vip = st.checkbox("Grant VIP Access", value=current_vip)
+                    
+                    if st.form_submit_button("Update"):
+                        if set_vip_status(selected_user, make_vip):
+                            st.success(f"Updated VIP status for {selected_user}")
+                            st.rerun()
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
