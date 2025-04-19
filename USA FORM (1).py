@@ -73,7 +73,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
+                role TEXT CHECK(role IN ('agent', 'admin')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
@@ -1592,53 +1592,141 @@ def inject_custom_css():
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
         
-        /* Notification Badge */
-        .notification-badge {{
-            position: relative;
-            display: inline-block;
-        }}
-        
-        .notification-badge[data-badge]:after {{
-            content: attr(data-badge);
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            font-size: .7em;
-            background: {c['accent']};
-            color: white;
-            width: 18px;
-            height: 18px;
-            text-align: center;
-            line-height: 18px;
-            border-radius: 50%;
-            box-shadow: 0 0 1px #333;
-        }}
-        
-        /* Logout Button */
-        .logout-button {{
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 10px 20px;
-            background-color: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }}
-        
-        .logout-button:hover {{
-            background-color: #b91c1c;
-        }}
-        
         /* Form Submit Button */
         .stForm [data-testid="stFormSubmitButton"] button {{
             background-color: {c['button_bg']} !important;
             color: {c['button_text']} !important;
         }}
         
-        /* Rest of your existing CSS styles... */
+        /* Dropdown/Select Styling */
+        .stSelectbox > div > div {{
+            background-color: {c['dropdown_bg']} !important;
+            color: {c['dropdown_text']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        .stSelectbox [data-baseweb="select"] {{
+            background-color: {c['dropdown_bg']} !important;
+        }}
+        
+        .stSelectbox [data-baseweb="select"] ul {{
+            background-color: {c['dropdown_bg']} !important;
+        }}
+        
+        .stSelectbox [data-baseweb="select"] li {{
+            background-color: {c['dropdown_bg']} !important;
+            color: {c['dropdown_text']} !important;
+        }}
+        
+        .stSelectbox [data-baseweb="select"] li:hover {{
+            background-color: {c['dropdown_hover']} !important;
+        }}
+        
+        /* Input Fields */
+        .stTextInput input, 
+        .stTextArea textarea {{
+            background-color: {c['input_bg']} !important;
+            color: {c['input_text']} !important;
+            border-color: {c['border']} !important;
+        }}
+        
+        /* Sidebar */
+        [data-testid="stSidebar"] {{
+            background-color: {c['sidebar']};
+            border-right: 1px solid {c['border']};
+        }}
+        
+        [data-testid="stSidebar"] .stButton > button {{
+            width: 100%;
+            text-align: left;
+            background-color: transparent;
+            color: {c['text']};
+            border: 1px solid transparent;
+        }}
+        
+        [data-testid="stSidebar"] .stButton > button:hover {{
+            background-color: {c['hover_bg']};
+            border-color: {c['accent']};
+        }}
+        
+        /* Cards */
+        .card {{
+            background-color: {c['card']};
+            border: 1px solid {c['border']};
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }}
+        
+        /* Chat Message Styling */
+        .chat-message {{
+            display: flex;
+            margin-bottom: 1rem;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in-out;
+        }}
+        
+        .chat-message.received {{
+            margin-right: auto;
+        }}
+        
+        .chat-message.sent {{
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }}
+        
+        .message-content {{
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            position: relative;
+        }}
+        
+        .received .message-content {{
+            background-color: {c['other_message_bg']};
+            color: {c['text']};
+            border-bottom-left-radius: 0.25rem;
+            margin-right: 1rem;
+        }}
+        
+        .sent .message-content {{
+            background-color: {c['my_message_bg']};
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            margin-left: 1rem;
+        }}
+        
+        .message-meta {{
+            font-size: 0.75rem;
+            color: {c['muted']};
+            margin-top: 0.25rem;
+        }}
+        
+        .message-avatar {{
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background-color: {c['accent']};
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+        }}
+        
+        /* Table Styling */
+        .stDataFrame {{
+            background-color: {c['card']} !important;
+        }}
+        
+        .stDataFrame td {{
+            color: {c['text']} !important;
+        }}
+        
+        .stDataFrame th {{
+            color: {c['text']} !important;
+            background-color: {c['dropdown_bg']} !important;
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -1740,61 +1828,65 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        # Define navigation options based on user role
-        nav_options = []
+        nav_options = [
+            ("📋 Requests", "requests"),
+            ("☕ Breaks", "breaks"),
+            ("🖼️ HOLD", "hold"),
+            ("❌ Mistakes", "mistakes"),
+            ("💬 Chat", "chat"),
+            ("📱 Fancy Number", "fancy_number"),
+            ("⏰ Late Login", "late_login"),
+            ("📞 Quality Issues", "quality_issues"),
+            ("🔄 Mid-shift Issues", "midshift_issues")
+        ]
         
-        if st.session_state.role == "qa":
-            nav_options = [
-                ("📞 Quality Issues", "quality_issues"),
-                ("📱 Fancy Number", "fancy_number")
-            ]
-        elif st.session_state.role == "admin":
-            nav_options = [
-                ("📋 Requests", "requests"),
-                ("☕ Breaks", "breaks"),
-                ("🖼️ HOLD", "hold"),
-                ("❌ Mistakes", "mistakes"),
-                ("💬 Chat", "chat"),
-                ("📱 Fancy Number", "fancy_number"),
-                ("⏰ Late Login", "late_login"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues"),
-                ("⚙️ Admin", "admin")
-            ]
-        else:  # agent role
-            nav_options = [
-                ("📋 Requests", "requests"),
-                ("☕ Breaks", "breaks"),
-                ("🖼️ HOLD", "hold"),
-                ("❌ Mistakes", "mistakes"),
-                ("💬 Chat", "chat"),
-                ("📱 Fancy Number", "fancy_number"),
-                ("⏰ Late Login", "late_login"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
-            ]
+        # Add admin option for admin users
+        if st.session_state.role == "admin":
+            nav_options.append(("⚙️ Admin", "admin"))
         
         # Add VIP Management for taha kirri
         if st.session_state.username.lower() == "taha kirri":
             nav_options.append(("⭐ VIP Management", "vip_management"))
         
         for option, value in nav_options:
-            if value == "chat" and len(st.session_state.last_message_ids) > 0:
-                st.markdown(f"""
-                <div class="notification-badge" data-badge="{len(st.session_state.last_message_ids)}">
-                    <button class="stButton">{option}</button>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                if st.button(option, key=f"nav_{value}", use_container_width=True):
-                    st.session_state.current_section = value
+            if st.button(option, key=f"nav_{value}", use_container_width=True):
+                st.session_state.current_section = value
         
-        # Add logout button at the bottom of sidebar
         st.markdown("---")
-        if st.button("🚪 Logout", key="logout_button", type="primary"):
-            # Clear session state
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+        pending_requests = len([r for r in get_requests() if not r[6]])
+        new_mistakes = len(get_mistakes())
+        unread_messages = len([m for m in get_group_messages() 
+                             if m[0] not in st.session_state.last_message_ids 
+                             and m[1] != st.session_state.username])
+        
+        st.markdown(f"""
+        <div style="
+            background-color: {'#1e293b' if st.session_state.color_mode == 'dark' else '#ffffff'};
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid {'#334155' if st.session_state.color_mode == 'dark' else '#e2e8f0'};
+            margin-bottom: 20px;
+        ">
+            <h4 style="
+                color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
+                margin-bottom: 1rem;
+            ">🔔 Notifications</h4>
+            <p style="
+                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+                margin-bottom: 0.5rem;
+            ">📋 Pending requests: {pending_requests}</p>
+            <p style="
+                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+                margin-bottom: 0.5rem;
+            ">❌ Recent mistakes: {new_mistakes}</p>
+            <p style="
+                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+            ">💬 Unread messages: {unread_messages}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.authenticated = False
             st.rerun()
 
     st.title(st.session_state.current_section.title())
@@ -2270,42 +2362,40 @@ else:
         st.subheader("📞 Quality Related Technical Issue")
         
         if not is_killswitch_enabled():
-            # Only show the form for agents and admins
-            if st.session_state.role in ["agent", "admin"]:
-                with st.form("quality_issue_form"):
-                    cols = st.columns(4)
-                    issue_type = cols[0].selectbox("Type of issue", [
-                        "Blocage Physical Avaya",
-                        "Hold Than Call Drop",
-                        "Call Drop From Workspace",
-                        "Wrong Space Frozen"
-                    ])
-                    timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
-                    mobile_number = cols[2].text_input("Mobile number")
-                    product = cols[3].selectbox("Product", [
-                        "LM_CS_LMUSA_EN",
-                        "LM_CS_LMUSA_ES"
-                    ])
-                    
-                    if st.form_submit_button("Submit"):
-                        try:
-                            datetime.strptime(timing, "%H:%M")
-                            add_quality_issue(
-                                st.session_state.username,
-                                issue_type,
-                                timing,
-                                mobile_number,
-                                product
-                            )
-                            st.success("Quality issue reported successfully!")
-                        except ValueError:
-                            st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
+            with st.form("quality_issue_form"):
+                cols = st.columns(4)
+                issue_type = cols[0].selectbox("Type of issue", [
+                    "Blocage Physical Avaya",
+                    "Hold Than Call Drop",
+                    "Call Drop From Workspace",
+                    "Wrong Space Frozen"
+                ])
+                timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
+                mobile_number = cols[2].text_input("Mobile number")
+                product = cols[3].selectbox("Product", [
+                    "LM_CS_LMUSA_EN",
+                    "LM_CS_LMUSA_ES"
+                ])
+                
+                if st.form_submit_button("Submit"):
+                    try:
+                        datetime.strptime(timing, "%H:%M")
+                        add_quality_issue(
+                            st.session_state.username,
+                            issue_type,
+                            timing,
+                            mobile_number,
+                            product
+                        )
+                        st.success("Quality issue reported successfully!")
+                    except ValueError:
+                        st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
         quality_issues = get_quality_issues()
         
-        # Search and date filter for admin and QA roles
-        if st.session_state.role in ["admin", "qa"]:
+        if st.session_state.role == "admin":
+            # Search and date filter only for admin users
             col1, col2 = st.columns([2, 1])
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
@@ -2364,8 +2454,7 @@ else:
                     mime="text/csv"
                 )
                 
-                # Only show clear button for admin role
-                if st.session_state.role == "admin" and st.button("Clear All Records"):
+                if st.button("Clear All Records"):
                     clear_quality_issues()
                     st.rerun()
             else:
@@ -2626,7 +2715,7 @@ else:
                 pwd = st.text_input("Password", type="password")
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin", "qa"])
+                    role = st.selectbox("Role", ["agent", "admin"])
                 else:
                     role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
