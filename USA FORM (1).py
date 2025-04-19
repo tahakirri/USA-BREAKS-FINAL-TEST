@@ -2712,7 +2712,8 @@ else:
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
         
-        if not is_killswitch_enabled():
+        # Only admin can submit quality issues
+        if st.session_state.role == "admin" and not is_killswitch_enabled():
             with st.form("quality_issue_form"):
                 cols = st.columns(4)
                 issue_type = cols[0].selectbox("Type of issue", [
