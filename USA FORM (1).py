@@ -3123,6 +3123,57 @@ if __name__ == "__main__":
         
     inject_custom_css()
 
+def is_fancy_number(phone_number):
+    """Determine if a phone number is 'fancy' based on specific patterns.
+    Focuses on the last 6 digits of the phone number.
+    
+    Returns:
+    - Tuple (is_fancy, pattern_description)
+    """
+    # Clean the phone number, keeping only digits
+    clean_number = re.sub(r'\D', '', phone_number)
+    
+    # Ensure we're working with at least 6 digits
+    if len(clean_number) < 6:
+        return False, "Number too short"
+    
+    # Always work with the last 6 digits
+    last_six = clean_number[-6:]
+    
+    # 6-Digit Patterns
+    if last_six == '123456':
+        return True, "Ascending sequence"
+    if last_six == '987654':
+        return True, "Descending sequence"
+    if last_six == '666666':
+        return True, "Repeating digits"
+    if last_six == '100001':
+        return True, "Palindrome"
+    if len(set(last_six)) == 1:
+        return True, "All identical digits"
+    
+    # 3-Digit Patterns
+    if last_six[:3] == last_six[3:]:
+        return True, "Double triplets"
+    
+    if last_six[:3] in ['444', '555', '666', '777', '888', '999']:
+        return True, "Repeating first triplet"
+    
+    # Incremental/Similar Patterns
+    if last_six in ['121122', '111213', '457456']:
+        return True, "Similar/Nearly sequential triplets"
+    
+    # 2-Digit Patterns
+    if last_six in ['111213', '202020', '010101']:
+        return True, "Incremental/Alternating pairs"
+    
+    # Exceptional Cases
+    if last_six.endswith('123') or last_six.endswith('555') or \
+       last_six.endswith('777') or last_six.endswith('999'):
+        return True, "Ends with special sequence"
+    
+    return False, "No special pattern detected"
+
 # Add Lycamobile Fancy Number Checker to main app
 def lycamobile_fancy_number_checker():
     st.title("📱 Lycamobile Fancy Number Checker")
