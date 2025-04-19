@@ -2142,13 +2142,13 @@ else:
         # Base navigation options available to all users
         nav_options = [
             ("requests", "📋 Requests"),
-            ("breaks", "☕ Breaks"),
             ("mistakes", "❌ Mistakes"),
             ("chat", "💬 Chat"),
             ("hold", "🖼️ HOLD Images"),
             ("late_login", "⏰ Late Login"),
             ("quality_issues", "📞 Quality Issues"),
             ("midshift_issues", "🔄 Mid-shift Issues"),
+            ("breaks", "☕ Breaks"),
             ("fancy_number", "📱 Fancy Number Checker")
         ]
 
@@ -2331,7 +2331,15 @@ else:
                         sender, message_text, timestamp, mentions = msg[1], msg[2], msg[3], msg[4]
                         
                         # Check if current user is mentioned
-                        mentioned_users = json.loads(mentions) if mentions else []
+                        mentioned_users = [] # Default to empty list
+                        if mentions:
+                            try:
+                                mentioned_users = json.loads(mentions)
+                            except json.JSONDecodeError:
+                                # Log the error or handle it silently
+                                # print(f"Warning: Could not decode mentions: {mentions}")
+                                pass # Keep mentioned_users as []
+                                
                         is_mentioned = st.session_state.username in mentioned_users
                         
                         message_class = "my-message" if sender == st.session_state.username else "other-message"
