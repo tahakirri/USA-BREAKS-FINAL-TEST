@@ -29,143 +29,14 @@ def convert_to_casablanca_date(date_str):
         return None
 
 def get_date_range_casablanca(date):
-    # Get start and end of day in Casablanca time
-    casablanca_start = datetime.strptime(date, "%Y-%m-%d").replace(hour=0, minute=0, second=0, microsecond=0)
-    casablanca_end = casablanca_start + timedelta(days=1) - timedelta(microseconds=1)
-    return casablanca_start, casablanca_end
-
-def is_sequential(digits, step=1):
-    """Check if digits form a sequential pattern with given step"""
+    """Get start and end of day in Casablanca time"""
     try:
-        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
-    except:
-        return False
-
-def is_fancy_number(phone_number):
-    clean_number = re.sub(r'\D', '', phone_number)
-    
-    # Get last 6 digits according to Lycamobile policy
-    if len(clean_number) >= 6:
-        last_six = clean_number[-6:]
-        last_three = clean_number[-3:]
-    else:
-        return False, "Number too short (need at least 6 digits)"
-    
-    patterns = []
-    
-    # Special case for 13322866688
-    if clean_number == "13322866688":
-        patterns.append("Special VIP number (13322866688)")
-    
-    # Check for ABBBAA pattern (like 566655)
-    if (len(last_six) == 6 and 
-        last_six[0] == last_six[5] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[4] == last_six[0] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBAA pattern (e.g., 566655)")
-    
-    # Check for ABBBA pattern (like 233322)
-    if (len(last_six) >= 5 and 
-        last_six[0] == last_six[4] and 
-        last_six[1] == last_six[2] == last_six[3] and 
-        last_six[0] != last_six[1]):
-        patterns.append("ABBBA pattern (e.g., 233322)")
-    
-    # 1. 6-digit patterns (strict matches only)
-    # All same digits (666666)
-    if len(set(last_six)) == 1:
-        patterns.append("6 identical digits")
-    
-    # Consecutive ascending (123456)
-    if is_sequential(last_six, 1):
-        patterns.append("6-digit ascending sequence")
-        
-    # Consecutive descending (654321)
-    if is_sequential(last_six, -1):
-        patterns.append("6-digit descending sequence")
-        
-    # Palindrome (100001)
-    if last_six == last_six[::-1]:
-        patterns.append("6-digit palindrome")
-    
-    # 2. 3-digit patterns (strict matches from image)
-    first_triple = last_six[:3]
-    second_triple = last_six[3:]
-    
-    # Double triplets (444555)
-    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple:
-        patterns.append("Double triplets (444555)")
-    
-    # Similar triplets (121122)
-    if (first_triple[0] == first_triple[1] and 
-        second_triple[0] == second_triple[1] and 
-        first_triple[2] == second_triple[2]):
-        patterns.append("Similar triplets (121122)")
-    
-    # Repeating triplets (786786)
-    if first_triple == second_triple:
-        patterns.append("Repeating triplets (786786)")
-    
-    # Nearly sequential (457456) - exactly 1 digit difference
-    if abs(int(first_triple) - int(second_triple)) == 1:
-        patterns.append("Nearly sequential triplets (457456)")
-    
-    # 3. 2-digit patterns (strict matches from image)
-    # Incremental pairs (111213)
-    pairs = [last_six[i:i+2] for i in range(0, 5, 1)]
-    try:
-        if all(int(pairs[i]) == int(pairs[i-1]) + 1 for i in range(1, len(pairs))):
-            patterns.append("Incremental pairs (111213)")
-    
-        # Repeating pairs (202020)
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Repeating pairs (202020)")
-    
-        # Alternating pairs (010101)
-        if (pairs[0] == pairs[2] == pairs[4] and 
-            pairs[1] == pairs[3] and 
-            pairs[0] != pairs[1]):
-            patterns.append("Alternating pairs (010101)")
-    
-        # Stepping pairs (324252) - Fixed this check
-        if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
-            all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
-            patterns.append("Stepping pairs (324252)")
-    except:
-        pass
-    
-    # 4. Exceptional cases (must match exactly)
-    exceptional_triplets = ['123', '555', '777', '999']
-    if last_three in exceptional_triplets:
-        patterns.append(f"Exceptional case ({last_three})")
-    
-    # Strict validation - only allow patterns that exactly match our rules
-    valid_patterns = []
-    for p in patterns:
-        if any(rule in p for rule in [
-            "Special VIP number",
-            "ABBBAA pattern",
-            "ABBBA pattern",
-            "6 identical digits",
-            "6-digit ascending sequence",
-            "6-digit descending sequence",
-            "6-digit palindrome",
-            "Double triplets (444555)",
-            "Similar triplets (121122)",
-            "Repeating triplets (786786)",
-            "Nearly sequential triplets (457456)",
-            "Incremental pairs (111213)",
-            "Repeating pairs (202020)",
-            "Alternating pairs (010101)",
-            "Stepping pairs (324252)",
-            "Exceptional case"
-        ]):
-            valid_patterns.append(p)
-    
-    return bool(valid_patterns), ", ".join(valid_patterns) if valid_patterns else "No qualifying fancy pattern"
+        start = datetime.combine(date, time.min)
+        end = datetime.combine(date, time.max)
+        return start, end
+    except Exception as e:
+        st.error(f"Error processing date: {str(e)}")
+        return None, None
 
 # --------------------------
 # Database Functions
@@ -2230,18 +2101,6 @@ else:
                     st.rerun()
         st.markdown("---")
         
-        st.sidebar.button("📊 Breaks", 
-            on_click=lambda: setattr(st.session_state, 'current_section', 'breaks'),
-            use_container_width=True
-        )
-        
-        st.sidebar.button("📱 Fancy Number", 
-            on_click=lambda: setattr(st.session_state, 'current_section', 'fancy_number'),
-            use_container_width=True
-        )
-        
-        st.sidebar.markdown("---")
-        
         # Base navigation options available to all users
         nav_options = []
         
@@ -2434,8 +2293,25 @@ else:
                                 Enable Notifications
                             </button>
                         </div>
-                    `);
+                    `;
                 }
+            }
+
+            async function requestNotificationPermission() {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('notification-container').style.display = 'none';
+                }
+            }
+            </script>
+            """, unsafe_allow_html=True)
+            
+            if is_chat_killswitch_enabled():
+                st.warning("Chat functionality is currently disabled by the administrator.")
+            else:
+
+                    # Regular chat only for non-VIP users
+                    st.subheader("Regular Chat")
                     messages = get_group_messages()
                     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                     for msg in reversed(messages):
@@ -2450,13 +2326,27 @@ else:
                             </div>
                             <div class="message-content">
                                 <div>{message}</div>
-                                <div class="message-meta">{sender} - {ts}</div>
+                                <div class="message-meta">{sender} • {ts}</div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     
                     with st.form("chat_form", clear_on_submit=True):
+                        message = st.text_input("Type your message...", key="chat_input")
+                        col1, col2 = st.columns([5,1])
+                        with col2:
+                            if st.form_submit_button("Send"):
+                                if message:
+                                    send_group_message(st.session_state.username, message)
+                                    st.rerun()
+        else:
+            st.error("System is currently locked. Access to chat is disabled.")
+
+
+
+    elif st.session_state.current_section == "hold":
+        if not is_killswitch_enabled():
             st.subheader("🖼️ HOLD Images")
             
             # Only show upload option to admin users
@@ -2613,36 +2503,6 @@ else:
                 st.dataframe(df)
             else:
                 st.info("You have no late login records")
-
-    elif st.session_state.current_section == "fancy_number":
-        st.subheader("📱 Lycamobile Fancy Number Checker")
-        
-        st.markdown("""
-        ### Check if your phone number is a Fancy Number!
-        
-        A Fancy Number is a phone number with a special pattern in its last 6 digits.
-        Patterns include:
-        - Sequential numbers (e.g., 123456)
-        - Palindrome numbers (e.g., 123321)
-        - Repeated digits (e.g., 111111)
-        - Special combinations
-        """)
-        
-        phone_number = st.text_input("Enter Phone Number", placeholder="e.g., +1 (123) 456-7890")
-        
-        if st.button("Check Fancy Number"):
-            if phone_number:
-                try:
-                    is_fancy = is_fancy_number(phone_number)
-                    if is_fancy:
-                        st.success(f"🎉 Congratulations! {phone_number} is a Fancy Number!")
-                        st.balloons()
-                    else:
-                        st.info(f"🤔 {phone_number} is not a Fancy Number.")
-                except Exception as e:
-                    st.error(f"Error checking number: {e}")
-            else:
-                st.warning("Please enter a phone number.")
 
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
@@ -3166,6 +3026,21 @@ else:
             admin_break_dashboard()
         else:
             agent_break_dashboard()
+
+def get_new_messages(last_check_time):
+    """Get new messages since last check"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, sender, message, timestamp, mentions 
+            FROM group_messages 
+            WHERE timestamp > ?
+            ORDER BY timestamp DESC
+        """, (last_check_time,))
+        return cursor.fetchall()
+    finally:
+        conn.close()
 
 def handle_message_check():
     if not st.session_state.authenticated:
