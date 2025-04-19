@@ -1710,13 +1710,38 @@ def inject_custom_css():
         }}
         
         /* Break Section */
-        .break-template {{    
+        .break-template,
+        .template-stats,
+        .template-count,
+        .active-templates,
+        .total-templates {{    
             color: {c['text']} !important;
             background-color: {c['card']} !important;
             border: 1px solid {c['border']} !important;
             padding: 1rem;
             border-radius: 0.5rem;
             margin-bottom: 1rem;
+        }}
+        
+        /* Template Statistics */
+        .stMarkdown div[data-testid="stMarkdownContainer"] p,
+        .stMarkdown div[data-testid="stMarkdownContainer"] span,
+        div[data-testid="stMetricValue"] {{    
+            color: {c['text']} !important;
+        }}
+        
+        /* Metric Values */
+        .stMetric label,
+        .stMetric [data-testid="stMetricValue"],
+        .stMetric [data-testid="stMetricDelta"] {{    
+            color: {c['text']} !important;
+        }}
+        
+        /* Template Headers */
+        .template-header {{    
+            color: {c['text']} !important;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }}
         
         /* Date Filter */
