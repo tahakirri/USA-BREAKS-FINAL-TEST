@@ -480,7 +480,7 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users")
+        cursor.execute("SELECT id, username, role, is_vip FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -1514,7 +1514,7 @@ def vip_management():
     # Create a DataFrame for better display
     user_data = []
     for user in users:
-        user_id, username, _, role, is_vip = user
+        user_id, username, role, is_vip = user  # Corrected unpacking to match the actual structure
         user_data.append({
             "ID": user_id,
             "Username": username,
@@ -3243,7 +3243,7 @@ else:
         st.subheader("VIP Statistics")
         
         total_users = len(users)
-        vip_users = sum(1 for user in users if is_vip_user(user[1]))
+        vip_users = sum(1 for user in users if user[3])  # Use the is_vip field directly from the query
         
         col1, col2, col3 = st.columns(3)
         with col1:
