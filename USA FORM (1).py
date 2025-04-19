@@ -73,7 +73,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin')),
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
@@ -1828,17 +1828,28 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        nav_options = [
-            ("📋 Requests", "requests"),
-            ("☕ Breaks", "breaks"),
-            ("🖼️ HOLD", "hold"),
-            ("❌ Mistakes", "mistakes"),
-            ("💬 Chat", "chat"),
-            ("📱 Fancy Number", "fancy_number"),
-            ("⏰ Late Login", "late_login"),
-            ("📞 Quality Issues", "quality_issues"),
-            ("🔄 Mid-shift Issues", "midshift_issues")
-        ]
+        # Base navigation options available to all users
+        nav_options = []
+        
+        # QA users only see quality issues and fancy number
+        if st.session_state.role == "qa":
+            nav_options.extend([
+                ("📞 Quality Issues", "quality_issues"),
+                ("📱 Fancy Number", "fancy_number")
+            ])
+        # Admin and agent see all regular options
+        elif st.session_state.role in ["admin", "agent"]:
+            nav_options.extend([
+                ("📋 Requests", "requests"),
+                ("☕ Breaks", "breaks"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues")
+            ])
         
         # Add admin option for admin users
         if st.session_state.role == "admin":
@@ -1853,37 +1864,40 @@ else:
                 st.session_state.current_section = value
         
         st.markdown("---")
-        pending_requests = len([r for r in get_requests() if not r[6]])
-        new_mistakes = len(get_mistakes())
-        unread_messages = len([m for m in get_group_messages() 
-                             if m[0] not in st.session_state.last_message_ids 
-                             and m[1] != st.session_state.username])
         
-        st.markdown(f"""
-        <div style="
-            background-color: {'#1e293b' if st.session_state.color_mode == 'dark' else '#ffffff'};
-            padding: 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid {'#334155' if st.session_state.color_mode == 'dark' else '#e2e8f0'};
-            margin-bottom: 20px;
-        ">
-            <h4 style="
-                color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
-                margin-bottom: 1rem;
-            ">🔔 Notifications</h4>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                margin-bottom: 0.5rem;
-            ">📋 Pending requests: {pending_requests}</p>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                margin-bottom: 0.5rem;
-            ">❌ Recent mistakes: {new_mistakes}</p>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-            ">💬 Unread messages: {unread_messages}</p>
-        </div>
-        """, unsafe_allow_html=True)
+        # Show notifications only for admin and agent roles
+        if st.session_state.role in ["admin", "agent"]:
+            pending_requests = len([r for r in get_requests() if not r[6]])
+            new_mistakes = len(get_mistakes())
+            unread_messages = len([m for m in get_group_messages() 
+                                 if m[0] not in st.session_state.last_message_ids 
+                                 and m[1] != st.session_state.username])
+            
+            st.markdown(f"""
+            <div style="
+                background-color: {'#1e293b' if st.session_state.color_mode == 'dark' else '#ffffff'};
+                padding: 1rem;
+                border-radius: 0.5rem;
+                border: 1px solid {'#334155' if st.session_state.color_mode == 'dark' else '#e2e8f0'};
+                margin-bottom: 20px;
+            ">
+                <h4 style="
+                    color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
+                    margin-bottom: 1rem;
+                ">🔔 Notifications</h4>
+                <p style="
+                    color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+                    margin-bottom: 0.5rem;
+                ">📋 Pending requests: {pending_requests}</p>
+                <p style="
+                    color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+                    margin-bottom: 0.5rem;
+                ">❌ Recent mistakes: {new_mistakes}</p>
+                <p style="
+                    color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
+                ">💬 Unread messages: {unread_messages}</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.authenticated = False
@@ -2869,6 +2883,62 @@ else:
             st.dataframe(pd.DataFrame(message_data))
         else:
             st.info("No VIP messages yet")
+
+    # VIP Management Section
+    def vip_management():
+        st.title("⭐ VIP Management")
+        
+        # Only taha kirri can access this section
+        if st.session_state.username.lower() != "taha kirri":
+            st.error("Access denied. Only Taha Kirri can access this section.")
+            return
+        
+        st.markdown("### Create New User")
+        
+        with st.form("create_user_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            role = st.selectbox("Role", ["agent", "admin", "qa"])
+            submit = st.form_submit_button("Create User")
+            
+            if submit:
+                if not username or not password:
+                    st.error("Please fill in all fields.")
+                    return
+                
+                # Check if user already exists
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT username FROM users WHERE username = ?", (username,))
+                if cur.fetchone():
+                    st.error("Username already exists.")
+                    conn.close()
+                    return
+                
+                # Create new user
+                cur.execute(
+                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                    (username, password, role)
+                )
+                conn.commit()
+                conn.close()
+                st.success(f"User {username} created successfully with role: {role}")
+        
+        st.markdown("### Manage Existing Users")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT username, role FROM users")
+        users = cur.fetchall()
+        conn.close()
+        
+        if not users:
+            st.info("No users found.")
+            return
+        
+        # Display users in a table
+        user_df = pd.DataFrame(users, columns=["Username", "Role"])
+        st.dataframe(user_df, use_container_width=True)
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
