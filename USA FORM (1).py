@@ -2712,8 +2712,8 @@ else:
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
         
-        # Only admin can submit quality issues
-        if st.session_state.role == "admin" and not is_killswitch_enabled():
+        # Admin and agent can submit quality issues
+        if st.session_state.role in ["admin", "agent"] and not is_killswitch_enabled():
             with st.form("quality_issue_form"):
                 cols = st.columns(4)
                 issue_type = cols[0].selectbox("Type of issue", [
@@ -2746,9 +2746,9 @@ else:
         st.subheader("Quality Issue Records")
         quality_issues = get_quality_issues()
         
-        # Allow both admin and QA roles to see all records and use search/filter
-        if st.session_state.role in ["admin", "qa"]:
-            # Search and date filter for admin and QA users
+        # Allow admin, agent, and QA roles to see all records and use search/filter
+        if st.session_state.role in ["admin", "agent", "qa"]:
+            # Search and date filter for admin, agent, and QA users
             col1, col2 = st.columns([2, 1])
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
