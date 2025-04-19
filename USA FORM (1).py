@@ -2207,46 +2207,46 @@ else:
 
     if st.session_state.current_section == "requests":
 
-elif st.session_state.current_section == "fancy":
-    st.title("Lycamobile Fancy Number Checker")
+    elif st.session_state.current_section == "fancy":
+        st.title("Lycamobile Fancy Number Checker")
 
-    def is_sequential(digits, step=1):
-        try:
-            return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
-        except:
-            return False
+        def is_sequential(digits, step=1):
+            try:
+                return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
+            except:
+                return False
 
-    def is_fancy_number(phone_number):
-        clean_number = re.sub(r'\D', '', phone_number)
-        if len(clean_number) >= 6:
-            last_six = clean_number[-6:]
-        else:
-            return False, "Number too short (need at least 6 digits)"
+        def is_fancy_number(phone_number):
+            clean_number = re.sub(r'\D', '', phone_number)
+            if len(clean_number) >= 6:
+                last_six = clean_number[-6:]
+            else:
+                return False, "Number too short (need at least 6 digits)"
 
-        patterns = []
-        if clean_number == "13322866688":
-            patterns.append("Special VIP number (13322866688)")
-        if len(set(last_six)) == 1:
-            patterns.append("All same digits")
-        if is_sequential(last_six):
-            patterns.append("Sequential digits")
-        if last_six[:3] == last_six[-3:]:
-            patterns.append("Mirror pattern")
-        if last_six[0] == last_six[1] == last_six[2] and last_six[3] == last_six[4] == last_six[5]:
-            patterns.append("AAABBB pattern")
+            patterns = []
+            if clean_number == "13322866688":
+                patterns.append("Special VIP number (13322866688)")
+            if len(set(last_six)) == 1:
+                patterns.append("All same digits")
+            if is_sequential(last_six):
+                patterns.append("Sequential digits")
+            if last_six[:3] == last_six[-3:]:
+                patterns.append("Mirror pattern")
+            if last_six[0] == last_six[1] == last_six[2] and last_six[3] == last_six[4] == last_six[5]:
+                patterns.append("AAABBB pattern")
 
-        if patterns:
-            return True, ", ".join(patterns)
-        else:
-            return False, "No fancy pattern detected"
+            if patterns:
+                return True, ", ".join(patterns)
+            else:
+                return False, "No fancy pattern detected"
 
-    phone_number = st.text_input("Enter a phone number")
-    if phone_number:
-        is_fancy, reason = is_fancy_number(phone_number)
-        if is_fancy:
-            st.success(f"✅ Fancy number detected: {reason}")
-        else:
-            st.warning(f"⚠️ Not a fancy number: {reason}")
+        phone_number = st.text_input("Enter a phone number")
+        if phone_number:
+            is_fancy, reason = is_fancy_number(phone_number)
+            if is_fancy:
+                st.success(f"✅ Fancy number detected: {reason}")
+            else:
+                st.warning(f"⚠️ Not a fancy number: {reason}")
 
         if not is_killswitch_enabled():
             with st.expander("➕ Submit New Request"):
