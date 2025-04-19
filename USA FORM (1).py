@@ -1629,34 +1629,51 @@ def inject_custom_css():
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
         
-        /* Form Submit Button */
-        .stForm [data-testid="stFormSubmitButton"] button {{
-            background-color: {c['button_bg']} !important;
-            color: {c['button_text']} !important;
+        /* Dropdown styling */
+        .stSelectbox [data-baseweb="select"],
+        .stSelectbox [data-baseweb="select"] div,
+        .stSelectbox [data-baseweb="select"] input,
+        .stSelectbox [data-baseweb="popover"] ul,
+        .stSelectbox [data-baseweb="select"] span {{    
+            background-color: {c['input_bg']} !important;
+            color: {c['text']} !important;
         }}
         
-        /* Dropdown/Select Styling */
-        .stSelectbox > div > div {{
-            background-color: {c['dropdown_bg']} !important;
-            color: {c['dropdown_text']} !important;
-            border-color: {c['border']} !important;
+        .stSelectbox [data-baseweb="select"] {{    
+            border: 1px solid {c['border']} !important;
         }}
         
-        .stSelectbox [data-baseweb="select"] {{
-            background-color: {c['dropdown_bg']} !important;
+        .stSelectbox [data-baseweb="select"]:hover {{    
+            border-color: {c['accent']} !important;
         }}
         
-        .stSelectbox [data-baseweb="select"] ul {{
-            background-color: {c['dropdown_bg']} !important;
+        .stSelectbox [data-baseweb="popover"] {{    
+            background-color: {c['input_bg']} !important;
         }}
         
-        .stSelectbox [data-baseweb="select"] li {{
-            background-color: {c['dropdown_bg']} !important;
-            color: {c['dropdown_text']} !important;
+        .stSelectbox [data-baseweb="popover"] ul {{    
+            background-color: {c['input_bg']} !important;
+            border: 1px solid {c['border']} !important;
         }}
         
-        .stSelectbox [data-baseweb="select"] li:hover {{
+        .stSelectbox [data-baseweb="popover"] ul li {{    
+            background-color: {c['input_bg']} !important;
+            color: {c['text']} !important;
+        }}
+        
+        .stSelectbox [data-baseweb="popover"] ul li:hover {{    
             background-color: {c['dropdown_hover']} !important;
+        }}
+        
+        /* Template selection specific */
+        .template-selector {{    
+            margin-bottom: 1rem;
+        }}
+        
+        .template-selector label {{    
+            color: {c['text']} !important;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
         }}
         
         /* Input Fields and Labels */
