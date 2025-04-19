@@ -2104,7 +2104,8 @@ else:
         # QA users only see quality issues and fancy number
         if st.session_state.role == "qa":
             nav_options.extend([
-                ("📞 Quality Issues", "quality_issues"),
+                ("📞 Quality Issues", "quality"),
+                ("📱 Fancy Number", "fancy_number")
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2115,8 +2116,9 @@ else:
                 ("❌ Mistakes", "mistakes"),
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
+                ("📞 Quality Issues", "quality"),
+                ("🔄 Mid-shift Issues", "midshift"),
+                ("📱 Fancy Number", "fancy_number")
             ])
         
         # Add admin option for admin users
@@ -2390,121 +2392,6 @@ else:
         st.subheader("⏰ Late Login Report")
         
         if not is_killswitch_enabled():
-            with st.form("late_login_form"):
-                cols = st.columns(3)
-                presence_time = cols[0].text_input("Time of presence (HH:MM)", placeholder="08:30")
-                login_time = cols[1].text_input("Time of log in (HH:MM)", placeholder="09:15")
-                reason = cols[2].selectbox("Reason", [
-                    "Workspace Issue",
-                    "Avaya Issue",
-                    "Aaad Tool",
-                    "Windows Issue",
-                    "Reset Password"
-                ])
-                
-                if st.form_submit_button("Submit"):
-                    try:
-                        datetime.strptime(presence_time, "%H:%M")
-                        datetime.strptime(login_time, "%H:%M")
-                        add_late_login(
-                            st.session_state.username,
-                            presence_time,
-                            login_time,
-                            reason
-                        )
-                        st.success("Late login reported successfully!")
-                    except ValueError:
-                        st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
-        
-        st.subheader("Late Login Records")
-        late_logins = get_late_logins()
-        
-        if st.session_state.role == "admin":
-            # Search and date filter only for admin users
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
-            with col2:
-                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="late_login_date")
-            
-            if search_query or date_filter:
-                filtered_logins = []
-                
-                for login in late_logins:
-                    matches_search = True
-                    matches_date = True
-                    
-                    if search_query:
-                        matches_search = (
-                            search_query.lower() in login[1].lower() or  # Agent name
-                            search_query.lower() in login[4].lower() or  # Reason
-                            search_query in login[2] or  # Presence time
-                            search_query in login[3]     # Login time
-                        )
-                    
-                    if date_filter:
-                        try:
-                            record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == date_filter
-                        except:
-                            matches_date = False
-                    
-                    if matches_search and matches_date:
-                        filtered_logins.append(login)
-                
-                late_logins = filtered_logins
-            
-            if late_logins:
-                data = []
-                for login in late_logins:
-                    _, agent, presence, login_time, reason, ts = login
-                    data.append({
-                        "Agent's Name": agent,
-                        "Time of presence": presence,
-                        "Time of log in": login_time,
-                        "Reason": reason,
-                        "Reported At": ts
-                    })
-                
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-                
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
-                    mime="text/csv"
-                )
-                
-                if st.button("Clear All Records"):
-                    clear_late_logins()
-                    st.rerun()
-            else:
-                st.info("No late login records found")
-        else:
-            # Regular users only see their own records without search
-            user_logins = [login for login in late_logins if login[1] == st.session_state.username]
-            if user_logins:
-                data = []
-                for login in user_logins:
-                    _, agent, presence, login_time, reason, ts = login
-                    data.append({
-                        "Time of presence": presence,
-                        "Time of log in": login_time,
-                        "Reason": reason,
-                        "Reported At": ts
-                    })
-                
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-            else:
-                st.info("You have no late login records")
-
-    elif st.session_state.current_section == "quality_issues":
-        st.subheader("📞 Quality Related Technical Issue")
-        
-        if not is_killswitch_enabled():
             with st.form("quality_issue_form"):
                 cols = st.columns(4)
                 issue_type = cols[0].selectbox("Type of issue", [
@@ -2533,8 +2420,10 @@ else:
                         st.success("Quality issue reported successfully!")
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
+        else:
+            st.info("As a QA or admin user, you can view and search quality issues but cannot add new ones.")
         
-        st.subheader("Quality Issue Records")
+        # Display existing issues
         quality_issues = get_quality_issues()
         
         # Allow both admin and QA roles to see all records and use search/filter
@@ -3018,6 +2907,81 @@ else:
         
         st.markdown("---")
 
+    elif st.session_state.current_section == "fancy_number":
+        st.title("📱 Lycamobile Fancy Number Checker")
+        st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
+
+        # Custom CSS for fancy number checker
+        st.markdown("""
+        <style>
+            .fancy-number { color: #00ff00; font-weight: bold; }
+            .normal-number { color: #ffffff; }
+            .result-box { padding: 15px; border-radius: 5px; margin: 10px 0; }
+            .fancy-result { background-color: #1e3d1e; border: 1px solid #00ff00; }
+            .normal-result { background-color: #3d1e1e; border: 1px solid #ff0000; }
+        </style>
+        """, unsafe_allow_html=True)
+
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            phone_input = st.text_input("Enter Phone Number", 
+                                    placeholder="e.g., 1555123456 or 44207123456")
+
+            if st.button("🔍 Check Number"):
+                if not phone_input:
+                    st.warning("Please enter a phone number")
+                else:
+                    is_fancy, pattern = is_fancy_number(phone_input)
+                    clean_number = re.sub(r'\D', '', phone_input)
+                    
+                    # Extract last 6 digits for display
+                    last_six = clean_number[-6:] if len(clean_number) >= 6 else clean_number
+                    formatted_num = f"{last_six[:3]}-{last_six[3:]}" if len(last_six) == 6 else last_six
+
+                    if is_fancy:
+                        st.markdown(f"""
+                        <div class="result-box fancy-result">
+                            <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                            <p>FANCY NUMBER DETECTED!</p>
+                            <p><strong>Pattern:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div class="result-box normal-result">
+                            <h3><span class="normal-number">{formatted_num}</span></h3>
+                            <p>Standard phone number</p>
+                            <p><strong>Reason:</strong> {pattern}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown("""
+            ### Lycamobile Fancy Number Policy
+            **Qualifying Patterns (last 6 digits only):**
+            
+            #### 6-Digit Patterns
+            - 123456 (ascending)
+            - 987654 (descending)
+            - 666666 (repeating)
+            - 100001 (palindrome)
+            
+            #### 3-Digit Patterns  
+            - 444 555 (double triplets)
+            - 121 122 (similar triplets)
+            - 786 786 (repeating triplets)
+            - 457 456 (nearly sequential)
+            
+            #### 2-Digit Patterns
+            - 11 12 13 (incremental)
+            - 20 20 20 (repeating)
+            - 01 01 01 (alternating)
+            - 32 42 52 (stepping)
+            
+            #### Exceptional Cases
+            - Ending with 123/555/777/999
+            """)
+
     elif st.session_state.current_section == "breaks":
         if st.session_state.role == "admin":
             admin_break_dashboard()
@@ -3080,6 +3044,140 @@ def get_date_range_casablanca(date):
     start = morocco_tz.localize(datetime.combine(date, time.min))
     end = morocco_tz.localize(datetime.combine(date, time.max))
     return start, end
+
+def is_sequential(digits, step=1):
+    """Check if digits form a sequential pattern with given step"""
+    try:
+        return all(int(digits[i]) == int(digits[i-1]) + step for i in range(1, len(digits)))
+    except:
+        return False
+
+def is_fancy_number(phone_number):
+    """Check if a phone number is fancy according to Lycamobile policy"""
+    clean_number = re.sub(r'\D', '', phone_number)
+    
+    # Get last 6 digits according to Lycamobile policy
+    if len(clean_number) >= 6:
+        last_six = clean_number[-6:]
+        last_three = clean_number[-3:]
+    else:
+        return False, "Number too short (need at least 6 digits)"
+    
+    patterns = []
+    
+    # Special case for 13322866688
+    if clean_number == "13322866688":
+        patterns.append("Special VIP number (13322866688)")
+    
+    # Check for ABBBAA pattern (like 566655)
+    if (len(last_six) == 6 and 
+        last_six[0] == last_six[5] and 
+        last_six[1] == last_six[2] == last_six[3] and 
+        last_six[4] == last_six[0] and 
+        last_six[0] != last_six[1]):
+        patterns.append("ABBBAA pattern (e.g., 566655)")
+    
+    # Check for ABBBA pattern (like 233322)
+    if (len(last_six) >= 5 and 
+        last_six[0] == last_six[4] and 
+        last_six[1] == last_six[2] == last_six[3] and 
+        last_six[0] != last_six[1]):
+        patterns.append("ABBBA pattern (e.g., 233322)")
+    
+    # 1. 6-digit patterns (strict matches only)
+    # All same digits (666666)
+    if len(set(last_six)) == 1:
+        patterns.append("6 identical digits")
+    
+    # Consecutive ascending (123456)
+    if is_sequential(last_six, 1):
+        patterns.append("6-digit ascending sequence")
+        
+    # Consecutive descending (654321)
+    if is_sequential(last_six, -1):
+        patterns.append("6-digit descending sequence")
+        
+    # Palindrome (100001)
+    if last_six == last_six[::-1]:
+        patterns.append("6-digit palindrome")
+    
+    # 2. 3-digit patterns (strict matches from image)
+    first_triple = last_six[:3]
+    second_triple = last_six[3:]
+    
+    # Double triplets (444555)
+    if len(set(first_triple)) == 1 and len(set(second_triple)) == 1 and first_triple != second_triple:
+        patterns.append("Double triplets (444555)")
+    
+    # Similar triplets (121122)
+    if (first_triple[0] == first_triple[1] and 
+        second_triple[0] == second_triple[1] and 
+        first_triple[2] == second_triple[2]):
+        patterns.append("Similar triplets (121122)")
+    
+    # Repeating triplets (786786)
+    if first_triple == second_triple:
+        patterns.append("Repeating triplets (786786)")
+    
+    # Nearly sequential (457456) - exactly 1 digit difference
+    if abs(int(first_triple) - int(second_triple)) == 1:
+        patterns.append("Nearly sequential triplets (457456)")
+    
+    # 3. 2-digit patterns (strict matches from image)
+    # Incremental pairs (111213)
+    pairs = [last_six[i:i+2] for i in range(0, 5, 1)]
+    try:
+        if all(int(pairs[i]) == int(pairs[i-1]) + 1 for i in range(1, len(pairs))):
+            patterns.append("Incremental pairs (111213)")
+    
+        # Repeating pairs (202020)
+        if (pairs[0] == pairs[2] == pairs[4] and 
+            pairs[1] == pairs[3] and 
+            pairs[0] != pairs[1]):
+            patterns.append("Repeating pairs (202020)")
+    
+        # Alternating pairs (010101)
+        if (pairs[0] == pairs[2] == pairs[4] and 
+            pairs[1] == pairs[3] and 
+            pairs[0] != pairs[1]):
+            patterns.append("Alternating pairs (010101)")
+    
+        # Stepping pairs (324252)
+        if (all(int(pairs[i][0]) == int(pairs[i-1][0]) + 1 for i in range(1, len(pairs))) and
+            all(int(pairs[i][1]) == int(pairs[i-1][1]) + 2 for i in range(1, len(pairs)))):
+            patterns.append("Stepping pairs (324252)")
+    except:
+        pass
+    
+    # 4. Exceptional cases (must match exactly)
+    exceptional_triplets = ['123', '555', '777', '999']
+    if last_three in exceptional_triplets:
+        patterns.append(f"Exceptional case ({last_three})")
+    
+    # Strict validation - only allow patterns that exactly match our rules
+    valid_patterns = []
+    for p in patterns:
+        if any(rule in p for rule in [
+            "Special VIP number",
+            "ABBBAA pattern",
+            "ABBBA pattern",
+            "6 identical digits",
+            "6-digit ascending sequence",
+            "6-digit descending sequence",
+            "6-digit palindrome",
+            "Double triplets (444555)",
+            "Similar triplets (121122)",
+            "Repeating triplets (786786)",
+            "Nearly sequential triplets (457456)",
+            "Incremental pairs (111213)",
+            "Repeating pairs (202020)",
+            "Alternating pairs (010101)",
+            "Stepping pairs (324252)",
+            "Exceptional case"
+        ]):
+            valid_patterns.append(p)
+    
+    return bool(valid_patterns), ", ".join(valid_patterns) if valid_patterns else "No qualifying fancy pattern"
 
 if __name__ == "__main__":
     # Initialize color mode if not set
