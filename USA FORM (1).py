@@ -38,6 +38,9 @@ def init_db():
     try:
         cursor = conn.cursor()
         
+        # Drop existing users table to update schema
+        cursor.execute("DROP TABLE IF EXISTS users")
+        
         # Create tables if they don't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -46,16 +49,6 @@ def init_db():
                 password TEXT,
                 role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
                 is_vip INTEGER DEFAULT 0
-            )
-        """)
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS vip_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sender TEXT,
-                message TEXT,
-                timestamp TEXT,
-                mentions TEXT
             )
         """)
         
@@ -1360,6 +1353,12 @@ def set_vip_status(username, is_vip):
     """Set or remove VIP status for a user"""
     if not username:
         return False
+        
+    # Only allow Taha Kirri to set VIP status
+    if st.session_state.username.lower() != "taha kirri":
+        st.error("Only Taha Kirri can manage VIP status")
+        return False
+        
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1719,9 +1718,7 @@ else:
         if st.session_state.role == "qa":
             nav_options = [
                 ("📱 Fancy Number", "fancy_number"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("⏰ Late Login", "late_login"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
+                ("📞 Quality Issues", "quality_issues")
             ]
         elif st.session_state.role == "admin":
             nav_options = [
@@ -1749,7 +1746,7 @@ else:
                 ("🔄 Mid-shift Issues", "midshift_issues")
             ]
         
-        # Add VIP Management for taha kirri
+        # Add VIP Management for taha kirri only
         if st.session_state.username.lower() == "taha kirri":
             nav_options.append(("⭐ VIP Management", "vip_management"))
         
@@ -1902,34 +1899,13 @@ else:
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
-            # Add notification permission request
-            st.markdown("""
-            <div id="notification-container"></div>
-            <script>
-            // Check if notifications are supported
-            if ('Notification' in window) {
-                const container = document.getElementById('notification-container');
-                if (Notification.permission === 'default') {
-                    container.innerHTML = `
-                        <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;">
-                            <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
-                            <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
-                                Enable Notifications
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-            </script>
-            """, unsafe_allow_html=True)
-            
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
                 # Check if user is VIP or taha kirri
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
-                if st.session_state.is_vip or is_taha:
+                if st.session_state.get("is_vip", False) or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
                     with tab1:
@@ -2000,7 +1976,6 @@ else:
                                         send_vip_message(st.session_state.username, message)
                                         st.rerun()
                 else:
-                    # Regular chat only for non-VIP users
                     st.subheader("Regular Chat")
                     messages = get_group_messages()
                     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -2176,7 +2151,8 @@ else:
         search_query = st.text_input("🔍 Search records...", key="late_login_search")
         late_logins = get_late_logins()
         
-        if st.session_state.role == "admin" or st.session_state.role == "qa":
+        # Only show search for admin/QA
+        if st.session_state.role in ["admin", "qa"]:
             if late_logins:
                 data = []
                 for login in late_logins:
@@ -2272,6 +2248,7 @@ else:
         search_query = st.text_input("🔍 Search records...", key="quality_issues_search")
         quality_issues = get_quality_issues()
         
+        # Only show search for admin/QA
         if st.session_state.role in ["admin", "qa"]:
             if quality_issues:
                 data = []
@@ -2373,6 +2350,7 @@ else:
         search_query = st.text_input("🔍 Search records...", key="midshift_issues_search")
         midshift_issues = get_midshift_issues()
         
+        # Only show search for admin/QA
         if st.session_state.role in ["admin", "qa"]:
             if midshift_issues:
                 data = []
@@ -2630,7 +2608,11 @@ else:
         else:
             agent_break_dashboard()
 
-    elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
+    elif st.session_state.current_section == "vip_management":
+        if st.session_state.username.lower() != "taha kirri":
+            st.error("Access denied. Only Taha Kirri can manage VIP status.")
+            st.stop()
+        
         st.title("⭐ VIP Management")
         
         # Get all users
