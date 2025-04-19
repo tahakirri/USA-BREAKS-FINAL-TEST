@@ -73,8 +73,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
-                is_vip INTEGER DEFAULT 0
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa'))
             )
         """)
         
@@ -185,9 +184,9 @@ def init_db():
         
         # Create default admin account
         cursor.execute("""
-            INSERT OR IGNORE INTO users (username, password, role, is_vip) 
-            VALUES (?, ?, ?, ?)
-        """, ("taha kirri", hash_password("arise@99"), "admin", 1))
+            INSERT OR IGNORE INTO users (username, password, role) 
+            VALUES (?, ?, ?)
+        """, ("taha kirri", hash_password("arise@99"), "admin"))
         
         # Create other admin accounts
         admin_accounts = [
@@ -200,9 +199,9 @@ def init_db():
         
         for username, password in admin_accounts:
             cursor.execute("""
-                INSERT OR IGNORE INTO users (username, password, role, is_vip) 
-                VALUES (?, ?, ?, ?)
-            """, (username, hash_password(password), "admin", 0))
+                INSERT OR IGNORE INTO users (username, password, role) 
+                VALUES (?, ?, ?)
+            """, (username, hash_password(password), "admin"))
         
         # Create agent accounts
         agents = [
@@ -255,14 +254,9 @@ def init_db():
         
         for agent_name, workspace_id in agents:
             cursor.execute("""
-                INSERT OR IGNORE INTO users (username, password, role, is_vip) 
-                VALUES (?, ?, ?, ?)
-            """, (agent_name, hash_password(workspace_id), "agent", 0))
-        
-        # Ensure taha kirri has VIP status
-        cursor.execute("""
-            UPDATE users SET is_vip = 1 WHERE LOWER(username) = 'taha kirri'
-        """)
+                INSERT OR IGNORE INTO users (username, password, role) 
+                VALUES (?, ?, ?)
+            """, (agent_name, hash_password(workspace_id), "agent"))
         
         conn.commit()
     finally:
@@ -509,6 +503,23 @@ def delete_user(user_id):
     try:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+        
+def reset_password(username, new_password):
+    """Reset a user's password"""
+    if is_killswitch_enabled():
+        st.error("System is currently locked. Please contact the developer.")
+        return False
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        hashed_password = hash_password(new_password)
+        cursor.execute("UPDATE users SET password = ? WHERE username = ?", 
+                     (hashed_password, username))
         conn.commit()
         return True
     finally:
@@ -1739,112 +1750,6 @@ def inject_custom_css():
         /* Message Alerts */
         .stAlert {{    
             background-color: {c['card']} !important;
-            border: 1px solid {c['border']} !important;
-        }}
-        
-        /* Template Names and Headers */
-        .streamlit-expanderHeader,
-        .stMarkdown h1,
-        .stMarkdown h2,
-        .stMarkdown h3,
-        .stMarkdown h4,
-        .stMarkdown h5,
-        .stMarkdown h6,
-        .stMarkdown strong {{    
-            color: {c['text']} !important;
-        }}
-        
-        /* VIP Chat Text */
-        .vip-text,
-        .exclusive-text {{    
-            color: {c['text']} !important;
-            font-weight: 600;
-        }}
-        
-        /* Break Section */
-        .break-template,
-        .template-stats,
-        .template-count,
-        .active-templates,
-        .total-templates {{    
-            color: {c['text']} !important;
-            background-color: {c['card']} !important;
-            border: 1px solid {c['border']} !important;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-        }}
-        
-        /* Template Statistics */
-        .stMarkdown div[data-testid="stMarkdownContainer"] p,
-        .stMarkdown div[data-testid="stMarkdownContainer"] span,
-        div[data-testid="stMetricValue"] {{    
-            color: {c['text']} !important;
-        }}
-        
-        /* Metric Values */
-        .stMetric label,
-        .stMetric [data-testid="stMetricValue"],
-        .stMetric [data-testid="stMetricDelta"] {{    
-            color: {c['text']} !important;
-        }}
-        
-        /* Template Headers */
-        .template-header {{    
-            color: {c['text']} !important;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }}
-        
-        /* Date Filter */
-        .stDateInput input,
-        .stDateInput div[data-baseweb="input"] {{    
-            color: {c['text']} !important;
-            background-color: {c['input_bg']} !important;
-        }}
-        
-        /* Placeholder text */
-        .stTextInput input::placeholder,
-        .stTextArea textarea::placeholder,
-        .stNumberInput input::placeholder {{    
-            color: {c['text_secondary']} !important;
-        }}
-        
-        /* Input focus state */
-        .stTextInput input:focus,
-        .stTextArea textarea:focus,
-        .stNumberInput input:focus {{    
-            border-color: {c['accent']} !important;
-            box-shadow: 0 0 0 1px {c['accent']} !important;
-        }}
-        
-        /* Sidebar */
-        [data-testid="stSidebar"] {{
-            background-color: {c['sidebar']};
-            border-right: 1px solid {c['border']};
-            color: {c['text']};
-        }}
-        
-        [data-testid="stSidebar"] .stButton > button {{
-            width: 100%;
-            text-align: left;
-            background-color: transparent !important;
-            color: {c['text']} !important;
-            border: 1px solid transparent;
-        }}
-        
-        [data-testid="stSidebar"] .stButton > button:hover {{
-            background-color: {c['hover_bg']} !important;
-            border-color: {c['accent']};
-        }}
-        
-        /* Notification and Alert styles */
-        .notification,
-        .stSuccess,
-        .stError,
-        .stWarning,
-        .stInfo {{    
-            background-color: {c['card']} !important;
             color: {c['text']} !important;
             padding: 1rem !important;
             border-radius: 1rem !important;
@@ -1852,7 +1757,7 @@ def inject_custom_css():
             border: 1px solid {c['border']} !important;
         }}
         
-        .notification p,
+        .stAlert p,
         .stSuccess p,
         .stError p,
         .stWarning p,
@@ -2200,7 +2105,6 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
-                ("📱 Fancy Number", "fancy_number")
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2210,7 +2114,6 @@ else:
                 ("🖼️ HOLD", "hold"),
                 ("❌ Mistakes", "mistakes"),
                 ("💬 Chat", "chat"),
-                ("📱 Fancy Number", "fancy_number"),
                 ("⏰ Late Login", "late_login"),
                 ("📞 Quality Issues", "quality_issues"),
                 ("🔄 Mid-shift Issues", "midshift_issues")
@@ -2219,10 +2122,6 @@ else:
         # Add admin option for admin users
         if st.session_state.role == "admin":
             nav_options.append(("⚙️ Admin", "admin"))
-        
-        # Add VIP Management for taha kirri
-        if st.session_state.username.lower() == "taha kirri":
-            nav_options.append(("⭐ VIP Management", "vip_management"))
         
         for option, value in nav_options:
             if st.button(option, key=f"nav_{value}", use_container_width=True):
@@ -2407,81 +2306,7 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user is VIP or taha kirri
-                is_vip = is_vip_user(st.session_state.username)
-                is_taha = st.session_state.username.lower() == "taha kirri"
-                
-                if is_vip or is_taha:
-                    tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
-                    
-                    with tab1:
-                        st.subheader("Regular Chat")
-                        messages = get_group_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                        for msg in reversed(messages):
-                            msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
-                            is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
-                            st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        with st.form("regular_chat_form", clear_on_submit=True):
-                            message = st.text_input("Type your message...", key="regular_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_group_message(st.session_state.username, message)
-                                        st.rerun()
-                    
-                    with tab2:
-                        st.markdown("""
-                        <div style='padding: 1rem; background-color: #2d3748; border-radius: 0.5rem; margin-bottom: 1rem;'>
-                            <h3 style='color: gold; margin: 0;'>⭐ VIP Chat</h3>
-                            <p style='color: #e2e8f0; margin: 0;'>Exclusive chat for VIP members</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        vip_messages = get_vip_messages()
-                        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                        for msg in reversed(vip_messages):
-                            msg_id, sender, message, ts, mentions = msg
-                            is_sent = sender == st.session_state.username
-                            is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                            
-                            st.markdown(f"""
-                            <div class="chat-message {'sent' if is_sent else 'received'}">
-                                <div class="message-avatar" style="background-color: gold;">
-                                    {sender[0].upper()}
-                                </div>
-                                <div class="message-content" style="background-color: #4a5568;">
-                                    <div>{message}</div>
-                                    <div class="message-meta">{sender} • {ts}</div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        with st.form("vip_chat_form", clear_on_submit=True):
-                            message = st.text_input("Type your message...", key="vip_chat_input")
-                            col1, col2 = st.columns([5,1])
-                            with col2:
-                                if st.form_submit_button("Send"):
-                                    if message:
-                                        send_vip_message(st.session_state.username, message)
-                                        st.rerun()
-                else:
+
                     # Regular chat only for non-VIP users
                     st.subheader("Regular Chat")
                     messages = get_group_messages()
@@ -2515,68 +2340,7 @@ else:
         else:
             st.error("System is currently locked. Access to chat is disabled.")
 
-    elif st.session_state.current_section == "fancy_number":
-        if not is_killswitch_enabled():
-            st.title("📱 Fancy Number Checker")
-            
-            with st.form("fancy_number_form"):
-                phone_number = st.text_input("Enter Phone Number", placeholder="Enter a 10-digit phone number")
-                submit = st.form_submit_button("Check Number")
-                
-                if submit and phone_number:
-                    # Clean the phone number
-                    cleaned_number = ''.join(filter(str.isdigit, phone_number))
-                    
-                    if len(cleaned_number) != 10:
-                        st.error("Please enter a valid 10-digit phone number")
-                    else:
-                        # Check for patterns
-                        patterns = []
-                        
-                        # Check for repeating digits
-                        for i in range(10):
-                            if str(i) * 3 in cleaned_number:
-                                patterns.append(f"Contains triple {i}'s")
-                            if str(i) * 4 in cleaned_number:
-                                patterns.append(f"Contains quadruple {i}'s")
-                        
-                        # Check for sequential numbers (ascending and descending)
-                        for i in range(len(cleaned_number)-2):
-                            if (int(cleaned_number[i]) + 1 == int(cleaned_number[i+1]) and 
-                                int(cleaned_number[i+1]) + 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains ascending sequence")
-                            elif (int(cleaned_number[i]) - 1 == int(cleaned_number[i+1]) and 
-                                  int(cleaned_number[i+1]) - 1 == int(cleaned_number[i+2])):
-                                patterns.append("Contains descending sequence")
-                        
-                        # Check for palindrome patterns
-                        for i in range(len(cleaned_number)-3):
-                            segment = cleaned_number[i:i+4]
-                            if segment == segment[::-1]:
-                                patterns.append(f"Contains palindrome pattern: {segment}")
-                        
-                        # Check for repeated pairs
-                        for i in range(len(cleaned_number)-1):
-                            pair = cleaned_number[i:i+2]
-                            if cleaned_number.count(pair) > 1:
-                                patterns.append(f"Contains repeated pair: {pair}")
-                        
-                        # Format number in a readable way
-                        formatted_number = f"({cleaned_number[:3]}) {cleaned_number[3:6]}-{cleaned_number[6:]}"
-                        
-                        # Display results
-                        st.write("### Analysis Results")
-                        st.write(f"Formatted Number: {formatted_number}")
-                        
-                        if patterns:
-                            st.success("This is a fancy number! 🌟")
-                            st.write("Special patterns found:")
-                            for pattern in set(patterns):  # Using set to remove duplicates
-                                st.write(f"- {pattern}")
-                        else:
-                            st.info("This appears to be a regular number. No special patterns found.")
-        else:
-            st.error("System is currently locked. Access to fancy number checker is disabled.")
+
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
@@ -3109,63 +2873,147 @@ else:
         st.subheader("Existing Users")
         users = get_all_users()
         
-        # Create a table-like display using columns
-        if st.session_state.username.lower() == "taha kirri":
-            # Full view for taha kirri
-            cols = st.columns([3, 1, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Role**")
-            cols[2].write("**Action**")
+        # Create tabs for different user types
+        user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
+        
+        with user_tabs[0]:
+            # All users view
+            st.write("### All Users")
             
+            # Create a dataframe for better display
+            user_data = []
             for uid, uname, urole in users:
-                cols = st.columns([3, 1, 1])
-                cols[0].write(uname)
-                cols[1].write(urole)
-                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
-        else:
-            # Limited view for other admins
-            cols = st.columns([4, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Action**")
+                user_data.append({
+                    "ID": uid,
+                    "Username": uname,
+                    "Role": urole
+                })
             
-            for uid, uname, urole in users:
-                cols = st.columns([4, 1])
-                cols[0].write(uname)
-                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
+            df = pd.DataFrame(user_data)
+            st.dataframe(df, use_container_width=True)
+            
+            # User deletion with dropdown
+            if st.session_state.username.lower() == "taha kirri":
+                # Taha can delete any user
+                with st.form("delete_user_form"):
+                    st.write("### Delete User")
+                    user_to_delete = st.selectbox(
+                        "Select User to Delete",
+                        [f"{user[0]} - {user[1]} ({user[2]})" for user in users],
+                        key="delete_user_select"
+                    )
+                    
+                    if st.form_submit_button("Delete User") and not is_killswitch_enabled():
+                        user_id = int(user_to_delete.split(' - ')[0])
+                        if delete_user(user_id):
+                            st.success(f"User deleted successfully!")
+                            st.rerun()
+        
+        with user_tabs[1]:
+            # Admins view
+            admin_users = [user for user in users if user[2] == "admin"]
+            st.write(f"### Admin Users ({len(admin_users)})")
+            
+            admin_data = []
+            for uid, uname, urole in admin_users:
+                admin_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if admin_data:
+                st.dataframe(pd.DataFrame(admin_data), use_container_width=True)
+            else:
+                st.info("No admin users found")
+        
+        with user_tabs[2]:
+            # Agents view
+            agent_users = [user for user in users if user[2] == "agent"]
+            st.write(f"### Agent Users ({len(agent_users)})")
+            
+            agent_data = []
+            for uid, uname, urole in agent_users:
+                agent_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if agent_data:
+                st.dataframe(pd.DataFrame(agent_data), use_container_width=True)
+                
+                # Only admins can delete agent accounts
+                with st.form("delete_agent_form"):
+                    st.write("### Delete Agent")
+                    agent_to_delete = st.selectbox(
+                        "Select Agent to Delete",
+                        [f"{user[0]} - {user[1]}" for user in agent_users],
+                        key="delete_agent_select"
+                    )
+                    
+                    if st.form_submit_button("Delete Agent") and not is_killswitch_enabled():
+                        agent_id = int(agent_to_delete.split(' - ')[0])
+                        if delete_user(agent_id):
+                            st.success(f"Agent deleted successfully!")
+                            st.rerun()
+            else:
+                st.info("No agent users found")
+        
+        with user_tabs[3]:
+            # QA view
+            qa_users = [user for user in users if user[2] == "qa"]
+            st.write(f"### QA Users ({len(qa_users)})")
+            
+            qa_data = []
+            for uid, uname, urole in qa_users:
+                qa_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if qa_data:
+                st.dataframe(pd.DataFrame(qa_data), use_container_width=True)
+            else:
+                st.info("No QA users found")
 
-        st.subheader("⭐ VIP User Management")
+        st.subheader("🔑 Password Management")
         
         # Get all users
         users = get_all_users()
         
-        with st.form("vip_management"):
-            selected_user = st.selectbox(
-                "Select User",
-                [user[1] for user in users],
-                format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-            )
-            
-            if selected_user:
-                current_vip = is_vip_user(selected_user)
-                make_vip = st.checkbox("VIP Status", value=current_vip)
+        # Filter users based on role
+        if st.session_state.username.lower() == "taha kirri":
+            # Taha can reset passwords for all users
+            with st.form("reset_password_form_admin"):
+                st.write("Reset Password for Admin/QA Users")
+                admin_qa_users = [user for user in users if user[2] in ["admin", "qa"]]
+                selected_admin = st.selectbox(
+                    "Select Admin/QA User",
+                    [user[1] for user in admin_qa_users],
+                    key="admin_select"
+                )
+                new_admin_pwd = st.text_input("New Password", type="password", key="admin_pwd")
                 
-                if st.form_submit_button("Update VIP Status"):
-                    if set_vip_status(selected_user, make_vip):
-                        st.success(f"Updated VIP status for {selected_user}")
-                        # Force database refresh
-                        conn = get_db_connection()
-                        try:
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT is_vip FROM users WHERE username = ?", (selected_user,))
-                            new_status = cursor.fetchone()
-                            if new_status:
-                                st.write(f"New VIP status: {'VIP' if new_status[0] else 'Regular User'}")
-                        finally:
-                            conn.close()
+                if st.form_submit_button("Reset Password"):
+                    if selected_admin and new_admin_pwd:
+                        if reset_password(selected_admin, new_admin_pwd):
+                            st.success(f"Password reset for {selected_admin}")
+                            st.rerun()
+        
+        # All admins can reset agent passwords
+        with st.form("reset_password_form_agent"):
+            st.write("Reset Password for Agent Users")
+            agent_users = [user for user in users if user[2] == "agent"]
+            selected_agent = st.selectbox(
+                "Select Agent",
+                [user[1] for user in agent_users],
+                key="agent_select"
+            )
+            new_agent_pwd = st.text_input("New Password", type="password", key="agent_pwd")
+            
+            if st.form_submit_button("Reset Password"):
+                if selected_agent and new_agent_pwd:
+                    if reset_password(selected_agent, new_agent_pwd):
+                        st.success(f"Password reset for {selected_agent}")
                         st.rerun()
         
         st.markdown("---")
@@ -3175,137 +3023,6 @@ else:
             admin_break_dashboard()
         else:
             agent_break_dashboard()
-
-    elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
-        st.title("⭐ VIP Management")
-        
-        # Get all users
-        users = get_all_users()
-        
-        # Create columns for better layout
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            # Show all users with their current VIP status
-            st.markdown("### Current VIP Status")
-            user_data = []
-            for user_id, username, role in users:
-                is_vip = is_vip_user(username)
-                user_data.append({
-                    "Username": username,
-                    "Role": role,
-                    "Status": "⭐ VIP" if is_vip else "Regular User"
-                })
-            
-            df = pd.DataFrame(user_data)
-            st.dataframe(df, use_container_width=True)
-        
-        with col2:
-            # VIP management form
-            with st.form("vip_management_form"):
-                st.write("### Update VIP Status")
-                selected_user = st.selectbox(
-                    "Select User",
-                    [user[1] for user in users if user[1].lower() != "taha kirri"],
-                    format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-                )
-                
-                if selected_user:
-                    current_vip = is_vip_user(selected_user)
-                    make_vip = st.checkbox("Grant VIP Access", value=current_vip)
-                    
-                    if st.form_submit_button("Update"):
-                        if set_vip_status(selected_user, make_vip):
-                            st.success(f"Updated VIP status for {selected_user}")
-                            st.rerun()
-        
-        # Add VIP Statistics
-        st.markdown("---")
-        st.subheader("VIP Statistics")
-        
-        total_users = len(users)
-        vip_users = sum(1 for user in users if is_vip_user(user[1]))
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Users", total_users)
-        with col2:
-            st.metric("VIP Users", vip_users)
-        with col3:
-            st.metric("Regular Users", total_users - vip_users)
-        
-        # VIP Chat Overview
-        st.markdown("---")
-        st.subheader("VIP Chat Overview")
-        vip_messages = get_vip_messages()
-        if vip_messages:
-            message_data = []
-            for msg in vip_messages[:10]:  # Show last 10 messages
-                msg_id, sender, message, ts, mentions = msg
-                message_data.append({
-                    "Time": ts,
-                    "Sender": sender,
-                    "Message": message
-                })
-            st.dataframe(pd.DataFrame(message_data))
-        else:
-            st.info("No VIP messages yet")
-
-    # VIP Management Section
-    def vip_management():
-        st.title("⭐ VIP Management")
-        
-        # Only taha kirri can access this section
-        if st.session_state.username.lower() != "taha kirri":
-            st.error("Access denied. Only Taha Kirri can access this section.")
-            return
-        
-        st.markdown("### Create New User")
-        
-        with st.form("create_user_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            role = st.selectbox("Role", ["agent", "admin", "qa"])
-            submit = st.form_submit_button("Create User")
-            
-            if submit:
-                if not username or not password:
-                    st.error("Please fill in all fields.")
-                    return
-                
-                # Check if user already exists
-                conn = get_db_connection()
-                cur = conn.cursor()
-                cur.execute("SELECT username FROM users WHERE username = ?", (username,))
-                if cur.fetchone():
-                    st.error("Username already exists.")
-                    conn.close()
-                    return
-                
-                # Create new user
-                cur.execute(
-                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                    (username, password, role)
-                )
-                conn.commit()
-                conn.close()
-                st.success(f"User {username} created successfully with role: {role}")
-        
-        st.markdown("### Manage Existing Users")
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT username, role FROM users")
-        users = cur.fetchall()
-        conn.close()
-        
-        if not users:
-            st.info("No users found.")
-            return
-        
-        # Display users in a table
-        user_df = pd.DataFrame(users, columns=["Username", "Role"])
-        st.dataframe(user_df, use_container_width=True)
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
