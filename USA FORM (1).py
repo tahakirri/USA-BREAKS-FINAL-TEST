@@ -690,219 +690,138 @@ def clear_late_logins():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Initialize or retrieve confirmation state
-    if 'data_clear_state' not in st.session_state:
-        st.session_state.data_clear_state = {}
+    # Confirmation mechanism for late logins
+    st.warning("🚨 PERMANENT DELETION WARNING")
+    st.markdown("### Late Login Records Clearance")
+    st.markdown("**Are you sure you want to PERMANENTLY delete ALL late login records?**")
     
-    # Unique key for late logins confirmation
-    clear_key = 'clear_late_logins'
+    col1, col2 = st.columns(2)
     
-    # Persistent confirmation mechanism
-    if clear_key not in st.session_state.data_clear_state:
-        st.session_state.data_clear_state[clear_key] = {
-            'show_confirmation': True,
-            'attempts': 0
-        }
-    
-    state = st.session_state.data_clear_state[clear_key]
-    
-    if state['show_confirmation']:
-        st.warning("🚨 PERMANENT DELETION WARNING")
-        st.markdown("### Late Login Records Clearance")
-        st.markdown("**This action will PERMANENTLY delete ALL late login records.**")
-        st.markdown("⚠️ **Consequences:**")
-        st.markdown("- All late login data will be irrecoverably removed")
-        st.markdown("- This action CANNOT be undone")
-        
-        # Confirmation checkbox with attempt tracking
-        confirmation = st.checkbox(f"🗑️ I understand. Confirm deletion (Attempt {state['attempts'] + 1}/3)")
-        
-        if confirmation:
-            state['attempts'] += 1
-            
-            if state['attempts'] <= 3:
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM late_logins")
-                    cursor.execute("VACUUM")
-                    conn.commit()
-                    
-                    # Clear related session state
-                    if 'late_logins' in st.session_state:
-                        del st.session_state.late_logins
-                    
-                    st.success("🟢 ALL late login records have been PERMANENTLY deleted!")
-                    
-                    # Reset and hide confirmation
-                    state['show_confirmation'] = False
-                    st.experimental_rerun()
-                    return True
-                except Exception as e:
-                    st.error(f"❌ Error clearing late login records: {str(e)}")
-                    return False
-                finally:
-                    conn.close()
-            else:
-                st.error("🚫 Maximum deletion attempts reached. Please contact system administrator.")
-                state['show_confirmation'] = False
+    with col1:
+        if st.button("🗑️ Yes, Delete All"):
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                # Clear late logins table
+                cursor.execute("DELETE FROM late_logins")
+                cursor.execute("VACUUM")
+                conn.commit()
+                
+                # Clear any related session state or display elements
+                if 'late_logins' in st.session_state:
+                    del st.session_state.late_logins
+                
+                # Clear any associated display tables or elements
+                if 'late_logins_table' in st.session_state:
+                    del st.session_state.late_logins_table
+                
+                st.success("🟢 ALL late login records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
-        
-        # Option to cancel
-        if st.button("🚫 Cancel Deletion"):
-            state['show_confirmation'] = False
-            st.experimental_rerun()
-        
-        # Prevent further page rendering
-        st.stop()
+                return True
+            except Exception as e:
+                st.error(f"❌ Error clearing late login records: {str(e)}")
+                return False
+            finally:
+                conn.close()
     
-    return False
+    with col2:
+        if st.button("🚫 No, Cancel"):
+            st.experimental_rerun()
+    
+    # Prevent further page rendering
+    st.stop()
 
 def clear_quality_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Initialize or retrieve confirmation state
-    if 'data_clear_state' not in st.session_state:
-        st.session_state.data_clear_state = {}
+    # Confirmation mechanism for quality issues
+    st.warning("🚨 PERMANENT DELETION WARNING")
+    st.markdown("### Quality Issue Records Clearance")
+    st.markdown("**Are you sure you want to PERMANENTLY delete ALL quality issue records?**")
     
-    # Unique key for quality issues confirmation
-    clear_key = 'clear_quality_issues'
+    col1, col2 = st.columns(2)
     
-    # Persistent confirmation mechanism
-    if clear_key not in st.session_state.data_clear_state:
-        st.session_state.data_clear_state[clear_key] = {
-            'show_confirmation': True,
-            'attempts': 0
-        }
-    
-    state = st.session_state.data_clear_state[clear_key]
-    
-    if state['show_confirmation']:
-        st.warning("🚨 PERMANENT DELETION WARNING")
-        st.markdown("### Quality Issue Records Clearance")
-        st.markdown("**This action will PERMANENTLY delete ALL quality issue records.**")
-        st.markdown("⚠️ **Consequences:**")
-        st.markdown("- All quality issue data will be irrecoverably removed")
-        st.markdown("- This action CANNOT be undone")
-        
-        # Confirmation checkbox with attempt tracking
-        confirmation = st.checkbox(f"🗑️ I understand. Confirm deletion (Attempt {state['attempts'] + 1}/3)")
-        
-        if confirmation:
-            state['attempts'] += 1
-            
-            if state['attempts'] <= 3:
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM quality_issues")
-                    cursor.execute("VACUUM")
-                    conn.commit()
-                    
-                    # Clear related session state
-                    if 'quality_issues' in st.session_state:
-                        del st.session_state.quality_issues
-                    
-                    st.success("🟢 ALL quality issue records have been PERMANENTLY deleted!")
-                    
-                    # Reset and hide confirmation
-                    state['show_confirmation'] = False
-                    st.experimental_rerun()
-                    return True
-                except Exception as e:
-                    st.error(f"❌ Error clearing quality issue records: {str(e)}")
-                    return False
-                finally:
-                    conn.close()
-            else:
-                st.error("🚫 Maximum deletion attempts reached. Please contact system administrator.")
-                state['show_confirmation'] = False
+    with col1:
+        if st.button("🗑️ Yes, Delete All"):
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                # Clear quality issues table
+                cursor.execute("DELETE FROM quality_issues")
+                cursor.execute("VACUUM")
+                conn.commit()
+                
+                # Clear any related session state or display elements
+                if 'quality_issues' in st.session_state:
+                    del st.session_state.quality_issues
+                
+                # Clear any associated display tables or elements
+                if 'quality_issues_table' in st.session_state:
+                    del st.session_state.quality_issues_table
+                
+                st.success("🟢 ALL quality issue records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
-        
-        # Option to cancel
-        if st.button("🚫 Cancel Deletion"):
-            state['show_confirmation'] = False
-            st.experimental_rerun()
-        
-        # Prevent further page rendering
-        st.stop()
+                return True
+            except Exception as e:
+                st.error(f"❌ Error clearing quality issue records: {str(e)}")
+                return False
+            finally:
+                conn.close()
     
-    return False
+    with col2:
+        if st.button("🚫 No, Cancel"):
+            st.experimental_rerun()
+    
+    # Prevent further page rendering
+    st.stop()
 
 def clear_midshift_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
     
-    # Initialize or retrieve confirmation state
-    if 'data_clear_state' not in st.session_state:
-        st.session_state.data_clear_state = {}
+    # Confirmation mechanism for midshift issues
+    st.warning("🚨 PERMANENT DELETION WARNING")
+    st.markdown("### Mid-Shift Issue Records Clearance")
+    st.markdown("**Are you sure you want to PERMANENTLY delete ALL mid-shift issue records?**")
     
-    # Unique key for midshift issues confirmation
-    clear_key = 'clear_midshift_issues'
+    col1, col2 = st.columns(2)
     
-    # Persistent confirmation mechanism
-    if clear_key not in st.session_state.data_clear_state:
-        st.session_state.data_clear_state[clear_key] = {
-            'show_confirmation': True,
-            'attempts': 0
-        }
-    
-    state = st.session_state.data_clear_state[clear_key]
-    
-    if state['show_confirmation']:
-        st.warning("🚨 PERMANENT DELETION WARNING")
-        st.markdown("### Mid-Shift Issue Records Clearance")
-        st.markdown("**This action will PERMANENTLY delete ALL mid-shift issue records.**")
-        st.markdown("⚠️ **Consequences:**")
-        st.markdown("- All mid-shift issue data will be irrecoverably removed")
-        st.markdown("- This action CANNOT be undone")
-        
-        # Confirmation checkbox with attempt tracking
-        confirmation = st.checkbox(f"🗑️ I understand. Confirm deletion (Attempt {state['attempts'] + 1}/3)")
-        
-        if confirmation:
-            state['attempts'] += 1
-            
-            if state['attempts'] <= 3:
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM midshift_issues")
-                    cursor.execute("VACUUM")
-                    conn.commit()
-                    
-                    # Clear related session state
-                    if 'midshift_issues' in st.session_state:
-                        del st.session_state.midshift_issues
-                    
-                    st.success("🟢 ALL mid-shift issue records have been PERMANENTLY deleted!")
-                    
-                    # Reset and hide confirmation
-                    state['show_confirmation'] = False
-                    st.experimental_rerun()
-                    return True
-                except Exception as e:
-                    st.error(f"❌ Error clearing mid-shift issue records: {str(e)}")
-                    return False
-                finally:
-                    conn.close()
-            else:
-                st.error("🚫 Maximum deletion attempts reached. Please contact system administrator.")
-                state['show_confirmation'] = False
+    with col1:
+        if st.button("🗑️ Yes, Delete All"):
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                # Clear midshift issues table
+                cursor.execute("DELETE FROM midshift_issues")
+                cursor.execute("VACUUM")
+                conn.commit()
+                
+                # Clear any related session state or display elements
+                if 'midshift_issues' in st.session_state:
+                    del st.session_state.midshift_issues
+                
+                # Clear any associated display tables or elements
+                if 'midshift_issues_table' in st.session_state:
+                    del st.session_state.midshift_issues_table
+                
+                st.success("🟢 ALL mid-shift issue records have been PERMANENTLY deleted!")
                 st.experimental_rerun()
-        
-        # Option to cancel
-        if st.button("🚫 Cancel Deletion"):
-            state['show_confirmation'] = False
-            st.experimental_rerun()
-        
-        # Prevent further page rendering
-        st.stop()
+                return True
+            except Exception as e:
+                st.error(f"❌ Error clearing mid-shift issue records: {str(e)}")
+                return False
+            finally:
+                conn.close()
     
-    return False
+    with col2:
+        if st.button("🚫 No, Cancel"):
+            st.experimental_rerun()
+    
+    # Prevent further page rendering
+    st.stop()
 
 def send_vip_message(sender, message):
     """Send a message in the VIP-only chat"""
