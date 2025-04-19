@@ -2136,6 +2136,7 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
+                ("📱 Fancy Number", "fancy_number"),
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2147,7 +2148,8 @@ else:
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
                 ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
+                ("🔄 Mid-shift Issues", "midshift_issues"),
+                ("📱 Fancy Number", "fancy_number")
             ])
         
         # Add admin option for admin users
@@ -2199,6 +2201,9 @@ else:
             st.rerun()
 
     st.title(st.session_state.current_section.title())
+
+    if st.session_state.current_section == "fancy_number":
+        lycamobile_fancy_number_checker()
 
     if st.session_state.current_section == "requests":
         if not is_killswitch_enabled():
