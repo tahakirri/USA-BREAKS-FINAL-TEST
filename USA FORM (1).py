@@ -73,7 +73,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin')),
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
@@ -1828,21 +1828,39 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        nav_options = [
-            ("📋 Requests", "requests"),
-            ("☕ Breaks", "breaks"),
-            ("🖼️ HOLD", "hold"),
-            ("❌ Mistakes", "mistakes"),
-            ("💬 Chat", "chat"),
-            ("📱 Fancy Number", "fancy_number"),
-            ("⏰ Late Login", "late_login"),
-            ("📞 Quality Issues", "quality_issues"),
-            ("🔄 Mid-shift Issues", "midshift_issues")
-        ]
+        # Define navigation options based on user role
+        nav_options = []
         
-        # Add admin option for admin users
-        if st.session_state.role == "admin":
-            nav_options.append(("⚙️ Admin", "admin"))
+        if st.session_state.role == "qa":
+            nav_options = [
+                ("📞 Quality Issues", "quality_issues"),
+                ("📱 Fancy Number", "fancy_number")
+            ]
+        elif st.session_state.role == "admin":
+            nav_options = [
+                ("📋 Requests", "requests"),
+                ("☕ Breaks", "breaks"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues"),
+                ("⚙️ Admin", "admin")
+            ]
+        else:  # agent role
+            nav_options = [
+                ("📋 Requests", "requests"),
+                ("☕ Breaks", "breaks"),
+                ("🖼️ HOLD", "hold"),
+                ("❌ Mistakes", "mistakes"),
+                ("💬 Chat", "chat"),
+                ("📱 Fancy Number", "fancy_number"),
+                ("⏰ Late Login", "late_login"),
+                ("📞 Quality Issues", "quality_issues"),
+                ("🔄 Mid-shift Issues", "midshift_issues")
+            ]
         
         # Add VIP Management for taha kirri
         if st.session_state.username.lower() == "taha kirri":
@@ -1851,43 +1869,6 @@ else:
         for option, value in nav_options:
             if st.button(option, key=f"nav_{value}", use_container_width=True):
                 st.session_state.current_section = value
-        
-        st.markdown("---")
-        pending_requests = len([r for r in get_requests() if not r[6]])
-        new_mistakes = len(get_mistakes())
-        unread_messages = len([m for m in get_group_messages() 
-                             if m[0] not in st.session_state.last_message_ids 
-                             and m[1] != st.session_state.username])
-        
-        st.markdown(f"""
-        <div style="
-            background-color: {'#1e293b' if st.session_state.color_mode == 'dark' else '#ffffff'};
-            padding: 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid {'#334155' if st.session_state.color_mode == 'dark' else '#e2e8f0'};
-            margin-bottom: 20px;
-        ">
-            <h4 style="
-                color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
-                margin-bottom: 1rem;
-            ">🔔 Notifications</h4>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                margin-bottom: 0.5rem;
-            ">📋 Pending requests: {pending_requests}</p>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                margin-bottom: 0.5rem;
-            ">❌ Recent mistakes: {new_mistakes}</p>
-            <p style="
-                color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-            ">💬 Unread messages: {unread_messages}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("🚪 Logout", use_container_width=True):
-            st.session_state.authenticated = False
-            st.rerun()
 
     st.title(st.session_state.current_section.title())
 
@@ -2362,40 +2343,42 @@ else:
         st.subheader("📞 Quality Related Technical Issue")
         
         if not is_killswitch_enabled():
-            with st.form("quality_issue_form"):
-                cols = st.columns(4)
-                issue_type = cols[0].selectbox("Type of issue", [
-                    "Blocage Physical Avaya",
-                    "Hold Than Call Drop",
-                    "Call Drop From Workspace",
-                    "Wrong Space Frozen"
-                ])
-                timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
-                mobile_number = cols[2].text_input("Mobile number")
-                product = cols[3].selectbox("Product", [
-                    "LM_CS_LMUSA_EN",
-                    "LM_CS_LMUSA_ES"
-                ])
-                
-                if st.form_submit_button("Submit"):
-                    try:
-                        datetime.strptime(timing, "%H:%M")
-                        add_quality_issue(
-                            st.session_state.username,
-                            issue_type,
-                            timing,
-                            mobile_number,
-                            product
-                        )
-                        st.success("Quality issue reported successfully!")
-                    except ValueError:
-                        st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
+            # Only show the form for agents and admins
+            if st.session_state.role in ["agent", "admin"]:
+                with st.form("quality_issue_form"):
+                    cols = st.columns(4)
+                    issue_type = cols[0].selectbox("Type of issue", [
+                        "Blocage Physical Avaya",
+                        "Hold Than Call Drop",
+                        "Call Drop From Workspace",
+                        "Wrong Space Frozen"
+                    ])
+                    timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
+                    mobile_number = cols[2].text_input("Mobile number")
+                    product = cols[3].selectbox("Product", [
+                        "LM_CS_LMUSA_EN",
+                        "LM_CS_LMUSA_ES"
+                    ])
+                    
+                    if st.form_submit_button("Submit"):
+                        try:
+                            datetime.strptime(timing, "%H:%M")
+                            add_quality_issue(
+                                st.session_state.username,
+                                issue_type,
+                                timing,
+                                mobile_number,
+                                product
+                            )
+                            st.success("Quality issue reported successfully!")
+                        except ValueError:
+                            st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
         quality_issues = get_quality_issues()
         
-        if st.session_state.role == "admin":
-            # Search and date filter only for admin users
+        # Search and date filter for admin and QA roles
+        if st.session_state.role in ["admin", "qa"]:
             col1, col2 = st.columns([2, 1])
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
@@ -2454,7 +2437,8 @@ else:
                     mime="text/csv"
                 )
                 
-                if st.button("Clear All Records"):
+                # Only show clear button for admin role
+                if st.session_state.role == "admin" and st.button("Clear All Records"):
                     clear_quality_issues()
                     st.rerun()
             else:
@@ -2715,7 +2699,7 @@ else:
                 pwd = st.text_input("Password", type="password")
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin"])
+                    role = st.selectbox("Role", ["agent", "admin", "qa"])
                 else:
                     role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
