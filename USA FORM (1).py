@@ -2908,46 +2908,82 @@ def handle_message_check():
     return {"new_messages": False, "messages": []}
 
 def get_late_logins_by_date(start_date=None, end_date=None):
-    late_logins = get_late_logins()
-    if start_date and end_date:
+    try:
+        late_logins = get_late_logins()
+        if not late_logins:
+            return []
+            
+        if not start_date or not end_date:
+            return late_logins
+            
         filtered_logins = []
         for login in late_logins:
             try:
+                # Handle potential empty timestamp
+                if not login[5]:
+                    continue
+                    
                 login_date = datetime.strptime(login[5][:10], "%Y-%m-%d").date()
                 if start_date <= login_date <= end_date:
                     filtered_logins.append(login)
-            except:
+            except (ValueError, IndexError, TypeError):
                 continue
         return filtered_logins
-    return late_logins
+    except Exception as e:
+        st.error(f"Error filtering late logins: {str(e)}")
+        return []
 
 def get_quality_issues_by_date(start_date=None, end_date=None):
-    quality_issues = get_quality_issues()
-    if start_date and end_date:
+    try:
+        quality_issues = get_quality_issues()
+        if not quality_issues:
+            return []
+            
+        if not start_date or not end_date:
+            return quality_issues
+            
         filtered_issues = []
         for issue in quality_issues:
             try:
+                # Handle potential empty timestamp
+                if not issue[6]:
+                    continue
+                    
                 issue_date = datetime.strptime(issue[6][:10], "%Y-%m-%d").date()
                 if start_date <= issue_date <= end_date:
                     filtered_issues.append(issue)
-            except:
+            except (ValueError, IndexError, TypeError):
                 continue
         return filtered_issues
-    return quality_issues
+    except Exception as e:
+        st.error(f"Error filtering quality issues: {str(e)}")
+        return []
 
 def get_midshift_issues_by_date(start_date=None, end_date=None):
-    midshift_issues = get_midshift_issues()
-    if start_date and end_date:
+    try:
+        midshift_issues = get_midshift_issues()
+        if not midshift_issues:
+            return []
+            
+        if not start_date or not end_date:
+            return midshift_issues
+            
         filtered_issues = []
         for issue in midshift_issues:
             try:
+                # Handle potential empty timestamp
+                if not issue[5]:
+                    continue
+                    
                 issue_date = datetime.strptime(issue[5][:10], "%Y-%m-%d").date()
                 if start_date <= issue_date <= end_date:
                     filtered_issues.append(issue)
-            except:
+            except (ValueError, IndexError, TypeError):
                 continue
         return filtered_issues
-    return midshift_issues
+    except Exception as e:
+        st.error(f"Error filtering midshift issues: {str(e)}")
+        return []
 
 def search_late_logins(query):
     conn = get_db_connection()
