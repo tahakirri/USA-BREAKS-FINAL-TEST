@@ -2251,6 +2251,7 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
+                ("📱 Fancy Number", "fancy_number")
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2646,6 +2647,48 @@ else:
                 st.dataframe(df)
             else:
                 st.info("You have no late login records")
+
+    elif st.session_state.current_section == "fancy_number":
+        st.subheader("📱 Fancy Number Checker")
+        
+        # Input for phone number
+        phone_number = st.text_input("Enter Phone Number", placeholder="e.g. +1 (123) 456-7890")
+        
+        # Check button
+        if st.button("Check Fancy Number"):
+            if phone_number:
+                # Clean the phone number
+                cleaned_number = re.sub(r'\D', '', phone_number)
+                
+                # Check if the last 6 digits form a fancy pattern
+                if len(cleaned_number) >= 6:
+                    last_six_digits = cleaned_number[-6:]
+                    
+                    # Check for various fancy patterns
+                    is_fancy = (
+                        # Repeating digits
+                        len(set(last_six_digits)) <= 2 or
+                        
+                        # Sequential digits
+                        last_six_digits in ['123456', '234567', '345678', '456789', '567890'] or
+                        last_six_digits in ['654321', '543210', '432109', '321098', '210987'] or
+                        
+                        # Palindrome
+                        last_six_digits == last_six_digits[::-1] or
+                        
+                        # Special patterns
+                        last_six_digits in ['111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999'] or
+                        last_six_digits in ['112233', '223344', '334455', '445566', '556677', '667788', '778899']
+                    )
+                    
+                    if is_fancy:
+                        st.success(f"🎉 Fancy Number Found! The last 6 digits ({last_six_digits}) form a fancy pattern.")
+                    else:
+                        st.info(f"🔍 Not a Fancy Number. The last 6 digits ({last_six_digits}) do not form a special pattern.")
+                else:
+                    st.warning("Please enter a valid phone number with at least 6 digits.")
+            else:
+                st.warning("Please enter a phone number.")
 
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
