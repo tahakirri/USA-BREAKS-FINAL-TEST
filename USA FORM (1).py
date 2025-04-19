@@ -1909,16 +1909,14 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         
         # Theme toggle
-        st.markdown("### 🎨 Theme Settings")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.write("🌙" if st.session_state.color_mode == 'dark' else "☀️")
-        with col2:
-            if st.toggle("Light Mode", value=st.session_state.color_mode == 'light'):
+        if st.toggle("Light Mode", value=st.session_state.color_mode == 'light', key='theme_toggle'):
+            if st.session_state.color_mode != 'light':
                 st.session_state.color_mode = 'light'
-            else:
+                st.rerun()
+        else:
+            if st.session_state.color_mode != 'dark':
                 st.session_state.color_mode = 'dark'
-            st.rerun()
+                st.rerun()
         st.markdown("---")
         
         # Base navigation options available to all users
