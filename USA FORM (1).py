@@ -2142,13 +2142,13 @@ else:
         # Base navigation options available to all users
         nav_options = [
             ("requests", "📋 Requests"),
+            ("breaks", "☕ Breaks"),
             ("mistakes", "❌ Mistakes"),
             ("chat", "💬 Chat"),
             ("hold", "🖼️ HOLD Images"),
             ("late_login", "⏰ Late Login"),
             ("quality_issues", "📞 Quality Issues"),
             ("midshift_issues", "🔄 Mid-shift Issues"),
-            ("breaks", "☕ Breaks"),
             ("fancy_number", "📱 Fancy Number Checker")
         ]
 
