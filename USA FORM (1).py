@@ -507,6 +507,23 @@ def delete_user(user_id):
         return True
     finally:
         conn.close()
+        
+def reset_password(username, new_password):
+    """Reset a user's password"""
+    if is_killswitch_enabled():
+        st.error("System is currently locked. Please contact the developer.")
+        return False
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        hashed_password = hash_password(new_password)
+        cursor.execute("UPDATE users SET password = ? WHERE username = ?", 
+                     (hashed_password, username))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 
 def add_hold_image(uploader, image_data):
     if is_killswitch_enabled():
@@ -2856,63 +2873,147 @@ else:
         st.subheader("Existing Users")
         users = get_all_users()
         
-        # Create a table-like display using columns
-        if st.session_state.username.lower() == "taha kirri":
-            # Full view for taha kirri
-            cols = st.columns([3, 1, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Role**")
-            cols[2].write("**Action**")
+        # Create tabs for different user types
+        user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
+        
+        with user_tabs[0]:
+            # All users view
+            st.write("### All Users")
             
+            # Create a dataframe for better display
+            user_data = []
             for uid, uname, urole in users:
-                cols = st.columns([3, 1, 1])
-                cols[0].write(uname)
-                cols[1].write(urole)
-                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
-        else:
-            # Limited view for other admins
-            cols = st.columns([4, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Action**")
+                user_data.append({
+                    "ID": uid,
+                    "Username": uname,
+                    "Role": urole
+                })
             
-            for uid, uname, urole in users:
-                cols = st.columns([4, 1])
-                cols[0].write(uname)
-                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
+            df = pd.DataFrame(user_data)
+            st.dataframe(df, use_container_width=True)
+            
+            # User deletion with dropdown
+            if st.session_state.username.lower() == "taha kirri":
+                # Taha can delete any user
+                with st.form("delete_user_form"):
+                    st.write("### Delete User")
+                    user_to_delete = st.selectbox(
+                        "Select User to Delete",
+                        [f"{user[0]} - {user[1]} ({user[2]})" for user in users],
+                        key="delete_user_select"
+                    )
+                    
+                    if st.form_submit_button("Delete User") and not is_killswitch_enabled():
+                        user_id = int(user_to_delete.split(' - ')[0])
+                        if delete_user(user_id):
+                            st.success(f"User deleted successfully!")
+                            st.rerun()
+        
+        with user_tabs[1]:
+            # Admins view
+            admin_users = [user for user in users if user[2] == "admin"]
+            st.write(f"### Admin Users ({len(admin_users)})")
+            
+            admin_data = []
+            for uid, uname, urole in admin_users:
+                admin_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if admin_data:
+                st.dataframe(pd.DataFrame(admin_data), use_container_width=True)
+            else:
+                st.info("No admin users found")
+        
+        with user_tabs[2]:
+            # Agents view
+            agent_users = [user for user in users if user[2] == "agent"]
+            st.write(f"### Agent Users ({len(agent_users)})")
+            
+            agent_data = []
+            for uid, uname, urole in agent_users:
+                agent_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if agent_data:
+                st.dataframe(pd.DataFrame(agent_data), use_container_width=True)
+                
+                # Only admins can delete agent accounts
+                with st.form("delete_agent_form"):
+                    st.write("### Delete Agent")
+                    agent_to_delete = st.selectbox(
+                        "Select Agent to Delete",
+                        [f"{user[0]} - {user[1]}" for user in agent_users],
+                        key="delete_agent_select"
+                    )
+                    
+                    if st.form_submit_button("Delete Agent") and not is_killswitch_enabled():
+                        agent_id = int(agent_to_delete.split(' - ')[0])
+                        if delete_user(agent_id):
+                            st.success(f"Agent deleted successfully!")
+                            st.rerun()
+            else:
+                st.info("No agent users found")
+        
+        with user_tabs[3]:
+            # QA view
+            qa_users = [user for user in users if user[2] == "qa"]
+            st.write(f"### QA Users ({len(qa_users)})")
+            
+            qa_data = []
+            for uid, uname, urole in qa_users:
+                qa_data.append({
+                    "ID": uid,
+                    "Username": uname
+                })
+            
+            if qa_data:
+                st.dataframe(pd.DataFrame(qa_data), use_container_width=True)
+            else:
+                st.info("No QA users found")
 
-        st.subheader("⭐ VIP User Management")
+        st.subheader("🔑 Password Management")
         
         # Get all users
         users = get_all_users()
         
-        with st.form("vip_management"):
-            selected_user = st.selectbox(
-                "Select User",
-                [user[1] for user in users],
-                format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-            )
-            
-            if selected_user:
-                current_vip = is_vip_user(selected_user)
-                make_vip = st.checkbox("VIP Status", value=current_vip)
+        # Filter users based on role
+        if st.session_state.username.lower() == "taha kirri":
+            # Taha can reset passwords for all users
+            with st.form("reset_password_form_admin"):
+                st.write("Reset Password for Admin/QA Users")
+                admin_qa_users = [user for user in users if user[2] in ["admin", "qa"]]
+                selected_admin = st.selectbox(
+                    "Select Admin/QA User",
+                    [user[1] for user in admin_qa_users],
+                    key="admin_select"
+                )
+                new_admin_pwd = st.text_input("New Password", type="password", key="admin_pwd")
                 
-                if st.form_submit_button("Update VIP Status"):
-                    if set_vip_status(selected_user, make_vip):
-                        st.success(f"Updated VIP status for {selected_user}")
-                        # Force database refresh
-                        conn = get_db_connection()
-                        try:
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT is_vip FROM users WHERE username = ?", (selected_user,))
-                            new_status = cursor.fetchone()
-                            if new_status:
-                                st.write(f"New VIP status: {'VIP' if new_status[0] else 'Regular User'}")
-                        finally:
-                            conn.close()
+                if st.form_submit_button("Reset Password"):
+                    if selected_admin and new_admin_pwd:
+                        if reset_password(selected_admin, new_admin_pwd):
+                            st.success(f"Password reset for {selected_admin}")
+                            st.rerun()
+        
+        # All admins can reset agent passwords
+        with st.form("reset_password_form_agent"):
+            st.write("Reset Password for Agent Users")
+            agent_users = [user for user in users if user[2] == "agent"]
+            selected_agent = st.selectbox(
+                "Select Agent",
+                [user[1] for user in agent_users],
+                key="agent_select"
+            )
+            new_agent_pwd = st.text_input("New Password", type="password", key="agent_pwd")
+            
+            if st.form_submit_button("Reset Password"):
+                if selected_agent and new_agent_pwd:
+                    if reset_password(selected_agent, new_agent_pwd):
+                        st.success(f"Password reset for {selected_agent}")
                         st.rerun()
         
         st.markdown("---")
