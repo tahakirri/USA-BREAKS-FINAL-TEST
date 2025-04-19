@@ -689,49 +689,94 @@ def clear_late_logins():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
+    
+    # Create a confirmation modal
+    confirm = st.empty()
+    with confirm.container():
+        st.warning("🚨 Are you absolutely sure you want to clear ALL late login records?")
+        col1, col2 = st.columns(2)
         
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM late_logins")
-        conn.commit()
-        return True
-    except Exception as e:
-        st.error(f"Error clearing late logins: {str(e)}")
-    finally:
-        conn.close()
+        with col1:
+            if st.button("Yes, I'm sure", key="confirm_clear_late_logins"):
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM late_logins")
+                    conn.commit()
+                    confirm.success("Late login records cleared successfully!")
+                    return True
+                except Exception as e:
+                    confirm.error(f"Error clearing late login records: {str(e)}")
+                    return False
+                finally:
+                    conn.close()
+        
+        with col2:
+            if st.button("Cancel", key="cancel_clear_late_logins"):
+                confirm.empty()
+                return False
 
 def clear_quality_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
+    
+    # Create a confirmation modal
+    confirm = st.empty()
+    with confirm.container():
+        st.warning("🚨 Are you absolutely sure you want to clear ALL quality issue records?")
+        col1, col2 = st.columns(2)
         
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM quality_issues")
-        conn.commit()
-        return True
-    except Exception as e:
-        st.error(f"Error clearing quality issues: {str(e)}")
-    finally:
-        conn.close()
+        with col1:
+            if st.button("Yes, I'm sure", key="confirm_clear_quality_issues"):
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM quality_issues")
+                    conn.commit()
+                    confirm.success("Quality issue records cleared successfully!")
+                    return True
+                except Exception as e:
+                    confirm.error(f"Error clearing quality issue records: {str(e)}")
+                    return False
+                finally:
+                    conn.close()
+        
+        with col2:
+            if st.button("Cancel", key="cancel_clear_quality_issues"):
+                confirm.empty()
+                return False
 
 def clear_midshift_issues():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
+    
+    # Create a confirmation modal
+    confirm = st.empty()
+    with confirm.container():
+        st.warning("🚨 Are you absolutely sure you want to clear ALL mid-shift issue records?")
+        col1, col2 = st.columns(2)
         
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM midshift_issues")
-        conn.commit()
-        return True
-    except Exception as e:
-        st.error(f"Error clearing mid-shift issues: {str(e)}")
-    finally:
-        conn.close()
+        with col1:
+            if st.button("Yes, I'm sure", key="confirm_clear_midshift_issues"):
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM midshift_issues")
+                    conn.commit()
+                    confirm.success("Mid-shift issue records cleared successfully!")
+                    return True
+                except Exception as e:
+                    confirm.error(f"Error clearing mid-shift issue records: {str(e)}")
+                    return False
+                finally:
+                    conn.close()
+        
+        with col2:
+            if st.button("Cancel", key="cancel_clear_midshift_issues"):
+                confirm.empty()
+                return False
 
 def send_vip_message(sender, message):
     """Send a message in the VIP-only chat"""
