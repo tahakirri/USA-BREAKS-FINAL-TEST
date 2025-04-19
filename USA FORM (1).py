@@ -1670,10 +1670,31 @@ def inject_custom_css():
             margin-bottom: 1rem;
         }}
         
-        .template-selector label {{    
+        .template-selector label,
+        .default-template,
+        .template-name {{    
             color: {c['text']} !important;
             font-weight: 500;
-            margin-bottom: 0.5rem;
+        }}
+        
+        /* Template text styles */
+        div[data-testid="stMarkdownContainer"] p strong,
+        div[data-testid="stMarkdownContainer"] p em,
+        div[data-testid="stMarkdownContainer"] p {{    
+            color: {c['text']} !important;
+        }}
+        
+        .template-info {{    
+            background-color: {c['card']} !important;
+            border: 1px solid {c['border']} !important;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }}
+        
+        .template-info p {{    
+            color: {c['text']} !important;
+            margin: 0;
         }}
         
         /* Input Fields and Labels */
