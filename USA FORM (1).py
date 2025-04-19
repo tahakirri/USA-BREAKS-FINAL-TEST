@@ -2758,79 +2758,44 @@ else:
                 filtered_issues = []
                 
                 for issue in quality_issues:
-                    matches_search = True
-                    matches_date = True
-                    
-                    if search_query:
-                        matches_search = (
-                            search_query.lower() in issue[1].lower() or  # Agent name
-                            search_query.lower() in issue[2].lower() or  # Issue type
-                            search_query in issue[3] or  # Timing
-                            search_query in issue[4] or  # Mobile number
-                            search_query.lower() in issue[5].lower()  # Product
-                        )
-                    
-                    if date_filter:
-                        try:
-                            record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == date_filter
-                        except:
-                            matches_date = False
-                    
-                    if matches_search and matches_date:
-                        filtered_issues.append(issue)
                 
-                quality_issues = filtered_issues
-            
-            if quality_issues:
-                data = []
-                for issue in quality_issues:
-                    _, agent, issue_type, timing, mobile, product, ts = issue
-                    data.append({
-                        "Agent's Name": agent,
-                        "Type of issue": issue_type,
-                        "Timing": timing,
-                        "Mobile number": mobile,
-                        "Product": product,
-                        "Reported At": ts
-                    })
+                submit_button = st.form_submit_button("Submit Quality Issue")
                 
-                df = pd.DataFrame(data)
-                st.dataframe(df)
+                if submit_button:
+                    add_quality_issue(agent_name, issue_type, timing.strftime("%H:%M"), mobile_number, product)
+                    st.success("Quality Issue Reported Successfully!")
+        
+        # Search functionality for all users
+        search_query = st.text_input("🔍 Search Quality Issues")
+        if search_query:
+            quality_issues = search_mistakes(search_query)
+        
+        # Download CSV for all users
+        if st.button("Download CSV"):
+            df = pd.DataFrame(quality_issues, columns=["ID", "Agent Name", "Issue Type", "Timing", "Mobile Number", "Product"])
+            csv = df.to_csv(index=False)
+            st.download_button(
+                label="Click to Download",
+                data=csv,
+                file_name="quality_issues.csv",
+                mime="text/csv"
+            )
+        
+        # Display issues in a table
+        if quality_issues:
+            data = []
+            for issue in quality_issues:
+                data.append({
+                    "ID": issue[0],
+                    "Agent Name": issue[1],
+                    "Issue Type": issue[2],
+                    "Timing": issue[3],
+                    "Mobile Number": issue[4],
+                    "Product": issue[5]
+                })
+            df = pd.DataFrame(data)
+            st.dataframe(df)
                 
-                csv = df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download as CSV",
-                    data=csv,
-                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
-                    mime="text/csv"
-                )
-                
-                # Only admin can clear records
-                if st.session_state.role == "admin" and st.button("Clear All Records"):
-                    clear_quality_issues()
-                    st.rerun()
-            else:
-                st.info("No quality issue records found")
-        else:
-            # Regular users only see their own records without search
-            user_issues = [issue for issue in quality_issues if issue[1] == st.session_state.username]
-            if user_issues:
-                data = []
-                for issue in user_issues:
-                    _, agent, issue_type, timing, mobile, product, ts = issue
-                    data.append({
-                        "Type of issue": issue_type,
-                        "Timing": timing,
-                        "Mobile number": mobile,
-                        "Product": product,
-                        "Reported At": ts
-                    })
-                
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-            else:
-                st.info("You have no quality issue records")
 
     elif st.session_state.current_section == "midshift_issues":
         st.subheader("🔄 Mid-shift Technical Issue")
@@ -2935,18 +2900,6 @@ else:
             if user_issues:
                 data = []
                 for issue in user_issues:
-                    _, agent, issue_type, start_time, end_time, ts = issue
-                    data.append({
-                        "Issue Type": issue_type,
-                        "Start time": start_time,
-                        "End Time": end_time,
-                        "Reported At": ts
-                    })
-                
-                df = pd.DataFrame(data)
-                st.dataframe(df)
-            else:
-                st.info("You have no mid-shift issue records")
 
     elif st.session_state.current_section == "admin" and st.session_state.role == "admin":
         if st.session_state.username.lower() == "taha kirri":
