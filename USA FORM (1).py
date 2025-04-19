@@ -26,10 +26,10 @@ def authenticate(username, password):
     try:
         cursor = conn.cursor()
         hashed_password = hash_password(password)
-        cursor.execute("SELECT role, is_vip FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
+        cursor.execute("SELECT role FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
                       (username, hashed_password))
         result = cursor.fetchone()
-        return result if result else (None, None)
+        return result[0] if result else None
     finally:
         conn.close()
 
@@ -38,31 +38,17 @@ def init_db():
     try:
         cursor = conn.cursor()
         
-        # Drop all existing tables to ensure clean schema
-        cursor.execute("DROP TABLE IF EXISTS users")
-        cursor.execute("DROP TABLE IF EXISTS vip_messages")
-        cursor.execute("DROP TABLE IF EXISTS requests")
-        cursor.execute("DROP TABLE IF EXISTS request_comments")
-        cursor.execute("DROP TABLE IF EXISTS mistakes")
-        cursor.execute("DROP TABLE IF EXISTS group_messages")
-        cursor.execute("DROP TABLE IF EXISTS hold_images")
-        cursor.execute("DROP TABLE IF EXISTS late_logins")
-        cursor.execute("DROP TABLE IF EXISTS quality_issues")
-        cursor.execute("DROP TABLE IF EXISTS midshift_issues")
-        cursor.execute("DROP TABLE IF EXISTS system_settings")
-        
-        # Create users table with updated role options
+        # Create tables if they don't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
+                role TEXT CHECK(role IN ('agent', 'admin')),
                 is_vip INTEGER DEFAULT 0
             )
         """)
         
-        # Create other necessary tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vip_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,17 +72,6 @@ def init_db():
         """)
         
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS request_comments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                request_id INTEGER,
-                user TEXT,
-                comment TEXT,
-                timestamp TEXT,
-                FOREIGN KEY (request_id) REFERENCES requests (id)
-            )
-        """)
-        
-        cursor.execute("""
             CREATE TABLE IF NOT EXISTS mistakes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_leader TEXT,
@@ -116,7 +91,26 @@ def init_db():
                 mentions TEXT
             )
         """)
-        
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY,
+                killswitch_enabled INTEGER DEFAULT 0,
+                chat_killswitch_enabled INTEGER DEFAULT 0
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS request_comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_id INTEGER,
+                user TEXT,
+                comment TEXT,
+                timestamp TEXT,
+                FOREIGN KEY(request_id) REFERENCES requests(id)
+            )
+        """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS hold_images (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,7 +119,7 @@ def init_db():
                 timestamp TEXT
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS late_logins (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,7 +130,7 @@ def init_db():
                 timestamp TEXT
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quality_issues (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,7 +142,7 @@ def init_db():
                 timestamp TEXT
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS midshift_issues (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -160,20 +154,6 @@ def init_db():
             )
         """)
         
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS system_settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                killswitch_enabled INTEGER DEFAULT 0,
-                chat_killswitch_enabled INTEGER DEFAULT 0
-            )
-        """)
-        
-        # Insert system settings if not exists
-        cursor.execute("""
-            INSERT OR IGNORE INTO system_settings (id, killswitch_enabled, chat_killswitch_enabled)
-            VALUES (1, 0, 0)
-        """)
-        
         # Create default admin account
         cursor.execute("""
             INSERT OR IGNORE INTO users (username, password, role, is_vip) 
@@ -182,6 +162,7 @@ def init_db():
         
         # Create other admin accounts
         admin_accounts = [
+            ("taha kirri", "arise@99"),
             ("Issam Samghini", "admin@2025"),
             ("Loubna Fellah", "admin@99"),
             ("Youssef Kamal", "admin@006"),
@@ -255,9 +236,6 @@ def init_db():
         """)
         
         conn.commit()
-    except Exception as e:
-        st.error(f"Database initialization error: {str(e)}")
-        conn.rollback()
     finally:
         conn.close()
 
@@ -485,23 +463,13 @@ def add_user(username, password, role):
         st.error("System is currently locked. Please contact the developer.")
         return False
         
-    if role not in ['agent', 'admin', 'qa']:
-        st.error("Invalid role specified")
-        return False
-        
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role, is_vip) VALUES (?, ?, ?, ?)",
-                      (username, hash_password(password), role, 0))
+        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                      (username, hash_password(password), role))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
-        st.error("Username already exists")
-        return False
-    except Exception as e:
-        st.error(f"Error adding user: {str(e)}")
-        return False
     finally:
         conn.close()
 
@@ -1477,26 +1445,16 @@ def is_vip_user(username):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT is_vip FROM users WHERE LOWER(username) = LOWER(?)", (username,))
+        cursor.execute("SELECT is_vip FROM users WHERE username = ?", (username,))
         result = cursor.fetchone()
         return bool(result[0]) if result else False
     finally:
         conn.close()
 
-def can_access_vip_features(username):
-    """Check if a user can access VIP features"""
-    return username.lower() == "taha kirri" or is_vip_user(username)
-
 def set_vip_status(username, is_vip):
     """Set or remove VIP status for a user"""
     if not username:
         return False
-        
-    # Only allow Taha Kirri to set VIP status
-    if st.session_state.username.lower() != "taha kirri":
-        st.error("Only Taha Kirri can manage VIP status")
-        return False
-        
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1785,13 +1743,12 @@ if not st.session_state.authenticated:
         with submit_col2:
             if st.form_submit_button("Login", use_container_width=True):
                 if username and password:
-                    role, is_vip = authenticate(username, password)
+                    role = authenticate(username, password)
                     if role:
                         st.session_state.update({
                             "authenticated": True,
                             "role": role,
                             "username": username,
-                            "is_vip": bool(is_vip),
                             "last_request_count": len(get_requests()),
                             "last_mistake_count": len(get_mistakes()),
                             "last_message_ids": [msg[0] for msg in get_group_messages()]
@@ -1850,41 +1807,23 @@ else:
         st.title(f"👋 Welcome, {st.session_state.username}")
         st.markdown("---")
         
-        # Define navigation options based on role
-        nav_options = []
+        nav_options = [
+            ("📋 Requests", "requests"),
+            ("☕ Breaks", "breaks"),
+            ("🖼️ HOLD", "hold"),
+            ("❌ Mistakes", "mistakes"),
+            ("💬 Chat", "chat"),
+            ("📱 Fancy Number", "fancy_number"),
+            ("⏰ Late Login", "late_login"),
+            ("📞 Quality Issues", "quality_issues"),
+            ("🔄 Mid-shift Issues", "midshift_issues")
+        ]
         
-        if st.session_state.role == "qa":
-            nav_options = [
-                ("📱 Fancy Number", "fancy_number"),
-                ("📞 Quality Issues", "quality_issues")
-            ]
-        elif st.session_state.role == "admin":
-            nav_options = [
-                ("📋 Requests", "requests"),
-                ("☕ Breaks", "breaks"),
-                ("🖼️ HOLD", "hold"),
-                ("❌ Mistakes", "mistakes"),
-                ("💬 Chat", "chat"),
-                ("📱 Fancy Number", "fancy_number"),
-                ("⏰ Late Login", "late_login"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues"),
-                ("⚙️ Admin", "admin")
-            ]
-        else:  # agent role
-            nav_options = [
-                ("📋 Requests", "requests"),
-                ("☕ Breaks", "breaks"),
-                ("🖼️ HOLD", "hold"),
-                ("❌ Mistakes", "mistakes"),
-                ("💬 Chat", "chat"),
-                ("📱 Fancy Number", "fancy_number"),
-                ("⏰ Late Login", "late_login"),
-                ("📞 Quality Issues", "quality_issues"),
-                ("🔄 Mid-shift Issues", "midshift_issues")
-            ]
+        # Add admin option for admin users
+        if st.session_state.role == "admin":
+            nav_options.append(("⚙️ Admin", "admin"))
         
-        # Only show VIP Management to Taha Kirri
+        # Add VIP Management for taha kirri
         if st.session_state.username.lower() == "taha kirri":
             nav_options.append(("⭐ VIP Management", "vip_management"))
         
@@ -2037,13 +1976,42 @@ else:
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
+            # Add notification permission request
+            st.markdown("""
+            <div id="notification-container"></div>
+            <script>
+            // Check if notifications are supported
+            if ('Notification' in window) {
+                const container = document.getElementById('notification-container');
+                if (Notification.permission === 'default') {
+                    container.innerHTML = `
+                        <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;">
+                            <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
+                            <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
+                                Enable Notifications
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            async function requestNotificationPermission() {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('notification-container').style.display = 'none';
+                }
+            }
+            </script>
+            """, unsafe_allow_html=True)
+            
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user can access VIP features
-                has_vip_access = can_access_vip_features(st.session_state.username)
+                # Check if user is VIP or taha kirri
+                is_vip = is_vip_user(st.session_state.username)
+                is_taha = st.session_state.username.lower() == "taha kirri"
                 
-                if has_vip_access:
+                if is_vip or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
                     with tab1:
@@ -2114,6 +2082,7 @@ else:
                                         send_vip_message(st.session_state.username, message)
                                         st.rerun()
                 else:
+                    # Regular chat only for non-VIP users
                     st.subheader("Regular Chat")
                     messages = get_group_messages()
                     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -2284,44 +2253,34 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
         st.subheader("Late Login Records")
-        
-        # Add search functionality
-        search_query = st.text_input("🔍 Search records...", key="late_login_search")
         late_logins = get_late_logins()
         
-        # Only show search for admin/QA
-        if st.session_state.role in ["admin", "qa"]:
+        if st.session_state.role == "admin":
             if late_logins:
                 data = []
                 for login in late_logins:
                     _, agent, presence, login_time, reason, ts = login
-                    # Filter based on search query
-                    if search_query.lower() in agent.lower() or search_query.lower() in reason.lower():
-                        data.append({
-                            "Agent's Name": agent,
-                            "Time of presence": presence,
-                            "Time of log in": login_time,
-                            "Reason": reason,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Time of presence": presence,
+                        "Time of log in": login_time,
+                        "Reason": reason
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Download as CSV",
-                        data=csv,
-                        file_name="late_logins.csv",
-                        mime="text/csv"
-                    )
-                    
-                    if st.session_state.role == "admin" and st.button("Clear All Records"):
-                        clear_late_logins()
-                        st.rerun()
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+                
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download as CSV",
+                    data=csv,
+                    file_name="late_logins.csv",
+                    mime="text/csv"
+                )
+                
+                if st.button("Clear All Records"):
+                    clear_late_logins()
+                    st.rerun()
             else:
                 st.info("No late login records found")
         else:
@@ -2330,20 +2289,15 @@ else:
                 data = []
                 for login in user_logins:
                     _, agent, presence, login_time, reason, ts = login
-                    # Filter based on search query
-                    if search_query.lower() in reason.lower():
-                        data.append({
-                            "Time of presence": presence,
-                            "Time of log in": login_time,
-                            "Reason": reason,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Time of presence": presence,
+                        "Time of log in": login_time,
+                        "Reason": reason
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
             else:
                 st.info("You have no late login records")
 
@@ -2381,48 +2335,35 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
-        
-        # Add search functionality
-        search_query = st.text_input("🔍 Search records...", key="quality_issues_search")
         quality_issues = get_quality_issues()
         
-        # Only show search for admin/QA
-        if st.session_state.role in ["admin", "qa"]:
+        if st.session_state.role == "admin":
             if quality_issues:
                 data = []
                 for issue in quality_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
-                    # Filter based on search query
-                    if (search_query.lower() in agent.lower() or 
-                        search_query.lower() in issue_type.lower() or 
-                        search_query.lower() in mobile.lower() or 
-                        search_query.lower() in product.lower()):
-                        data.append({
-                            "Agent's Name": agent,
-                            "Type of issue": issue_type,
-                            "Timing": timing,
-                            "Mobile number": mobile,
-                            "Product": product,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Type of issue": issue_type,
+                        "Timing": timing,
+                        "Mobile number": mobile,
+                        "Product": product
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Download as CSV",
-                        data=csv,
-                        file_name="quality_issues.csv",
-                        mime="text/csv"
-                    )
-                    
-                    if st.session_state.role == "admin" and st.button("Clear All Records"):
-                        clear_quality_issues()
-                        st.rerun()
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+                
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download as CSV",
+                    data=csv,
+                    file_name="quality_issues.csv",
+                    mime="text/csv"
+                )
+                
+                if st.button("Clear All Records"):
+                    clear_quality_issues()
+                    st.rerun()
             else:
                 st.info("No quality issue records found")
         else:
@@ -2431,23 +2372,16 @@ else:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, timing, mobile, product, ts = issue
-                    # Filter based on search query
-                    if (search_query.lower() in issue_type.lower() or 
-                        search_query.lower() in mobile.lower() or 
-                        search_query.lower() in product.lower()):
-                        data.append({
-                            "Type of issue": issue_type,
-                            "Timing": timing,
-                            "Mobile number": mobile,
-                            "Product": product,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Type of issue": issue_type,
+                        "Timing": timing,
+                        "Mobile number": mobile,
+                        "Product": product
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
             else:
                 st.info("You have no quality issue records")
 
@@ -2483,44 +2417,34 @@ else:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
         st.subheader("Mid-shift Issue Records")
-        
-        # Add search functionality
-        search_query = st.text_input("🔍 Search records...", key="midshift_issues_search")
         midshift_issues = get_midshift_issues()
         
-        # Only show search for admin/QA
-        if st.session_state.role in ["admin", "qa"]:
+        if st.session_state.role == "admin":
             if midshift_issues:
                 data = []
                 for issue in midshift_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
-                    # Filter based on search query
-                    if search_query.lower() in agent.lower() or search_query.lower() in issue_type.lower():
-                        data.append({
-                            "Agent's Name": agent,
-                            "Issue Type": issue_type,
-                            "Start time": start_time,
-                            "End Time": end_time,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Issue Type": issue_type,
+                        "Start time": start_time,
+                        "End Time": end_time
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                    
-                    csv = df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="Download as CSV",
-                        data=csv,
-                        file_name="midshift_issues.csv",
-                        mime="text/csv"
-                    )
-                    
-                    if st.session_state.role == "admin" and st.button("Clear All Records"):
-                        clear_midshift_issues()
-                        st.rerun()
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+                
+                csv = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="Download as CSV",
+                    data=csv,
+                    file_name="midshift_issues.csv",
+                    mime="text/csv"
+                )
+                
+                if st.button("Clear All Records"):
+                    clear_midshift_issues()
+                    st.rerun()
             else:
                 st.info("No mid-shift issue records found")
         else:
@@ -2529,20 +2453,15 @@ else:
                 data = []
                 for issue in user_issues:
                     _, agent, issue_type, start_time, end_time, ts = issue
-                    # Filter based on search query
-                    if search_query.lower() in issue_type.lower():
-                        data.append({
-                            "Issue Type": issue_type,
-                            "Start time": start_time,
-                            "End Time": end_time,
-                            "Timestamp": ts
-                        })
+                    data.append({
+                        "Agent's Name": agent,
+                        "Issue Type": issue_type,
+                        "Start time": start_time,
+                        "End Time": end_time
+                    })
                 
-                if data:
-                    df = pd.DataFrame(data)
-                    st.dataframe(df)
-                else:
-                    st.info("No matching records found")
+                df = pd.DataFrame(data)
+                st.dataframe(df)
             else:
                 st.info("You have no mid-shift issue records")
 
@@ -2660,39 +2579,98 @@ else:
         st.markdown("---")
         st.subheader("User Management")
         if not is_killswitch_enabled():
-            # Show add user form to all admins
-            with st.form("add_user_form", clear_on_submit=True):  # Changed form key and added clear_on_submit
-                col1, col2 = st.columns(2)
-                with col1:
-                    user = st.text_input("Username", key="new_user_name")
-                with col2:
-                    pwd = st.text_input("Password", type="password", key="new_user_pwd")
-                
+            # Show add user form to all admins, but with different options
+            with st.form("add_user"):
+                user = st.text_input("Username")
+                pwd = st.text_input("Password", type="password")
                 # Only show role selection to taha kirri, others can only create agent accounts
                 if st.session_state.username.lower() == "taha kirri":
-                    role = st.selectbox("Role", ["agent", "admin", "qa"], key="new_user_role")
+                    role = st.selectbox("Role", ["agent", "admin"])
                 else:
-                    role = "agent"
+                    role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
                 
-                submitted = st.form_submit_button("Add User")
-                if submitted:
+                if st.form_submit_button("Add User"):
                     if user and pwd:
-                        try:
-                            if add_user(user, pwd, role):
-                                st.success(f"Successfully created {role} account for {user}")
-                                st.rerun()
-                            else:
-                                st.error("Failed to create user account")
-                        except Exception as e:
-                            st.error(f"Error creating user: {str(e)}")
-                    else:
-                        st.error("Please provide both username and password")
-
+                        add_user(user, pwd, role)
+                        st.rerun()
+        
         st.subheader("Existing Users")
         users = get_all_users()
         
         # Create a table-like display using columns
+        if st.session_state.username.lower() == "taha kirri":
+            # Full view for taha kirri
+            cols = st.columns([3, 1, 1])
+            cols[0].write("**Username**")
+            cols[1].write("**Role**")
+            cols[2].write("**Action**")
+            
+            for uid, uname, urole in users:
+                cols = st.columns([3, 1, 1])
+                cols[0].write(uname)
+                cols[1].write(urole)
+                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
+                    delete_user(uid)
+                    st.rerun()
+        else:
+            # Limited view for other admins
+            cols = st.columns([4, 1])
+            cols[0].write("**Username**")
+            cols[1].write("**Action**")
+            
+            for uid, uname, urole in users:
+                cols = st.columns([4, 1])
+                cols[0].write(uname)
+                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
+                    delete_user(uid)
+                    st.rerun()
+
+        st.subheader("⭐ VIP User Management")
+        
+        # Get all users
+        users = get_all_users()
+        
+        with st.form("vip_management"):
+            selected_user = st.selectbox(
+                "Select User",
+                [user[1] for user in users],
+                format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
+            )
+            
+            if selected_user:
+                current_vip = is_vip_user(selected_user)
+                make_vip = st.checkbox("VIP Status", value=current_vip)
+                
+                if st.form_submit_button("Update VIP Status"):
+                    if set_vip_status(selected_user, make_vip):
+                        st.success(f"Updated VIP status for {selected_user}")
+                        # Force database refresh
+                        conn = get_db_connection()
+                        try:
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT is_vip FROM users WHERE username = ?", (selected_user,))
+                            new_status = cursor.fetchone()
+                            if new_status:
+                                st.write(f"New VIP status: {'VIP' if new_status[0] else 'Regular User'}")
+                        finally:
+                            conn.close()
+                        st.rerun()
+        
+        st.markdown("---")
+
+    elif st.session_state.current_section == "breaks":
+        if st.session_state.role == "admin":
+            admin_break_dashboard()
+        else:
+            agent_break_dashboard()
+
+    elif st.session_state.current_section == "vip_management" and st.session_state.username.lower() == "taha kirri":
+        st.title("⭐ VIP Management")
+        
+        # Get all users
+        users = get_all_users()
+        
         # Create columns for better layout
         col1, col2 = st.columns([3, 1])
         
@@ -2761,53 +2739,6 @@ else:
             st.dataframe(pd.DataFrame(message_data))
         else:
             st.info("No VIP messages yet")
-
-    elif st.session_state.current_section == "vip_management":
-        if st.session_state.username.lower() != "taha kirri":
-            st.error("Access denied. Only Taha Kirri can manage VIP status.")
-            st.stop()
-        
-        st.title("⭐ VIP Management")
-        
-        # Get all users
-        users = get_all_users()
-        
-        # Create columns for better layout
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            # Show all users with their current VIP status
-            st.markdown("### Current VIP Status")
-            user_data = []
-            for user_id, username, role in users:
-                is_vip = is_vip_user(username)
-                user_data.append({
-                    "Username": username,
-                    "Role": role,
-                    "Status": "⭐ VIP" if is_vip else "Regular User"
-                })
-            
-            df = pd.DataFrame(user_data)
-            st.dataframe(df, use_container_width=True)
-        
-        with col2:
-            # VIP management form
-            with st.form("vip_management_form"):
-                st.write("### Update VIP Status")
-                selected_user = st.selectbox(
-                    "Select User",
-                    [user[1] for user in users if user[1].lower() != "taha kirri"],
-                    format_func=lambda x: f"{x} {'⭐' if is_vip_user(x) else ''}"
-                )
-                
-                if selected_user:
-                    current_vip = is_vip_user(selected_user)
-                    make_vip = st.checkbox("Grant VIP Access", value=current_vip)
-                    
-                    if st.form_submit_button("Update"):
-                        if set_vip_status(selected_user, make_vip):
-                            st.success(f"Updated VIP status for {selected_user}")
-                            st.rerun()
 
 def get_new_messages(last_check_time):
     """Get new messages since last check"""
