@@ -68,42 +68,53 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE,
-                password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa'))
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'agent' CHECK(role IN ('admin', 'agent', 'qa'))
             )
         """)
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                agent_name TEXT,
-                request_type TEXT,
+                agent_name TEXT NOT NULL,
+                request_type TEXT NOT NULL,
                 identifier TEXT,
                 comment TEXT,
-                timestamp TEXT,
-                completed INTEGER DEFAULT 0
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                completed BOOLEAN DEFAULT 0,
+                completed_timestamp DATETIME
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS request_comments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_id INTEGER NOT NULL,
+                user TEXT NOT NULL,
+                comment TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (request_id) REFERENCES requests (id)
             )
         """)
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS mistakes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                team_leader TEXT,
-                agent_name TEXT,
-                ticket_id TEXT,
-                error_description TEXT,
-                timestamp TEXT
+                team_leader TEXT NOT NULL,
+                agent_name TEXT NOT NULL,
+                ticket_id TEXT NOT NULL,
+                error_description TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS group_messages (
+            CREATE TABLE IF NOT EXISTS group_chat (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sender TEXT,
-                message TEXT,
-                timestamp TEXT,
-                mentions TEXT
+                sender TEXT NOT NULL,
+                message TEXT NOT NULL,
+                timestamp TEXT
             )
         """)
 
@@ -112,17 +123,6 @@ def init_db():
                 id INTEGER PRIMARY KEY,
                 killswitch_enabled INTEGER DEFAULT 0,
                 chat_killswitch_enabled INTEGER DEFAULT 0
-            )
-        """)
-
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS request_comments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                request_id INTEGER,
-                user TEXT,
-                comment TEXT,
-                timestamp TEXT,
-                FOREIGN KEY(request_id) REFERENCES requests(id)
             )
         """)
 
@@ -436,7 +436,7 @@ def search_mistakes(query):
     finally:
         conn.close()
 
-def send_group_message(sender, message, mentions=None):
+def send_group_message(sender, message):
     if is_killswitch_enabled() or is_chat_killswitch_enabled():
         st.error("Chat is currently locked. Please contact the developer.")
         return False
@@ -444,11 +444,10 @@ def send_group_message(sender, message, mentions=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        mentions = mentions if mentions else []
         cursor.execute("""
-            INSERT INTO group_messages (sender, message, timestamp, mentions) 
-            VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+            INSERT INTO group_chat (sender, message, timestamp) 
+            VALUES (?, ?, ?)
+        """, (sender, message, get_casablanca_time()))
         conn.commit()
         return True
     finally:
@@ -458,7 +457,7 @@ def get_group_messages():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
+        cursor.execute("SELECT * FROM group_chat ORDER BY timestamp DESC LIMIT 50")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -578,7 +577,7 @@ def clear_all_group_messages():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM group_messages")
+        cursor.execute("DELETE FROM group_chat")
         conn.commit()
         return True
     finally:
@@ -2111,11 +2110,7 @@ else:
         new_messages = [msg for msg in current_messages if msg[0] not in st.session_state.last_message_ids]
         for msg in new_messages:
             if msg[1] != st.session_state.username:
-                mentions = msg[4].split(',') if msg[4] else []
-                if st.session_state.username in mentions:
-                    st.toast(f"💬 You were mentioned by {msg[1]}!")
-                else:
-                    st.toast(f"💬 New message from {msg[1]}!")
+                st.toast(f"💬 New message from {msg[1]}!")
         st.session_state.last_message_ids = current_message_ids
 
     show_notifications()
@@ -2328,26 +2323,14 @@ else:
                     st.info("No messages yet.")
                 else:
                     for msg in messages:
-                        sender, message_text, timestamp, mentions = msg[1], msg[2], msg[3], msg[4]
+                        sender, message_text, timestamp = msg[1], msg[2], msg[3]
                         
-                        # Check if current user is mentioned
-                        mentioned_users = [] # Default to empty list
-                        if mentions:
-                            try:
-                                mentioned_users = json.loads(mentions)
-                            except json.JSONDecodeError:
-                                # Log the error or handle it silently
-                                # print(f"Warning: Could not decode mentions: {mentions}")
-                                pass # Keep mentioned_users as []
-                                
-                        is_mentioned = st.session_state.username in mentioned_users
-                        
+                        # Determine message alignment class
                         message_class = "my-message" if sender == st.session_state.username else "other-message"
-                        mention_class = " mentioned" if is_mentioned else ""
                         
                         # Display message with timestamp
                         st.markdown(f'''
-                            <div class="message {message_class}{mention_class}">
+                            <div class="message {message_class}">
                                 <strong>{sender}</strong> <span style="font-size: 0.8em; color: grey;">({timestamp})</span><br>
                                 {message_text}
                             </div>''', unsafe_allow_html=True)
@@ -2356,16 +2339,14 @@ else:
                 
                 # Message Input Form
                 with st.form("message_form", clear_on_submit=True):
-                    users_list = [user[1] for user in get_all_users() if user[1] != st.session_state.username]
-                    mentions_select = st.multiselect("Mention users (@)", users_list)
-                    new_message = st.text_area("Type your message:", height=100)
+                    message_input = st.text_area("Type your message:", height=100, key="chat_input")
                     submitted = st.form_submit_button("Send")
-                    if submitted and new_message:
-                        send_group_message(st.session_state.username, new_message, mentions_select)
+                    if submitted and message_input:
+                        send_group_message(st.session_state.username, message_input)
                         # Trigger notification check immediately after sending
                         st.session_state.last_message_check = datetime.min.replace(tzinfo=pytz.UTC) # Force immediate update
                         st.rerun()
-                    elif submitted and not new_message:
+                    elif submitted and not message_input:
                         st.warning("Cannot send an empty message.")
 
         else:
