@@ -55,10 +55,10 @@ def authenticate(username, password):
     try:
         cursor = conn.cursor()
         hashed_password = hash_password(password)
-        cursor.execute("SELECT role FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
+        cursor.execute("SELECT role, user_group FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
                       (username, hashed_password))
         result = cursor.fetchone()
-        return result[0] if result else None
+        return (result[0], result[1]) if result else (None, None)
     finally:
         conn.close()
 
@@ -73,7 +73,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa'))
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
+                user_group TEXT CHECK(user_group IN ('1', '2', '3', '4', 'admin', 'qa'))
             )
         """)
         
@@ -83,7 +84,8 @@ def init_db():
                 sender TEXT,
                 message TEXT,
                 timestamp TEXT,
-                mentions TEXT
+                mentions TEXT,
+                user_group TEXT
             )
         """)
         
@@ -95,7 +97,8 @@ def init_db():
                 identifier TEXT,
                 comment TEXT,
                 timestamp TEXT,
-                completed INTEGER DEFAULT 0
+                completed INTEGER DEFAULT 0,
+                user_group TEXT
             )
         """)
         
@@ -106,7 +109,8 @@ def init_db():
                 agent_name TEXT,
                 ticket_id TEXT,
                 error_description TEXT,
-                timestamp TEXT
+                timestamp TEXT,
+                user_group TEXT
             )
         """)
         
@@ -116,7 +120,8 @@ def init_db():
                 sender TEXT,
                 message TEXT,
                 timestamp TEXT,
-                mentions TEXT
+                mentions TEXT,
+                user_group TEXT
             )
         """)
 
@@ -155,7 +160,8 @@ def init_db():
                 presence_time TEXT,
                 login_time TEXT,
                 reason TEXT,
-                timestamp TEXT
+                timestamp TEXT,
+                user_group TEXT
             )
         """)
 
@@ -167,7 +173,8 @@ def init_db():
                 timing TEXT,
                 mobile_number TEXT,
                 product TEXT,
-                timestamp TEXT
+                timestamp TEXT,
+                user_group TEXT
             )
         """)
 
@@ -178,85 +185,89 @@ def init_db():
                 issue_type TEXT,
                 start_time TEXT,
                 end_time TEXT,
-                timestamp TEXT
+                timestamp TEXT,
+                user_group TEXT
             )
         """)
         
+        # Initialize system settings if not exists
+        cursor.execute("INSERT OR IGNORE INTO system_settings (id, killswitch_enabled, chat_killswitch_enabled) VALUES (1, 0, 0)")
+        
         # Create default admin account
         cursor.execute("""
-            INSERT OR IGNORE INTO users (username, password, role) 
-            VALUES (?, ?, ?)
-        """, ("taha kirri", hash_password("arise@99"), "admin"))
+            INSERT OR IGNORE INTO users (username, password, role, user_group) 
+            VALUES (?, ?, ?, ?)
+        """, ("taha kirri", hash_password("arise@99"), "admin", "admin"))
         
         # Create other admin accounts
         admin_accounts = [
-            ("taha kirri", "arise@99"),
-            ("Issam Samghini", "admin@2025"),
-            ("Loubna Fellah", "admin@99"),
-            ("Youssef Kamal", "admin@006"),
-            ("Fouad Fathi", "admin@55")
+            ("taha kirri", "arise@99", "admin", "admin"),
+            ("Issam Samghini", "admin@2025", "admin", "admin"),
+            ("Loubna Fellah", "admin@99", "admin", "admin"),
+            ("Youssef Kamal", "admin@006", "admin", "admin"),
+            ("Fouad Fathi", "admin@55", "admin", "admin")
         ]
         
-        for username, password in admin_accounts:
+        for username, password, role, group in admin_accounts:
             cursor.execute("""
-                INSERT OR IGNORE INTO users (username, password, role) 
-                VALUES (?, ?, ?)
-            """, (username, hash_password(password), "admin"))
+                INSERT OR IGNORE INTO users (username, password, role, user_group) 
+                VALUES (?, ?, ?, ?)
+            """, (username, hash_password(password), role, group))
         
-        # Create agent accounts
+        # Create agent accounts with group assignments
         agents = [
-            ("Karabila Younes", "30866"),
-            ("Kaoutar Mzara", "30514"),
-            ("Ben Tahar Chahid", "30864"),
-            ("Cherbassi Khadija", "30868"),
-            ("Lekhmouchi Kamal", "30869"),
-            ("Said Kilani", "30626"),
-            ("AGLIF Rachid", "30830"),
-            ("Yacine Adouha", "30577"),
-            ("Manal Elanbi", "30878"),
-            ("Jawad Ouassaddine", "30559"),
-            ("Kamal Elhaouar", "30844"),
-            ("Hoummad Oubella", "30702"),
-            ("Zouheir Essafi", "30703"),
-            ("Anwar Atifi", "30781"),
-            ("Said Elgaouzi", "30782"),
-            ("HAMZA SAOUI", "30716"),
-            ("Ibtissam Mazhari", "30970"),
-            ("Imad Ghazali", "30971"),
-            ("Jamila Lahrech", "30972"),
-            ("Nassim Ouazzani Touhami", "30973"),
-            ("Salaheddine Chaggour", "30974"),
-            ("Omar Tajani", "30711"),
-            ("Nizar Remz", "30728"),
-            ("Abdelouahed Fettah", "30693"),
-            ("Amal Bouramdane", "30675"),
-            ("Fatima Ezzahrae Oubaalla", "30513"),
-            ("Redouane Bertal", "30643"),
-            ("Abdelouahab Chenani", "30789"),
-            ("Imad El Youbi", "30797"),
-            ("Youssef Hammouda", "30791"),
-            ("Anas Ouassifi", "30894"),
-            ("SALSABIL ELMOUSS", "30723"),
-            ("Hicham Khalafa", "30712"),
-            ("Ghita Adib", "30710"),
-            ("Aymane Msikila", "30722"),
-            ("Marouane Boukhadda", "30890"),
-            ("Hamid Boulatouan", "30899"),
-            ("Bouchaib Chafiqi", "30895"),
-            ("Houssam Gouaalla", "30891"),
-            ("Abdellah Rguig", "30963"),
-            ("Abdellatif Chatir", "30964"),
-            ("Abderrahman Oueto", "30965"),
-            ("Fatiha Lkamel", "30967"),
-            ("Abdelhamid Jaber", "30708"),
-            ("Yassine Elkanouni", "30735")
+            ("Karabila Younes", "30866", "1"),
+            ("Kaoutar Mzara", "30514", "1"),
+            ("Ben Tahar Chahid", "30864", "2"),
+            ("Cherbassi Khadija", "30868", "2"),
+            ("Lekhmouchi Kamal", "30869", "3"),
+            ("Said Kilani", "30626", "3"),
+            ("AGLIF Rachid", "30830", "4"),
+            ("Yacine Adouha", "30577", "4"),
+            ("Manal Elanbi", "30878", "1"),
+            ("Jawad Ouassaddine", "30559", "1"),
+            ("Kamal Elhaouar", "30844", "2"),
+            ("Hoummad Oubella", "30702", "2"),
+            ("Zouheir Essafi", "30703", "3"),
+            ("Anwar Atifi", "30781", "3"),
+            ("Said Elgaouzi", "30782", "4"),
+            ("HAMZA SAOUI", "30716", "4"),
+            ("Ibtissam Mazhari", "30970", "1"),
+            ("Imad Ghazali", "30971", "1"),
+            ("Jamila Lahrech", "30972", "2"),
+            ("Nassim Ouazzani Touhami", "30973", "2"),
+            ("Salaheddine Chaggour", "30974", "3"),
+            ("Omar Tajani", "30711", "3"),
+            ("Nizar Remz", "30728", "4"),
+            ("Abdelouahed Fettah", "30693", "4"),
+            ("Amal Bouramdane", "30675", "1"),
+            ("Fatima Ezzahrae Oubaalla", "30513", "1"),
+            ("Redouane Bertal", "30643", "2"),
+            ("Abdelouahab Chenani", "30789", "2"),
+            ("Imad El Youbi", "30797", "3"),
+            ("Youssef Hammouda", "30791", "3"),
+            ("Anas Ouassifi", "30894", "4"),
+            ("SALSABIL ELMOUSS", "30723", "4"),
+            ("Hicham Khalafa", "30712", "1"),
+            ("Ghita Adib", "30710", "1"),
+            ("Aymane Msikila", "30722", "2"),
+            ("Marouane Boukhadda", "30890", "2"),
+            ("Hamid Boulatouan", "30899", "3"),
+            ("Bouchaib Chafiqi", "30895", "3"),
+            ("Houssam Gouaalla", "30891", "4"),
+            ("Abdellah Rguig", "30963", "4"),
+            ("Abdellatif Chatir", "30964", "1"),
+            ("Abderrahman Oueto", "30965", "1"),
+            ("Fatiha Lkamel", "30967", "2"),
+            ("Abdelhamid Jaber", "30708", "2"),
+            ("Yassine Elkanouni", "30735", "3")
         ]
         
-        for agent_name, workspace_id in agents:
+        for agent_name, workspace_id, group in agents:
             cursor.execute("""
-                INSERT OR IGNORE INTO users (username, password, role) 
-                VALUES (?, ?, ?)
-            """, (agent_name, hash_password(workspace_id), "agent"))
+                INSERT OR IGNORE INTO users (username, password, role, user_group) 
+                VALUES (?, ?, ?, ?)
+            """, (agent_name, hash_password(workspace_id), "agent", group))
         
         conn.commit()
     finally:
@@ -304,7 +315,7 @@ def toggle_chat_killswitch(enable):
     finally:
         conn.close()
 
-def add_request(agent_name, request_type, identifier, comment):
+def add_request(agent_name, request_type, identifier, comment, user_group):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -314,9 +325,9 @@ def add_request(agent_name, request_type, identifier, comment):
         cursor = conn.cursor()
         timestamp = get_casablanca_time()
         cursor.execute("""
-            INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, request_type, identifier, comment, timestamp))
+            INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp, user_group) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (agent_name, request_type, identifier, comment, timestamp, user_group))
         
         request_id = cursor.lastrowid
         
@@ -330,28 +341,48 @@ def add_request(agent_name, request_type, identifier, comment):
     finally:
         conn.close()
 
-def get_requests():
+def get_requests(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM requests ORDER BY timestamp DESC")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT r.* FROM requests r
+                JOIN users u ON r.agent_name = u.username
+                WHERE u.user_group = ? OR r.user_group = ?
+                ORDER BY r.timestamp DESC
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM requests ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def search_requests(query):
+def search_requests(query, group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         query = f"%{query.lower()}%"
-        cursor.execute("""
-            SELECT * FROM requests 
-            WHERE LOWER(agent_name) LIKE ? 
-            OR LOWER(request_type) LIKE ? 
-            OR LOWER(identifier) LIKE ? 
-            OR LOWER(comment) LIKE ?
-            ORDER BY timestamp DESC
-        """, (query, query, query, query))
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT r.* FROM requests r
+                JOIN users u ON r.agent_name = u.username
+                WHERE (u.user_group = ? OR r.user_group = ?)
+                AND (LOWER(r.agent_name) LIKE ? 
+                OR LOWER(r.request_type) LIKE ? 
+                OR LOWER(r.identifier) LIKE ? 
+                OR LOWER(r.comment) LIKE ?)
+                ORDER BY r.timestamp DESC
+            """, (group, group, query, query, query, query))
+        else:
+            cursor.execute("""
+                SELECT * FROM requests 
+                WHERE LOWER(agent_name) LIKE ? 
+                OR LOWER(request_type) LIKE ? 
+                OR LOWER(identifier) LIKE ? 
+                OR LOWER(comment) LIKE ?
+                ORDER BY timestamp DESC
+            """, (query, query, query, query))
         return cursor.fetchall()
     finally:
         conn.close()
@@ -401,7 +432,7 @@ def get_request_comments(request_id):
     finally:
         conn.close()
 
-def add_mistake(team_leader, agent_name, ticket_id, error_description):
+def add_mistake(team_leader, agent_name, ticket_id, error_description, user_group):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -410,40 +441,59 @@ def add_mistake(team_leader, agent_name, ticket_id, error_description):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO mistakes (team_leader, agent_name, ticket_id, error_description, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (team_leader, agent_name, ticket_id, error_description, get_casablanca_time()))
+            INSERT INTO mistakes (team_leader, agent_name, ticket_id, error_description, timestamp, user_group) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (team_leader, agent_name, ticket_id, error_description, get_casablanca_time(), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_mistakes():
+def get_mistakes(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM mistakes ORDER BY timestamp DESC")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT m.* FROM mistakes m
+                JOIN users u ON m.agent_name = u.username
+                WHERE u.user_group = ? OR m.user_group = ?
+                ORDER BY m.timestamp DESC
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM mistakes ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def search_mistakes(query):
+def search_mistakes(query, group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         query = f"%{query.lower()}%"
-        cursor.execute("""
-            SELECT * FROM mistakes 
-            WHERE LOWER(agent_name) LIKE ? 
-            OR LOWER(ticket_id) LIKE ? 
-            OR LOWER(error_description) LIKE ?
-            ORDER BY timestamp DESC
-        """, (query, query, query))
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT m.* FROM mistakes m
+                JOIN users u ON m.agent_name = u.username
+                WHERE (u.user_group = ? OR m.user_group = ?)
+                AND (LOWER(m.agent_name) LIKE ? 
+                OR LOWER(m.ticket_id) LIKE ? 
+                OR LOWER(m.error_description) LIKE ?
+                ORDER BY m.timestamp DESC
+            """, (group, group, query, query, query))
+        else:
+            cursor.execute("""
+                SELECT * FROM mistakes 
+                WHERE LOWER(agent_name) LIKE ? 
+                OR LOWER(ticket_id) LIKE ? 
+                OR LOWER(error_description) LIKE ?
+                ORDER BY timestamp DESC
+            """, (query, query, query))
         return cursor.fetchall()
     finally:
         conn.close()
 
-def send_group_message(sender, message):
+def send_group_message(sender, message, user_group):
     if is_killswitch_enabled() or is_chat_killswitch_enabled():
         st.error("Chat is currently locked. Please contact the developer.")
         return False
@@ -453,19 +503,27 @@ def send_group_message(sender, message):
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
         cursor.execute("""
-            INSERT INTO group_messages (sender, message, timestamp, mentions) 
-            VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+            INSERT INTO group_messages (sender, message, timestamp, mentions, user_group) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (sender, message, get_casablanca_time(), ','.join(mentions), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_group_messages():
+def get_group_messages(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT gm.* FROM group_messages gm
+                JOIN users u ON gm.sender = u.username
+                WHERE u.user_group = ? OR gm.user_group = ? OR u.role = 'admin'
+                ORDER BY gm.timestamp DESC LIMIT 50
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -474,12 +532,12 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users")
+        cursor.execute("SELECT id, username, role, user_group FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_user(username, password, role):
+def add_user(username, password, role, group=None):
     if is_killswitch_enabled():
         st.error('System is currently locked. Please contact the developer.')
         return False
@@ -495,9 +553,17 @@ def add_user(username, password, role):
             st.error(f'User "{username}" already exists. Please choose a different username.')
             return False
         
+        # Set group based on role
+        if role == 'admin':
+            group = 'admin'
+        elif role == 'qa':
+            group = 'qa'
+        elif role == 'agent' and not group:
+            group = '1'  # Default group for agents
+            
         # If user doesn't exist, proceed with insertion
-        cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-                       (username, hash_password(password), role))
+        cursor.execute('INSERT INTO users (username, password, role, user_group) VALUES (?, ?, ?, ?)',
+                       (username, hash_password(password), role, group))
         conn.commit()
         st.success(f'User "{username}" successfully created!')
         return True
@@ -621,7 +687,7 @@ def clear_all_group_messages():
     finally:
         conn.close()
 
-def add_late_login(agent_name, presence_time, login_time, reason):
+def add_late_login(agent_name, presence_time, login_time, reason, user_group):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -630,24 +696,32 @@ def add_late_login(agent_name, presence_time, login_time, reason):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO late_logins (agent_name, presence_time, login_time, reason, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, presence_time, login_time, reason, get_casablanca_time()))
+            INSERT INTO late_logins (agent_name, presence_time, login_time, reason, timestamp, user_group) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (agent_name, presence_time, login_time, reason, get_casablanca_time(), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_late_logins():
+def get_late_logins(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM late_logins ORDER BY timestamp DESC")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT ll.* FROM late_logins ll
+                JOIN users u ON ll.agent_name = u.username
+                WHERE u.user_group = ? OR ll.user_group = ?
+                ORDER BY ll.timestamp DESC
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM late_logins ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
+def add_quality_issue(agent_name, issue_type, timing, mobile_number, product, user_group):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -656,26 +730,34 @@ def add_quality_issue(agent_name, issue_type, timing, mobile_number, product):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO quality_issues (agent_name, issue_type, timing, mobile_number, product, timestamp) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (agent_name, issue_type, timing, mobile_number, product, get_casablanca_time()))
+            INSERT INTO quality_issues (agent_name, issue_type, timing, mobile_number, product, timestamp, user_group) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (agent_name, issue_type, timing, mobile_number, product, get_casablanca_time(), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_quality_issues():
+def get_quality_issues(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT qi.* FROM quality_issues qi
+                JOIN users u ON qi.agent_name = u.username
+                WHERE u.user_group = ? OR qi.user_group = ?
+                ORDER BY qi.timestamp DESC
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM quality_issues ORDER BY timestamp DESC")
         return cursor.fetchall()
     except Exception as e:
         st.error(f"Error fetching quality issues: {str(e)}")
     finally:
         conn.close()
 
-def add_midshift_issue(agent_name, issue_type, start_time, end_time):
+def add_midshift_issue(agent_name, issue_type, start_time, end_time, user_group):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -684,19 +766,27 @@ def add_midshift_issue(agent_name, issue_type, start_time, end_time):
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO midshift_issues (agent_name, issue_type, start_time, end_time, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, issue_type, start_time, end_time, get_casablanca_time()))
+            INSERT INTO midshift_issues (agent_name, issue_type, start_time, end_time, timestamp, user_group) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (agent_name, issue_type, start_time, end_time, get_casablanca_time(), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_midshift_issues():
+def get_midshift_issues(group=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM midshift_issues ORDER BY timestamp DESC")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT mi.* FROM midshift_issues mi
+                JOIN users u ON mi.agent_name = u.username
+                WHERE u.user_group = ? OR mi.user_group = ?
+                ORDER BY mi.timestamp DESC
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM midshift_issues ORDER BY timestamp DESC")
         return cursor.fetchall()
     except Exception as e:
         st.error(f"Error fetching mid-shift issues: {str(e)}")
@@ -751,7 +841,7 @@ def clear_midshift_issues():
     finally:
         conn.close()
 
-def send_vip_message(sender, message):
+def send_vip_message(sender, message, user_group):
     """Send a message in the VIP-only chat"""
     if is_killswitch_enabled() or is_chat_killswitch_enabled():
         st.error("Chat is currently locked. Please contact the developer.")
@@ -766,26 +856,34 @@ def send_vip_message(sender, message):
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
         cursor.execute("""
-            INSERT INTO vip_messages (sender, message, timestamp, mentions) 
-            VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+            INSERT INTO vip_messages (sender, message, timestamp, mentions, user_group) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (sender, message, get_casablanca_time(), ','.join(mentions), user_group))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_vip_messages():
+def get_vip_messages(group=None):
     """Get messages from the VIP-only chat"""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM vip_messages ORDER BY timestamp DESC LIMIT 50")
+        if group and group != 'admin':
+            cursor.execute("""
+                SELECT vm.* FROM vip_messages vm
+                JOIN users u ON vm.sender = u.username
+                WHERE u.user_group = ? OR vm.user_group = ? OR u.role = 'admin'
+                ORDER BY vm.timestamp DESC LIMIT 50
+            """, (group, group))
+        else:
+            cursor.execute("SELECT * FROM vip_messages ORDER BY timestamp DESC LIMIT 50")
         return cursor.fetchall()
     finally:
         conn.close()
 
 # --------------------------
-# Break Scheduling Functions (from first code)
+# Break Scheduling Functions
 # --------------------------
 
 def init_break_session_state():
@@ -1311,6 +1409,15 @@ def agent_break_dashboard():
     if is_killswitch_enabled():
         st.error("System is currently locked. Break booking is disabled.")
         return
+    
+    # Get the agent's group
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_group FROM users WHERE username = ?", (st.session_state.username,))
+        agent_group = cursor.fetchone()[0]
+    finally:
+        conn.close()
     
     # Initialize session state
     if 'agent_bookings' not in st.session_state:
@@ -2185,6 +2292,7 @@ if "authenticated" not in st.session_state:
         "authenticated": False,
         "role": None,
         "username": None,
+        "user_group": None,
         "current_section": "requests",
         "last_request_count": 0,
         "last_mistake_count": 0,
@@ -2207,15 +2315,16 @@ if not st.session_state.authenticated:
         with submit_col2:
             if st.form_submit_button("Login", use_container_width=True):
                 if username and password:
-                    role = authenticate(username, password)
+                    role, user_group = authenticate(username, password)
                     if role:
                         st.session_state.update({
                             "authenticated": True,
                             "role": role,
                             "username": username,
-                            "last_request_count": len(get_requests()),
-                            "last_mistake_count": len(get_mistakes()),
-                            "last_message_ids": [msg[0] for msg in get_group_messages()]
+                            "user_group": user_group,
+                            "last_request_count": len(get_requests(user_group)),
+                            "last_mistake_count": len(get_mistakes(user_group)),
+                            "last_message_ids": [msg[0] for msg in get_group_messages(user_group)]
                         })
                         st.rerun()
                     else:
@@ -2240,9 +2349,9 @@ else:
         """, unsafe_allow_html=True)
 
     def show_notifications():
-        current_requests = get_requests()
-        current_mistakes = get_mistakes()
-        current_messages = get_group_messages()
+        current_requests = get_requests(st.session_state.user_group)
+        current_mistakes = get_mistakes(st.session_state.user_group)
+        current_messages = get_group_messages(st.session_state.user_group)
         
         new_requests = len(current_requests) - st.session_state.last_request_count
         if new_requests > 0 and st.session_state.last_request_count > 0:
@@ -2321,9 +2430,9 @@ else:
         
         # Show notifications only for admin and agent roles
         if st.session_state.role in ["admin", "agent"]:
-            pending_requests = len([r for r in get_requests() if not r[6]])
-            new_mistakes = len(get_mistakes())
-            unread_messages = len([m for m in get_group_messages() 
+            pending_requests = len([r for r in get_requests(st.session_state.user_group) if not r[6]])
+            new_mistakes = len(get_mistakes(st.session_state.user_group))
+            unread_messages = len([m for m in get_group_messages(st.session_state.user_group) 
                                  if m[0] not in st.session_state.last_message_ids 
                                  and m[1] != st.session_state.username])
             
@@ -2361,6 +2470,16 @@ else:
 
     if st.session_state.current_section == "requests":
         if not is_killswitch_enabled():
+            # Add group filter for admins
+            if st.session_state.role == "admin":
+                group_filter = st.selectbox(
+                    "Filter by Group", 
+                    ["All", "1", "2", "3", "4"],
+                    key="request_group_filter"
+                )
+            else:
+                group_filter = st.session_state.user_group if st.session_state.role == "agent" else None
+            
             with st.expander("➕ Submit New Request"):
                 with st.form("request_form"):
                     cols = st.columns([1, 3])
@@ -2369,17 +2488,22 @@ else:
                     comment = st.text_area("Comment")
                     if st.form_submit_button("Submit"):
                         if identifier and comment:
-                            if add_request(st.session_state.username, request_type, identifier, comment):
+                            if add_request(st.session_state.username, request_type, identifier, comment, st.session_state.user_group):
                                 st.success("Request submitted successfully!")
                                 st.rerun()
         
             st.subheader("🔍 Search Requests")
             search_query = st.text_input("Search requests...")
-            requests = search_requests(search_query) if search_query else get_requests()
             
+            # Get requests with group filter
+            if st.session_state.role == "admin" and group_filter != "All":
+                requests = search_requests(search_query, group_filter) if search_query else get_requests(group_filter)
+            else:
+                requests = search_requests(search_query, st.session_state.user_group) if search_query else get_requests(st.session_state.user_group)
+                
             st.subheader("All Requests")
             for req in requests:
-                req_id, agent, req_type, identifier, comment, timestamp, completed = req
+                req_id, agent, req_type, identifier, comment, timestamp, completed, group = req
                 with st.container():
                     cols = st.columns([0.1, 0.9])
                     with cols[0]:
@@ -2394,7 +2518,7 @@ else:
                                 <h4>#{req_id} - {req_type}</h4>
                                 <small>{timestamp}</small>
                             </div>
-                            <p>Agent: {agent}</p>
+                            <p>Agent: {agent} (Group: {group})</p>
                             <p>Identifier: {identifier}</p>
                             <div style="margin-top: 1rem;">
                                 <h5>Status Updates:</h5>
@@ -2437,24 +2561,24 @@ else:
                         error_description = st.text_area("Error Description")
                         if st.form_submit_button("Submit"):
                             if agent_name and ticket_id and error_description:
-                                add_mistake(st.session_state.username, agent_name, ticket_id, error_description)
+                                add_mistake(st.session_state.username, agent_name, ticket_id, error_description, st.session_state.user_group)
                                 st.success("Mistake reported successfully!")
                                 st.rerun()
         
             st.subheader("🔍 Search Mistakes")
             search_query = st.text_input("Search mistakes...")
-            mistakes = search_mistakes(search_query) if search_query else get_mistakes()
+            mistakes = search_mistakes(search_query, st.session_state.user_group) if search_query else get_mistakes(st.session_state.user_group)
             
             st.subheader("Mistakes Log")
             for mistake in mistakes:
-                m_id, tl, agent, ticket, error, ts = mistake
+                m_id, tl, agent, ticket, error, ts, group = mistake
                 st.markdown(f"""
                 <div class="card">
                     <div style="display: flex; justify-content: space-between;">
                         <h4>#{m_id}</h4>
                         <small>{ts}</small>
                     </div>
-                    <p>Agent: {agent}</p>
+                    <p>Agent: {agent} (Group: {group})</p>
                     <p>Ticket: {ticket}</p>
                     <p>Error: {error}</p>
                     <p><small>Reported by: {tl}</small></p>
@@ -2496,41 +2620,52 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-
-                    # Group Chat only for non-VIP users
-                    st.subheader("Group Chat")
-                    messages = get_group_messages()
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    for msg in reversed(messages):
-                        msg_id, sender, message, ts, mentions = msg
-                        is_sent = sender == st.session_state.username
-                        is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                        
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">
-                                {sender[0].upper()}
-                            </div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                # Add group filter for admins
+                if st.session_state.role == "admin":
+                    group_filter = st.selectbox(
+                        "Filter by Group", 
+                        ["All", "1", "2", "3", "4"],
+                        key="chat_group_filter"
+                    )
+                else:
+                    group_filter = st.session_state.user_group if st.session_state.role == "agent" else None
+                
+                # Get messages with group filter
+                if st.session_state.role == "admin" and group_filter != "All":
+                    messages = get_group_messages(group_filter)
+                else:
+                    messages = get_group_messages(st.session_state.user_group)
+                
+                st.subheader("Group Chat")
+                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                for msg in reversed(messages):
+                    msg_id, sender, message, ts, mentions, group = msg
+                    is_sent = sender == st.session_state.username
+                    is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
                     
-                    with st.form("chat_form", clear_on_submit=True):
-                        message = st.text_input("Type your message...", key="chat_input")
-                        col1, col2 = st.columns([5,1])
-                        with col2:
-                            if st.form_submit_button("Send"):
-                                if message:
-                                    send_group_message(st.session_state.username, message)
-                                    st.rerun()
+                    st.markdown(f"""
+                    <div class="chat-message {'sent' if is_sent else 'received'}">
+                        <div class="message-avatar">
+                            {sender[0].upper()}
+                        </div>
+                        <div class="message-content">
+                            <div>{message}</div>
+                            <div class="message-meta">{sender} (Group: {group}) • {ts}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                with st.form("chat_form", clear_on_submit=True):
+                    message = st.text_input("Type your message...", key="chat_input")
+                    col1, col2 = st.columns([5,1])
+                    with col2:
+                        if st.form_submit_button("Send"):
+                            if message:
+                                send_group_message(st.session_state.username, message, st.session_state.user_group)
+                                st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
-
-
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
@@ -2600,14 +2735,15 @@ else:
                             st.session_state.username,
                             presence_time,
                             login_time,
-                            reason
+                            reason,
+                            st.session_state.user_group
                         )
                         st.success("Late login reported successfully!")
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 08:30)")
         
         st.subheader("Late Login Records")
-        late_logins = get_late_logins()
+        late_logins = get_late_logins(st.session_state.user_group)
         
         if st.session_state.role == "admin":
             # Search and date filter only for admin users
@@ -2647,9 +2783,10 @@ else:
             if late_logins:
                 data = []
                 for login in late_logins:
-                    _, agent, presence, login_time, reason, ts = login
+                    _, agent, presence, login_time, reason, ts, group = login
                     data.append({
                         "Agent's Name": agent,
+                        "Group": group,
                         "Time of presence": presence,
                         "Time of log in": login_time,
                         "Reason": reason,
@@ -2678,7 +2815,7 @@ else:
             if user_logins:
                 data = []
                 for login in user_logins:
-                    _, agent, presence, login_time, reason, ts = login
+                    _, agent, presence, login_time, reason, ts, group = login
                     data.append({
                         "Time of presence": presence,
                         "Time of log in": login_time,
@@ -2760,14 +2897,15 @@ else:
                             issue_type,
                             timing,
                             mobile_number,
-                            product
+                            product,
+                            st.session_state.user_group
                         )
                         st.success("Quality issue reported successfully!")
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 14:30)")
         
         st.subheader("Quality Issue Records")
-        quality_issues = get_quality_issues()
+        quality_issues = get_quality_issues(st.session_state.user_group)
         
         # Allow both admin and QA roles to see all records and use search/filter
         if st.session_state.role in ["admin", "qa"]:
@@ -2809,9 +2947,10 @@ else:
             if quality_issues:
                 data = []
                 for issue in quality_issues:
-                    _, agent, issue_type, timing, mobile, product, ts = issue
+                    _, agent, issue_type, timing, mobile, product, ts, group = issue
                     data.append({
                         "Agent's Name": agent,
+                        "Group": group,
                         "Type of issue": issue_type,
                         "Timing": timing,
                         "Mobile number": mobile,
@@ -2842,7 +2981,7 @@ else:
             if user_issues:
                 data = []
                 for issue in user_issues:
-                    _, agent, issue_type, timing, mobile, product, ts = issue
+                    _, agent, issue_type, timing, mobile, product, ts, group = issue
                     data.append({
                         "Type of issue": issue_type,
                         "Timing": timing,
@@ -2881,14 +3020,15 @@ else:
                             st.session_state.username,
                             issue_type,
                             start_time,
-                            end_time
+                            end_time,
+                            st.session_state.user_group
                         )
                         st.success("Mid-shift issue reported successfully!")
                     except ValueError:
                         st.error("Invalid time format. Please use HH:MM format (e.g., 10:00)")
         
         st.subheader("Mid-shift Issue Records")
-        midshift_issues = get_midshift_issues()
+        midshift_issues = get_midshift_issues(st.session_state.user_group)
         
         if st.session_state.role == "admin":
             # Search and date filter only for admin users
@@ -2928,9 +3068,10 @@ else:
             if midshift_issues:
                 data = []
                 for issue in midshift_issues:
-                    _, agent, issue_type, start_time, end_time, ts = issue
+                    _, agent, issue_type, start_time, end_time, ts, group = issue
                     data.append({
                         "Agent's Name": agent,
+                        "Group": group,
                         "Issue Type": issue_type,
                         "Start time": start_time,
                         "End Time": end_time,
@@ -2959,7 +3100,7 @@ else:
             if user_issues:
                 data = []
                 for issue in user_issues:
-                    _, agent, issue_type, start_time, end_time, ts = issue
+                    _, agent, issue_type, start_time, end_time, ts, group = issue
                     data.append({
                         "Issue Type": issue_type,
                         "Start time": start_time,
@@ -3083,13 +3224,18 @@ else:
                 # Allow all admin users to create admin and QA accounts
                 if st.session_state.role == 'admin':
                     role = st.selectbox("Role", ["agent", "admin", "qa"])
+                    if role == "agent":
+                        group = st.selectbox("Group", ["1", "2", "3", "4"])
+                    else:
+                        group = role  # admin or qa
                 else:
                     role = "agent"  # Default role for accounts created by non-admin users
                     st.info("Note: You can only create agent accounts.")
+                    group = "1"  # Default group
                 
                 if st.form_submit_button("Add User"):
                     if user and pwd:
-                        add_user(user, pwd, role)
+                        add_user(user, pwd, role, group)
                         st.rerun()
         
         st.subheader("Existing Users")
@@ -3104,11 +3250,12 @@ else:
             
             # Create a dataframe for better display
             user_data = []
-            for uid, uname, urole in users:
+            for uid, uname, urole, ugroup in users:
                 user_data.append({
                     "ID": uid,
                     "Username": uname,
-                    "Role": urole
+                    "Role": urole,
+                    "Group": ugroup
                 })
             
             df = pd.DataFrame(user_data)
@@ -3121,7 +3268,7 @@ else:
                     st.write("### Delete User")
                     user_to_delete = st.selectbox(
                         "Select User to Delete",
-                        [f"{user[0]} - {user[1]} ({user[2]})" for user in users],
+                        [f"{user[0]} - {user[1]} ({user[2]}, Group: {user[3]})" for user in users],
                         key="delete_user_select"
                     )
                     
@@ -3137,10 +3284,11 @@ else:
             st.write(f"### Admin Users ({len(admin_users)})")
             
             admin_data = []
-            for uid, uname, urole in admin_users:
+            for uid, uname, urole, ugroup in admin_users:
                 admin_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": ugroup
                 })
             
             if admin_data:
@@ -3154,10 +3302,11 @@ else:
             st.write(f"### Agent Users ({len(agent_users)})")
             
             agent_data = []
-            for uid, uname, urole in agent_users:
+            for uid, uname, urole, ugroup in agent_users:
                 agent_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": ugroup
                 })
             
             if agent_data:
@@ -3168,7 +3317,7 @@ else:
                     st.write("### Delete Agent")
                     agent_to_delete = st.selectbox(
                         "Select Agent to Delete",
-                        [f"{user[0]} - {user[1]}" for user in agent_users],
+                        [f"{user[0]} - {user[1]} (Group: {user[3]})" for user in agent_users],
                         key="delete_agent_select"
                     )
                     
@@ -3186,10 +3335,11 @@ else:
             st.write(f"### QA Users ({len(qa_users)})")
             
             qa_data = []
-            for uid, uname, urole in qa_users:
+            for uid, uname, urole, ugroup in qa_users:
                 qa_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": ugroup
                 })
             
             if qa_data:
