@@ -2461,11 +2461,19 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                # Check if user is VIP or taha kirri
-                is_vip = is_vip_user(st.session_state.username)
+                # Get user VIP status directly from the database
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT is_vip FROM users WHERE username = ?", (st.session_state.username,))
+                    result = cursor.fetchone()
+                    is_vip = bool(result[0]) if result else False
+                finally:
+                    conn.close()
+                
                 is_taha = st.session_state.username.lower() == "taha kirri"
                 
-                # Make sure to check is_vip properly
+                # Check if user is VIP or taha kirri
                 if is_vip or is_taha:
                     tab1, tab2 = st.tabs(["💬 Regular Chat", "⭐ VIP Chat"])
                     
@@ -3164,32 +3172,29 @@ else:
         st.subheader("Existing Users")
         users = get_all_users()
         
-        # Create a table-like display using columns
+        # Create a dataframe display for better visualization
+        user_data = []
+        for user in users:
+            uid, uname, role, is_vip = user  # Correctly unpack user data
+            user_data.append({
+                "ID": uid,
+                "Username": uname,
+                "Role": role,
+                "VIP": "⭐" if is_vip else ""
+            })
+        
+        df = pd.DataFrame(user_data)
+        st.dataframe(df)
+        
+        # Add delete functionality
         if st.session_state.username.lower() == "taha kirri":
-            # Full view for taha kirri
-            cols = st.columns([3, 1, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Role**")
-            cols[2].write("**Action**")
-            
-            for uid, uname, urole in users:
-                cols = st.columns([3, 1, 1])
-                cols[0].write(uname)
-                cols[1].write(urole)
-                if cols[2].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
-                    st.rerun()
-        else:
-            # Limited view for other admins
-            cols = st.columns([4, 1])
-            cols[0].write("**Username**")
-            cols[1].write("**Action**")
-            
-            for uid, uname, urole in users:
-                cols = st.columns([4, 1])
-                cols[0].write(uname)
-                if cols[1].button("Delete", key=f"del_{uid}") and not is_killswitch_enabled():
-                    delete_user(uid)
+            with st.form("delete_user_form"):
+                user_to_delete = st.selectbox("Select user to delete", [u[1] for u in users])
+                user_id = next((u[0] for u in users if u[1] == user_to_delete), None)
+                
+                if st.form_submit_button("Delete User") and user_id and not is_killswitch_enabled():
+                    delete_user(user_id)
+                    st.success(f"User {user_to_delete} deleted successfully!")
                     st.rerun()
 
         st.subheader("⭐ VIP User Management")
