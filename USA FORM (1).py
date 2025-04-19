@@ -2408,8 +2408,9 @@ else:
         st.subheader("Quality Issue Records")
         quality_issues = get_quality_issues()
         
-        if st.session_state.role == "admin":
-            # Search and date filter only for admin users
+        # Allow both admin and QA roles to see all records and use search/filter
+        if st.session_state.role in ["admin", "qa"]:
+            # Search and date filter for admin and QA users
             col1, col2 = st.columns([2, 1])
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
@@ -2468,7 +2469,8 @@ else:
                     mime="text/csv"
                 )
                 
-                if st.button("Clear All Records"):
+                # Only admin can clear records
+                if st.session_state.role == "admin" and st.button("Clear All Records"):
                     clear_quality_issues()
                     st.rerun()
             else:
