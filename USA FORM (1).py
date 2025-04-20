@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#2f3542'
         },
 'light': {
-            'bg': '#f9fafb',           # Soft off-white
-            'sidebar': '#ffffff',      # Pure white
-            'card': '#ffffff',         # Clean white cards
-            'text': '#1f2937',         # Dark gray (high contrast)
-            'text_secondary': '#4b5563',
-            'border': '#e5e7eb',       # Light gray border
-            'accent': '#f97316',       # Vibrant orange
-            'accent_hover': '#ea580c', # Darker orange (strong hover)
-            'muted': '#6b7280',        # Neutral gray
+            'bg': '#f5f3ff',           # Very light lilac tint
+            'sidebar': '#ffffff',
+            'card': '#ffffff',
+            'text': '#0f172a',
+            'text_secondary': '#334155',
+            'border': '#ddd6fe',       # Soft lilac border
+            'accent': '#8b5cf6',       # Vibrant lilac
+            'accent_hover': '#84cc16', # Lime hover (fresh contrast)
+            'muted': '#64748b',
             'input_bg': '#ffffff',
-            'input_text': '#1f2937',
-            'my_message_bg': '#f97316',  # Orange message bubble
-            'other_message_bg': '#f3f4f6',
-            'hover_bg': '#ffedd5',      # Light orange hover (high visibility)
+            'input_text': '#0f172a',
+            'my_message_bg': '#8b5cf6',  # Lilac message
+            'other_message_bg': '#f5f3ff',
+            'hover_bg': '#ecfccb',      # Light lime hover (visible)
             'notification_bg': '#ffffff',
-            'notification_text': '#1f2937',
-            'button_bg': '#f97316',     # Orange button
-            'button_text': '#ffffff',
-            'button_hover': '#ea580c',   # Darker hover
+            'notification_text': '#0f172a',
+            'button_bg': '#8b5cf6',     # Lilac button
+            'button_text': '#0f172a',   # Near-black text
+            'button_hover': '#84cc16', # Lime hover
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#1f2937',
-            'dropdown_hover': '#ffedd5', # Light orange hover
-            'table_header': '#f3f4f6',  # Light gray header
+            'dropdown_text': '#0f172a',
+            'dropdown_hover': '#ecfccb',
+            'table_header': '#ede9fe',  # Light lilac header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f9fafb',
-            'table_border': '#e5e7eb'
+            'table_row_odd': '#f5f3ff',
+            'table_border': '#ddd6fe'
         }
     }
 
