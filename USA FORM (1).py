@@ -1737,7 +1737,7 @@ def inject_custom_css():
             'bg': '#f8fafc',  # Soft, light neutral background
             'sidebar': '#ffffff',  # Pure white sidebar
             'card': '#ffffff',  # White cards
-            'text': '#ffffff',  # Slightly softer dark text
+            'text': '#2d3748',  # Slightly softer dark text
             'text_secondary': '#4a5568',
             'border': '#e2e8f0',  # Soft, muted border
             'accent': '#3182ce',  # Softer blue accent
