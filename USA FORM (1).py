@@ -681,7 +681,7 @@ def get_vip_messages():
         cursor.execute("SELECT * FROM vip_messages ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
-        conn.close()", unsafe_allow_html=True)
+        conn.close()
         else:
             st.error("System is currently locked. Access to mistakes is disabled.")
 
