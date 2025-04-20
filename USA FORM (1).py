@@ -1734,29 +1734,29 @@ def inject_custom_css():
             'table_border': '#334155'
         },
 'light': {
-             'bg': '#fafafa',           # Slightly warm white
+            'bg': '#f8fafc',           # Neutral soft white
             'sidebar': '#ffffff',
             'card': '#ffffff',
-            'text': '#1e293b',         # Deep slate (high contrast)
+            'text': '#1e293b',         # Deep slate
             'text_secondary': '#475569',
-            'border': '#e2e8f0',       # Cool gray border
-            'accent': '#ef4444',       # Bright red
-            'accent_hover': '#dc2626', # Stronger red (hover contrast)
+            'border': '#e2e8f0',       # Soft border
+            'accent': '#7c3aed',       # Vibrant purple
+            'accent_hover': '#6d28d9', # Deeper purple (hover contrast)
             'muted': '#64748b',
             'input_bg': '#ffffff',
             'input_text': '#1e293b',
-            'my_message_bg': '#ef4444',  # Red message bubble
-            'other_message_bg': '#f1f5f9',
-            'hover_bg': '#fee2e2',      # Light red hover (high visibility)
+            'my_message_bg': '#7c3aed',  # Purple message bubble
+            'other_message_bg': '#f5f3ff', # Very light purple
+            'hover_bg': '#ede9fe',      # Light purple hover (high visibility)
             'notification_bg': '#ffffff',
             'notification_text': '#1e293b',
-            'button_bg': '#ef4444',     # Red button
+            'button_bg': '#7c3aed',    # Purple button
             'button_text': '#ffffff',
-            'button_hover': '#dc2626',   # Darker hover
+            'button_hover': '#6d28d9',  # Darker hover
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#1e293b',
-            'dropdown_hover': '#fee2e2', # Light red hover
-            'table_header': '#f1f5f9',  # Light blue-gray header
+            'dropdown_hover': '#ede9fe', # Light purple hover
+            'table_header': '#f5f3ff',  # Light purple header
             'table_row_even': '#ffffff',
             'table_row_odd': '#f8fafc',
             'table_border': '#e2e8f0'
