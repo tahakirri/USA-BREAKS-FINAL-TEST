@@ -492,13 +492,13 @@ def send_group_message(sender, message, group_name=None):
         conn.close()
 
 def get_group_messages(group_name=None):
+    # Harden: Never allow None, empty, or blank group_name to fetch all messages
+    if group_name is None or str(group_name).strip() == "":
+        return []
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        if group_name is not None:
-            cursor.execute("SELECT * FROM group_messages WHERE group_name = ? ORDER BY timestamp DESC LIMIT 50", (group_name,))
-        else:
-            cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
+        cursor.execute("SELECT * FROM group_messages WHERE group_name = ? ORDER BY timestamp DESC LIMIT 50", (group_name,))
         return cursor.fetchall()
     finally:
         conn.close()
