@@ -1868,7 +1868,7 @@ def inject_custom_css():
         
         /* Template and stats numbers (Total Templates, Active Templates) */
         .template-stats-number, .template-info-number {{
-            color: {c['template_stats_number']} !important;
+            color: {c['text']} !important;
             font-weight: bold;
             font-size: 2rem;
         }}
