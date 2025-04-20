@@ -1654,7 +1654,7 @@ def set_vip_status(username, is_vip):
 
 # Add this at the beginning of the file, after the imports
 if 'color_mode' not in st.session_state:
-    st.session_state.color_mode = 'dark'
+    st.session_state.color_mode = 'light'
 
 def inject_custom_css():
     # Add notification JavaScript
