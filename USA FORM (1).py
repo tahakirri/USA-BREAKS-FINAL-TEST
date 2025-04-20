@@ -1720,6 +1720,7 @@ def inject_custom_css():
             'muted': '#64748b',
             'input_bg': '#1e293b',
             'input_text': '#f1f5f9',
+            'placeholder_text': '#94a3b8',  # Light gray for placeholder in dark mode
             'my_message_bg': '#94a3b8',  # Slate message
             'other_message_bg': '#1e293b',
             'hover_bg': '#475569',      # Darker slate hover
