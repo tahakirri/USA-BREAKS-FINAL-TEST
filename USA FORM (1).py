@@ -1738,10 +1738,10 @@ def inject_custom_css():
             'sidebar': '#ffffff',  # Pure white sidebar
             'card': '#ffffff',  # White cards
             'text': '#2d3748',  # Slightly softer dark text
-            'text_secondary': '#2d3748',
+            'text_secondary': '#4a5568',
             'border': '#e2e8f0',  # Soft, muted border
             'accent': '#3182ce',  # Softer blue accent
-            'accent_hover': '#ef1010',
+            'accent_hover': '#2c5282',
             'muted': '#718096',  # Softer muted text
             'input_bg': '#ffffff',
             'input_text': '#2d3748',
@@ -1752,10 +1752,10 @@ def inject_custom_css():
             'notification_text': '#2d3748',
             'button_bg': '#3182ce',  # Soft blue buttons
             'button_text': '#ffffff',
-            'button_hover': '#ef1010',
+            'button_hover': '#2c5282',
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#2d3748',
-            'dropdown_hover': '#ef1010',
+            'dropdown_hover': '#edf2f7',
             'table_header': '#f7fafc',  # Very light blue-gray header
             'table_row_even': '#ffffff',
             'table_row_odd': '#f8fafc',
