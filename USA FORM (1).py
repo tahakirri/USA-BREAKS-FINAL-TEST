@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#334155'
         },
 'light': {
-            'bg': '#f8fafc',           # Neutral soft white
+            'bg': '#f0fdfa',           # Very light teal tint
             'sidebar': '#ffffff',
             'card': '#ffffff',
-            'text': '#1e293b',         # Deep slate
-            'text_secondary': '#475569',
-            'border': '#e2e8f0',       # Soft border
-            'accent': '#7c3aed',       # Vibrant purple
-            'accent_hover': '#6d28d9', # Deeper purple (hover contrast)
+            'text': '#0f172a',         # Near-black for contrast
+            'text_secondary': '#334155',
+            'border': '#cbd5e1',      # Light gray
+            'accent': '#0d9488',       # Calm teal
+            'accent_hover': '#f97316', # Coral hover (high contrast)
             'muted': '#64748b',
             'input_bg': '#ffffff',
-            'input_text': '#1e293b',
-            'my_message_bg': '#7c3aed',  # Purple message bubble
-            'other_message_bg': '#f5f3ff', # Very light purple
-            'hover_bg': '#ede9fe',      # Light purple hover (high visibility)
+            'input_text': '#0f172a',
+            'my_message_bg': '#0d9488',  # Teal message
+            'other_message_bg': '#f1f5f9',
+            'hover_bg': '#f0fdf4',     # Mint green hover (subtle but visible)
             'notification_bg': '#ffffff',
-            'notification_text': '#1e293b',
-            'button_bg': '#7c3aed',    # Purple button
+            'notification_text': '#0f172a',
+            'button_bg': '#0d9488',    # Teal button
             'button_text': '#ffffff',
-            'button_hover': '#6d28d9',  # Darker hover
+            'button_hover': '#f97316',  # Coral hover (stands out)
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#1e293b',
-            'dropdown_hover': '#ede9fe', # Light purple hover
-            'table_header': '#f5f3ff',  # Light purple header
+            'dropdown_text': '#0f172a',
+            'dropdown_hover': '#f0fdf4',
+            'table_header': '#ccfbf1',  # Light teal header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f8fafc',
-            'table_border': '#e2e8f0'
+            'table_row_odd': '#f0fdfa',
+            'table_border': '#cbd5e1'
         }
     }
 
