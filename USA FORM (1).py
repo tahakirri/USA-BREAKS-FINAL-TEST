@@ -2187,14 +2187,14 @@ else:
     if is_killswitch_enabled():
         st.markdown("""
         <div class="killswitch-active">
-            <h3>⚠️ SYSTEM LOCKED ⚠️</h3>
+            <h3>SYSTEM LOCKED</h3>
             <p>The system is currently in read-only mode.</p>
         </div>
         """, unsafe_allow_html=True)
     elif is_chat_killswitch_enabled():
         st.markdown("""
         <div class="chat-killswitch-active">
-            <h3>⚠️ CHAT LOCKED ⚠️</h3>
+            <h3>CHAT LOCKED</h3>
             <p>The chat functionality is currently disabled.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2230,12 +2230,12 @@ else:
     with st.sidebar:
         # Sidebar welcome text color: dark in light mode, white in dark mode
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
-        st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
+        st.markdown(f'<h2 style="color: {welcome_color};">Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
         
         # Theme toggle
         col1, col2 = st.columns([1, 6])
         with col1:
-            current_icon = "🌙" if st.session_state.color_mode == 'dark' else "☀️"
+            current_icon = "Moon" if st.session_state.color_mode == 'dark' else "Sun"
             st.write(current_icon)
         with col2:
             if st.toggle("", value=st.session_state.color_mode == 'light', key='theme_toggle', label_visibility="collapsed"):
@@ -2300,18 +2300,18 @@ else:
                 <h4 style="
                     color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
                     margin-bottom: 1rem;
-                ">🔔 Notifications</h4>
+                ">Notifications</h4>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
                     margin-bottom: 0.5rem;
-                ">📋 Pending requests: {pending_requests}</p>
+                ">Pending requests: {pending_requests}</p>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
                     margin-bottom: 0.5rem;
-                ">❌ Recent mistakes: {new_mistakes}</p>
+                ">Recent mistakes: {new_mistakes}</p>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                ">💬 Unread messages: {unread_messages}</p>
+                ">Unread messages: {unread_messages}</p>
             </div>
             """, unsafe_allow_html=True)
         
