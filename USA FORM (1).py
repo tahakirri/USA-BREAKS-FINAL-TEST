@@ -2591,20 +2591,27 @@ else:
                             if message:
                                 send_group_message(st.session_state.username, message, group_filter)
                                 st.rerun()
+        else:
+            st.error("System is currently locked. Access to chat is disabled.")
+
+    elif st.session_state.current_section == "hold":
+        if not is_killswitch_enabled():
+            st.subheader("🖼️ HOLD Images")
+            # Only show upload option to admin users
+            if st.session_state.role == "admin":
+                uploaded_file = st.file_uploader("Upload HOLD Image", type=['png', 'jpg', 'jpeg'])
+                if uploaded_file is not None:
                     try:
                         # Convert the file to bytes
                         img_bytes = uploaded_file.getvalue()
-                        
                         # Clear existing images before adding new one
                         clear_hold_images()
-                        
                         # Add to database
                         if add_hold_image(st.session_state.username, img_bytes):
                             st.success("Image uploaded successfully!")
                             st.rerun()
                     except Exception as e:
                         st.error(f"Error uploading image: {str(e)}")
-            
             # Display images (visible to all users)
             images = get_hold_images()
             if images:
