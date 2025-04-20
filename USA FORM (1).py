@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#334155'
         },
 'light': {
-    'bg': '#f9fafb',           # Warm off-white
-    'sidebar': '#ffffff',      # White sidebar
-    'card': '#ffffff',         # White cards
-    'text': '#374151',         # Warm dark gray
-    'text_secondary': '#6b7280',
-    'border': '#e5e7eb',       # Warm gray border
-    'accent': '#3b82f6',       # Vibrant blue
-    'accent_hover': '#2563eb',
-    'muted': '#6b7280',        # Warm gray
-    'input_bg': '#ffffff',
-    'input_text': '#374151',
-    'my_message_bg': '#3b82f6',  # Bright blue message
-    'other_message_bg': '#f9fafb',
-    'hover_bg': '#f3f4f6',      # Warm light gray hover
-    'notification_bg': '#ffffff',
-    'notification_text': '#374151',
-    'button_bg': '#3b82f6',     # Vibrant blue button
-    'button_text': '#ffffff',
-    'button_hover': '#2563eb',
-    'dropdown_bg': '#ffffff',
-    'dropdown_text': '#374151',
-    'dropdown_hover': '#f3f4f6',
-    'table_header': '#f3f4f6',  # Warm light gray header
-    'table_row_even': '#ffffff',
-    'table_row_odd': '#f9fafb',
-    'table_border': '#e5e7eb''
+            'bg': '#f9fafb',           # Warm off-white
+            'sidebar': '#ffffff',      # White sidebar
+            'card': '#ffffff',         # White cards
+            'text': '#374151',         # Warm dark gray
+            'text_secondary': '#6b7280',
+            'border': '#e5e7eb',       # Warm gray border
+            'accent': '#3b82f6',       # Vibrant blue
+            'accent_hover': '#2563eb',
+            'muted': '#6b7280',        # Warm gray
+            'input_bg': '#ffffff',
+            'input_text': '#374151',
+            'my_message_bg': '#3b82f6',  # Bright blue message
+            'other_message_bg': '#f9fafb',
+            'hover_bg': '#f3f4f6',      # Warm light gray hover
+            'notification_bg': '#ffffff',
+            'notification_text': '#374151',
+            'button_bg': '#3b82f6',     # Vibrant blue button
+            'button_text': '#ffffff',
+            'button_hover': '#2563eb',
+            'dropdown_bg': '#ffffff',
+            'dropdown_text': '#374151',
+            'dropdown_hover': '#f3f4f6',
+            'table_header': '#f3f4f6',  # Warm light gray header
+            'table_row_even': '#ffffff',
+            'table_row_odd': '#f9fafb',
+            'table_border': '#e5e7eb''
         }
     }
 
