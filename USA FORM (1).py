@@ -2193,13 +2193,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom sidebar background color for light/dark mode
+# Custom sidebar background color and text color for light/dark mode
 sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
+sidebar_text = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
 st.markdown(f'''
     <style>
     [data-testid="stSidebar"] > div:first-child {{
         background-color: {sidebar_bg} !important;
+        color: {sidebar_text} !important;
         transition: background-color 0.2s;
+    }}
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {{
+        color: {sidebar_text} !important;
     }}
     </style>
 ''', unsafe_allow_html=True)
@@ -2584,6 +2589,8 @@ else:
                     messages = get_group_messages(view_group)
                 else:
                     messages = []  # No group selected or group is blank, show no messages
+                    if st.session_state.role == "agent":
+                        st.warning("You are not assigned to a group. Please contact an admin.")
                 st.markdown('''<style>
                 .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
                 .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
