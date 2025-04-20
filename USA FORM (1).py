@@ -2404,9 +2404,20 @@ else:
             # Filter requests by group
             if group_filter:
                 all_requests = search_requests(search_query) if search_query else get_requests()
-                requests = [r for r in all_requests if len(r) > 7 and r[7] == group_filter]
+                # Only show requests for this group
+                requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
             else:
-                requests = search_requests(search_query) if search_query else get_requests()
+                # If agent, restrict to their group only
+                if st.session_state.role == "agent":
+                    user_group = None
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            user_group = u[3]
+                            break
+                    all_requests = search_requests(search_query) if search_query else get_requests()
+                    requests = [r for r in all_requests if (len(r) > 7 and r[7] == user_group)]
+                else:
+                    requests = search_requests(search_query) if search_query else get_requests()
             
             st.subheader("All Requests")
             for req in requests:
