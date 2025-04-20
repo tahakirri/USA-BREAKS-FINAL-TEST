@@ -1866,6 +1866,13 @@ def inject_custom_css():
             margin: 0;
         }}
         
+        /* Template and stats numbers (Total Templates, Active Templates) */
+        .template-stats-number, .template-info-number {{
+            color: {c['template_stats_number']} !important;
+            font-weight: bold;
+            font-size: 2rem;
+        }}
+        
         /* Input Fields and Labels */
         .stTextInput input, 
         .stTextArea textarea,
@@ -1874,6 +1881,14 @@ def inject_custom_css():
             color: {c['input_text']} !important;
             border-color: {c['border']} !important;
             caret-color: {c['text']} !important;
+        }}
+        
+        /* Placeholder text color for input fields */
+        .stTextInput input::placeholder, 
+        .stTextArea textarea::placeholder, 
+        .stNumberInput input::placeholder {{
+            color: {c['placeholder_text']} !important;
+            opacity: 1 !important;
         }}
         
         /* Input focus and selection */
