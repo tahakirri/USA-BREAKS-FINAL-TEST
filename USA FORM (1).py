@@ -2557,45 +2557,40 @@ else:
                                 st.session_state.group_name = u[3]
                                 break
                     group_filter = st.session_state.group_name
+
                 st.subheader("Group Chat")
                 messages = get_group_messages(group_filter)
+                st.markdown('''<style>
+                .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
+                .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
+                .chat-message.sent {flex-direction: row-reverse;}
+                .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
+                .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
+                .chat-message.sent .message-content {background: #dbeafe;}
+                .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
+                </style>''', unsafe_allow_html=True)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                 for msg in reversed(messages):
                     msg_id, sender, message, ts, mentions, group_name = msg
                     is_sent = sender == st.session_state.username
-                    is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
                     st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">
-                                {sender[0].upper()}
-                            </div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
-                            </div>
+                    <div class="chat-message {'sent' if is_sent else 'received'}">
+                        <div class="message-avatar">{sender[0].upper()}</div>
+                        <div class="message-content">
+                            <div>{message}</div>
+                            <div class="message-meta">{sender} • {ts}</div>
                         </div>
-                        """, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    with st.form("chat_form", clear_on_submit=True):
-                        message = st.text_input("Type your message...", key="chat_input")
-                        col1, col2 = st.columns([5,1])
-                        with col2:
-                            if st.form_submit_button("Send"):
-                                if message:
-                                    send_group_message(st.session_state.username, message)
-                                    st.rerun()
-        else:
-            st.error("System is currently locked. Access to chat is disabled.")
-
-    elif st.session_state.current_section == "hold":
-        if not is_killswitch_enabled():
-            st.subheader("🖼️ HOLD Images")
-            
-            # Only show upload option to admin users
-            if st.session_state.role == "admin":
-                uploaded_file = st.file_uploader("Upload HOLD Image", type=['png', 'jpg', 'jpeg'])
-                if uploaded_file is not None:
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                with st.form("chat_form", clear_on_submit=True):
+                    message = st.text_input("Type your message...", key="chat_input")
+                    col1, col2 = st.columns([5,1])
+                    with col2:
+                        if st.form_submit_button("Send"):
+                            if message:
+                                send_group_message(st.session_state.username, message, group_filter)
+                                st.rerun()
                     try:
                         # Convert the file to bytes
                         img_bytes = uploaded_file.getvalue()
@@ -3280,10 +3275,11 @@ else:
             st.write(f"### QA Users ({len(qa_users)})")
             
             qa_data = []
-            for uid, uname, urole in qa_users:
+            for uid, uname, urole, gname in qa_users:
                 qa_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": gname
                 })
             
             if qa_data:
