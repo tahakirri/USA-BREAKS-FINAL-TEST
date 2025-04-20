@@ -209,10 +209,7 @@ def init_db():
         # Create other admin accounts
         admin_accounts = [
             ("taha kirri", "arise@99"),
-            ("Issam Samghini", "admin@2025"),
-            ("Loubna Fellah", "admin@99"),
-            ("Youssef Kamal", "admin@006"),
-            ("Fouad Fathi", "admin@55")
+            ("admin", "p@ssWord995"),
         ]
         
         for username, password in admin_accounts:
@@ -223,51 +220,7 @@ def init_db():
         
         # Create agent accounts
         agents = [
-            ("Karabila Younes", "30866"),
-            ("Kaoutar Mzara", "30514"),
-            ("Ben Tahar Chahid", "30864"),
-            ("Cherbassi Khadija", "30868"),
-            ("Lekhmouchi Kamal", "30869"),
-            ("Said Kilani", "30626"),
-            ("AGLIF Rachid", "30830"),
-            ("Yacine Adouha", "30577"),
-            ("Manal Elanbi", "30878"),
-            ("Jawad Ouassaddine", "30559"),
-            ("Kamal Elhaouar", "30844"),
-            ("Hoummad Oubella", "30702"),
-            ("Zouheir Essafi", "30703"),
-            ("Anwar Atifi", "30781"),
-            ("Said Elgaouzi", "30782"),
-            ("HAMZA SAOUI", "30716"),
-            ("Ibtissam Mazhari", "30970"),
-            ("Imad Ghazali", "30971"),
-            ("Jamila Lahrech", "30972"),
-            ("Nassim Ouazzani Touhami", "30973"),
-            ("Salaheddine Chaggour", "30974"),
-            ("Omar Tajani", "30711"),
-            ("Nizar Remz", "30728"),
-            ("Abdelouahed Fettah", "30693"),
-            ("Amal Bouramdane", "30675"),
-            ("Fatima Ezzahrae Oubaalla", "30513"),
-            ("Redouane Bertal", "30643"),
-            ("Abdelouahab Chenani", "30789"),
-            ("Imad El Youbi", "30797"),
-            ("Youssef Hammouda", "30791"),
-            ("Anas Ouassifi", "30894"),
-            ("SALSABIL ELMOUSS", "30723"),
-            ("Hicham Khalafa", "30712"),
-            ("Ghita Adib", "30710"),
-            ("Aymane Msikila", "30722"),
-            ("Marouane Boukhadda", "30890"),
-            ("Hamid Boulatouan", "30899"),
-            ("Bouchaib Chafiqi", "30895"),
-            ("Houssam Gouaalla", "30891"),
-            ("Abdellah Rguig", "30963"),
-            ("Abdellatif Chatir", "30964"),
-            ("Abderrahman Oueto", "30965"),
-            ("Fatiha Lkamel", "30967"),
-            ("Abdelhamid Jaber", "30708"),
-            ("Yassine Elkanouni", "30735")
+            ("agent", "Agent@3356"),
         ]
         
         for agent_name, workspace_id in agents:
