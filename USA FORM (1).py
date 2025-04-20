@@ -2810,8 +2810,22 @@ else:
                 timing = cols[1].text_input("Timing (HH:MM)", placeholder="14:30")
                 mobile_number = cols[2].text_input("Mobile number")
                 product = cols[3].selectbox("Product", [
+                    "LM_CS_LMFR_FR",
+                    "LMREG_FR",
+                    "LM_CS_LMBE_FR",
+                    "LM_PM_LMFR_FR",
                     "LM_CS_LMUSA_EN",
-                    "LM_CS_LMUSA_ES"
+                    "LM_CS_LMUSA_ES",
+                    "LM_CS_LMUK_EN",
+                    "LM_CS_LMDE_DE",
+                    "LM_CS_LMCH_IT",
+                    "LM_CS_LMNL_NL",
+                    "LM_CS_LMBE_FL",
+                    "LM_CS_LMPT_PT",
+                    "LM_CS_LMCH_DE",
+                    "LM_CS_LMIT_IT",
+                    "WC_CS_LMFR_LMCH_LMBE_FR",
+                    "WC_CS_LMDE_DE"
                 ])
                 
                 if st.form_submit_button("Submit"):
