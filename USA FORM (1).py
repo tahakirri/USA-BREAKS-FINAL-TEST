@@ -1868,11 +1868,15 @@ def inject_custom_css():
         }}
         
         /* Template and stats numbers (Total Templates, Active Templates) */
-        .template-stats-number, .template-info-number {{
+        .template-stats-number, .template-info-number {
             color: {c['text']} !important;
             font-weight: bold;
             font-size: 2rem;
-        }}
+        }
+        /* Explicitly fix white-on-white in light mode */
+        body[data-theme="light"] .template-stats-number, body[data-theme="light"] .template-info-number {
+            color: {c['text']} !important;
+        }
         
         /* Input Fields and Labels */
         .stTextInput input, 
