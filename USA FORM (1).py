@@ -1769,7 +1769,8 @@ def inject_custom_css():
     }
 
     # Use the appropriate color scheme based on the session state
-    c = colors['dark'] if st.session_state.color_mode == 'dark' else colors['light']
+    color_mode = st.session_state.get('color_mode', 'light')
+    c = colors['dark'] if color_mode == 'dark' else colors['light']
     
     st.markdown(f"""
     <style>
