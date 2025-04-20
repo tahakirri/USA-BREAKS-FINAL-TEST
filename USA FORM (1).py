@@ -1741,7 +1741,7 @@ def inject_custom_css():
             'text_secondary': '#4a5568',
             'border': '#e2e8f0',  # Soft, muted border
             'accent': '#3182ce',  # Softer blue accent
-            'accent_hover': '#2c5282',
+            'accent_hover': '#4a91c2',
             'muted': '#718096',  # Softer muted text
             'input_bg': '#ffffff',
             'input_text': '#2d3748',
