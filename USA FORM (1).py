@@ -681,7 +681,9 @@ def get_vip_messages():
         cursor.execute("SELECT * FROM vip_messages ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
-        conn.close()
+        conn.close()", unsafe_allow_html=True)
+        else:
+            st.error("System is currently locked. Access to mistakes is disabled.")
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
