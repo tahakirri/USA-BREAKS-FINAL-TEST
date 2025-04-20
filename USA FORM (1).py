@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import streamlit as st
 import sqlite3
 import hashlib
@@ -10,13 +9,6 @@ import io
 import pandas as pd
 import json
 import pytz
-
-st.set_page_config(
-    page_title="Lyca Management System",
-    page_icon=":office:",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # --------------------------
 # Timezone Utility Functions
@@ -2146,10 +2138,44 @@ def inject_custom_css():
         
         .theme-toggle label {{
             margin-right: 0.5rem;
+            color: {c['text']};
         }}
+    </style>
+    """, unsafe_allow_html=True)
+
+st.set_page_config(
+    page_title="Lyca Management System",
+    page_icon=":office:",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom sidebar background color and text color for light/dark mode
+sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
+sidebar_text = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
+st.markdown(f'''
+    <style>
+    [data-testid="stSidebar"] > div:first-child {{
+        background-color: {sidebar_bg} !important;
+        color: {sidebar_text} !important;
+        transition: background-color 0.2s;
+    }}
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {{
+        color: {sidebar_text} !important;
+    }}
     </style>
 ''', unsafe_allow_html=True)
 
+if "authenticated" not in st.session_state:
+    st.session_state.update({
+        "authenticated": False,
+        "role": None,
+        "username": None,
+        "current_section": "requests",
+        "last_request_count": 0,
+        "last_mistake_count": 0,
+        "last_message_ids": []
+    })
 
 init_db()
 init_break_session_state()
@@ -2157,7 +2183,7 @@ init_break_session_state()
 if not st.session_state.authenticated:
     st.markdown("""
         <div class="login-container">
-            <h1 style="text-align: center; margin-bottom: 2rem;">Lyca Management System</h1>
+            <h1 style="text-align: center; margin-bottom: 2rem;">💠 Lyca Management System</h1>
     """, unsafe_allow_html=True)
     
     with st.form("login_form"):
@@ -2187,14 +2213,14 @@ else:
     if is_killswitch_enabled():
         st.markdown("""
         <div class="killswitch-active">
-            <h3>SYSTEM LOCKED</h3>
+            <h3>⚠️ SYSTEM LOCKED ⚠️</h3>
             <p>The system is currently in read-only mode.</p>
         </div>
         """, unsafe_allow_html=True)
     elif is_chat_killswitch_enabled():
         st.markdown("""
         <div class="chat-killswitch-active">
-            <h3>CHAT LOCKED</h3>
+            <h3>⚠️ CHAT LOCKED ⚠️</h3>
             <p>The chat functionality is currently disabled.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2230,12 +2256,12 @@ else:
     with st.sidebar:
         # Sidebar welcome text color: dark in light mode, white in dark mode
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
-        st.markdown(f'<h2 style="color: {welcome_color};">Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
+        st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
         
         # Theme toggle
         col1, col2 = st.columns([1, 6])
         with col1:
-            current_icon = "Moon" if st.session_state.color_mode == 'dark' else "Sun"
+            current_icon = "🌙" if st.session_state.color_mode == 'dark' else "☀️"
             st.write(current_icon)
         with col2:
             if st.toggle("", value=st.session_state.color_mode == 'light', key='theme_toggle', label_visibility="collapsed"):
@@ -2300,18 +2326,18 @@ else:
                 <h4 style="
                     color: {'#e2e8f0' if st.session_state.color_mode == 'dark' else '#1e293b'};
                     margin-bottom: 1rem;
-                ">Notifications</h4>
+                ">🔔 Notifications</h4>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
                     margin-bottom: 0.5rem;
-                ">Pending requests: {pending_requests}</p>
+                ">📋 Pending requests: {pending_requests}</p>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
                     margin-bottom: 0.5rem;
-                ">Recent mistakes: {new_mistakes}</p>
+                ">❌ Recent mistakes: {new_mistakes}</p>
                 <p style="
                     color: {'#94a3b8' if st.session_state.color_mode == 'dark' else '#475569'};
-                ">Unread messages: {unread_messages}</p>
+                ">💬 Unread messages: {unread_messages}</p>
             </div>
             """, unsafe_allow_html=True)
         
