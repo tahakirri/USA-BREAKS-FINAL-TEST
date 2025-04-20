@@ -2380,7 +2380,13 @@ else:
                 all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
                 group_filter = st.selectbox("Select Group to View Requests", all_groups, key="admin_request_group")
             else:
-                group_filter = st.session_state.group_name if hasattr(st.session_state, 'group_name') else None
+                # Set group_name in session_state for agents
+                if not hasattr(st.session_state, 'group_name') or not st.session_state.group_name:
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            st.session_state.group_name = u[3]
+                            break
+                group_filter = st.session_state.group_name
             with st.expander("➕ Submit New Request"):
                 with st.form("request_form"):
                     cols = st.columns([1, 3])
@@ -2544,7 +2550,13 @@ else:
                     all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
                     group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
                 else:
-                    group_filter = st.session_state.group_name if hasattr(st.session_state, 'group_name') else None
+                    # Set group_name in session_state for agents
+                    if not hasattr(st.session_state, 'group_name') or not st.session_state.group_name:
+                        for u in get_all_users():
+                            if u[1] == st.session_state.username:
+                                st.session_state.group_name = u[3]
+                                break
+                    group_filter = st.session_state.group_name
                 st.subheader("Group Chat")
                 messages = get_group_messages(group_filter)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -2575,8 +2587,6 @@ else:
                                     st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
-
-
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
@@ -3147,6 +3157,17 @@ else:
         # Create tabs for different user types
         user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
         
+        # Password reset for admin
+        if st.session_state.role == "admin":
+            st.write("### Reset User Password")
+            with st.form("reset_password_form"):
+                reset_user = st.selectbox("Select User", [u[1] for u in users], key="reset_user_select")
+                new_pwd = st.text_input("New Password", type="password", key="reset_user_pwd")
+                if st.form_submit_button("Reset Password"):
+                    if reset_user and new_pwd:
+                        reset_password(reset_user, new_pwd)
+                        st.success(f"Password reset for {reset_user}")
+                        st.rerun()
         # Group editing for admin
         if st.session_state.username.lower() == "taha kirri":
             st.write("### Change Agent Group")
@@ -3208,10 +3229,11 @@ else:
             st.write(f"### Admin Users ({len(admin_users)})")
             
             admin_data = []
-            for uid, uname, urole in admin_users:
+            for uid, uname, urole, gname in admin_users:
                 admin_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": gname
                 })
             
             if admin_data:
@@ -3225,10 +3247,11 @@ else:
             st.write(f"### Agent Users ({len(agent_users)})")
             
             agent_data = []
-            for uid, uname, urole in agent_users:
+            for uid, uname, urole, gname in agent_users:
                 agent_data.append({
                     "ID": uid,
-                    "Username": uname
+                    "Username": uname,
+                    "Group": gname
                 })
             
             if agent_data:
