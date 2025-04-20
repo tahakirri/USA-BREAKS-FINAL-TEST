@@ -2277,7 +2277,7 @@ else:
         if st.session_state.role == "qa":
             nav_options.extend([
                 ("📞 Quality Issues", "quality_issues"),
-                ("📱 Fancy Number", "fancy_number")
+                ("💎 Fancy Number", "fancy_number")
             ])
         # Admin and agent see all regular options
         elif st.session_state.role in ["admin", "agent"]:
@@ -2290,7 +2290,7 @@ else:
                 ("⏰ Late Login", "late_login"),
                 ("📞 Quality Issues", "quality_issues"),
                 ("🔄 Mid-shift Issues", "midshift_issues"),
-                ("📱 Fancy Number", "fancy_number")
+                ("💎 Fancy Number", "fancy_number")
             ])
         
         # Add admin option for admin users
@@ -2753,7 +2753,7 @@ else:
                 st.info("You have no late login records")
 
     elif st.session_state.current_section == "fancy_number":
-        st.subheader("📱 Fancy Number Checker")
+        st.subheader("💎 Fancy Number Checker")
         
         # Input for phone number
         phone_number = st.text_input("Enter Phone Number", placeholder="e.g. +1 (123) 456-7890")
@@ -3347,7 +3347,7 @@ else:
             agent_break_dashboard()
     
     elif st.session_state.current_section == "fancy_number":
-        st.title("📱 Lycamobile Fancy Number Checker")
+        st.title("💎 Lycamobile Fancy Number Checker")
         st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
 
         phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
