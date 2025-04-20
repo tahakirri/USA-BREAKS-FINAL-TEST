@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#e2e8f0'
         },
 'light': {
-            'bg': '#f8fafc',
+            'bg': '#f5f3ff',           # Very light lilac tint
             'sidebar': '#ffffff',
             'card': '#ffffff',
             'text': '#0f172a',
             'text_secondary': '#334155',
-            'border': '#e2e8f0',
-            'accent': '#64748b',       # Muted slate gray
-            'accent_hover': '#dc2626', # Cherry red hover (high contrast)
+            'border': '#ddd6fe',       # Soft lilac border
+            'accent': '#8b5cf6',       # Vibrant lilac
+            'accent_hover': '#84cc16', # Lime hover (fresh contrast)
             'muted': '#64748b',
             'input_bg': '#ffffff',
             'input_text': '#0f172a',
-            'my_message_bg': '#64748b',  # Slate gray message
-            'other_message_bg': '#f1f5f9',
-            'hover_bg': '#fee2e2',      # Light red hover (visible)
+            'my_message_bg': '#8b5cf6',  # Lilac message
+            'other_message_bg': '#f5f3ff',
+            'hover_bg': '#ecfccb',      # Light lime hover (visible)
             'notification_bg': '#ffffff',
             'notification_text': '#0f172a',
-            'button_bg': '#64748b',     # Slate gray button
+            'button_bg': '#8b5cf6',     # Lilac button
             'button_text': '#0f172a',   # Near-black text
-            'button_hover': '#dc2626',  # Cherry red hover
+            'button_hover': '#84cc16', # Lime hover
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#0f172a',
-            'dropdown_hover': '#fee2e2',
-            'table_header': '#f1f5f9',
+            'dropdown_hover': '#ecfccb',
+            'table_header': '#ede9fe',  # Light lilac header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f8fafc',
-            'table_border': '#e2e8f0'
+            'table_row_odd': '#f5f3ff',
+            'table_border': '#ddd6fe'
         }
     }
 
