@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#0f172a',           # Deep navy (dark background)
-            'sidebar': '#1e293b',      # Dark slate
-            'card': '#1e293b',         # Dark cards
-            'text': '#f8fafc',         # Off-white text
+            'bg': '#020617',           # Near-black
+            'sidebar': '#0f172a',      # Dark navy
+            'card': '#0f172a',
+            'text': '#e2e8f0',         # Light gray text
             'text_secondary': '#94a3b8',
-            'border': '#334155',       # Dark gray border
-            'accent': '#818cf8',       # Soft indigo (easier on eyes)
-            'accent_hover': '#f59e0b', # Amber hover (pops in dark mode)
+            'border': '#1e293b',       # Dark border
+            'accent': '#34d399',       # Vibrant emerald
+            'accent_hover': '#fb7185', # Rose hover (contrast)
             'muted': '#64748b',
-            'input_bg': '#1e293b',
-            'input_text': '#f8fafc',
-            'my_message_bg': '#818cf8',  # Indigo message
-            'other_message_bg': '#1e293b',
-            'hover_bg': '#1e40af',      # Dark indigo hover (visible)
-            'notification_bg': '#1e293b',
-            'notification_text': '#f8fafc',
-            'button_bg': '#818cf8',     # Indigo button
-            'button_text': '#0f172a',   # Near-black text (high contrast)
-            'button_hover': '#f59e0b',  # Amber hover
-            'dropdown_bg': '#1e293b',
-            'dropdown_text': '#f8fafc',
-            'dropdown_hover': '#1e40af',
-            'table_header': '#1e293b',  # Dark header
-            'table_row_even': '#0f172a',
-            'table_row_odd': '#1e293b',
-            'table_border': '#334155'
+            'input_bg': '#0f172a',
+            'input_text': '#e2e8f0',
+            'my_message_bg': '#34d399',  # Emerald message
+            'other_message_bg': '#0f172a',
+            'hover_bg': '#065f46',      # Dark emerald hover
+            'notification_bg': '#0f172a',
+            'notification_text': '#e2e8f0',
+            'button_bg': '#34d399',     # Emerald button
+            'button_text': '#020617',   # Near-black text
+            'button_hover': '#fb7185',  # Rose hover
+            'dropdown_bg': '#0f172a',
+            'dropdown_text': '#e2e8f0',
+            'dropdown_hover': '#065f46',
+            'table_header': '#0f172a',
+            'table_row_even': '#020617',
+            'table_row_odd': '#0f172a',
+            'table_border': '#1e293b'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
