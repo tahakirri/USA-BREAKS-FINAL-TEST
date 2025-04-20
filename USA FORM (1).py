@@ -1733,35 +1733,35 @@ def inject_custom_css():
             'table_row_odd': '#0f172a',
             'table_border': '#334155'
         },
-'light_cool': {
-    'bg': '#f5f7fa',           # Very light gray-blue background
-    'sidebar': '#ffffff',      # Crisp white sidebar
-    'card': '#ffffff',         # White cards
-    'text': '#1a202c',        # Deep charcoal (high contrast)
-    'text_secondary': '#4a5568',
-    'border': '#e2e8f0',       # Soft gray border
-    'accent': '#4299e1',       # Bright sky blue
-    'accent_hover': '#3182ce',
-    'muted': '#718096',        # Medium gray
-    'input_bg': '#ffffff',
-    'input_text': '#1a202c',
-    'my_message_bg': '#4299e1',  # Sky blue message
-    'other_message_bg': '#f7fafc',
-    'hover_bg': '#ebf4ff',      # Light blue hover
-    'notification_bg': '#ffffff',
-    'notification_text': '#1a202c',
-    'button_bg': '#4299e1',     # Sky blue button
-    'button_text': '#ffffff',
-    'button_hover': '#3182ce',
-    'dropdown_bg': '#ffffff',
-    'dropdown_text': '#1a202c',
-    'dropdown_hover': '#ebf4ff',
-    'table_header': '#f0f5ff',  # Very light blue header
-    'table_row_even': '#ffffff',
-    'table_row_odd': '#f5f7fa',
-    'table_border': '#e2e8f0'
-}
-    }
+        'light_cool': {
+            'bg': '#f5f7fa',           # Very light gray-blue background
+            'sidebar': '#ffffff',      # Crisp white sidebar
+            'card': '#ffffff',         # White cards
+            'text': '#1a202c',        # Deep charcoal (high contrast)
+            'text_secondary': '#4a5568',
+            'border': '#e2e8f0',       # Soft gray border
+            'accent': '#4299e1',       # Bright sky blue
+            'accent_hover': '#3182ce',
+            'muted': '#718096',        # Medium gray
+            'input_bg': '#ffffff',
+            'input_text': '#1a202c',
+            'my_message_bg': '#4299e1',  # Sky blue message
+            'other_message_bg': '#f7fafc',
+            'hover_bg': '#ebf4ff',      # Light blue hover
+            'notification_bg': '#ffffff',
+            'notification_text': '#1a202c',
+            'button_bg': '#4299e1',     # Sky blue button
+            'button_text': '#ffffff',
+            'button_hover': '#3182ce',
+            'dropdown_bg': '#ffffff',
+            'dropdown_text': '#1a202c',
+            'dropdown_hover': '#ebf4ff',
+            'table_header': '#f0f5ff',  # Very light blue header
+            'table_row_even': '#ffffff',
+            'table_row_odd': '#f5f7fa',
+            'table_border': '#e2e8f0'
+        }
+            }
 
     # Use the appropriate color scheme based on the session state
     c = colors['dark'] if st.session_state.color_mode == 'dark' else colors['light']
