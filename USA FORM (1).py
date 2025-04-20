@@ -2568,13 +2568,14 @@ else:
                     all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
                     group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
                 else:
-                    # Set group_name in session_state for agents
-                    if not hasattr(st.session_state, 'group_name') or not st.session_state.group_name:
-                        for u in get_all_users():
-                            if u[1] == st.session_state.username:
-                                st.session_state.group_name = u[3]
-                                break
-                    group_filter = st.session_state.group_name
+                    # Always look up the user's group from the users table each time
+                    user_group = None
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            user_group = u[3]
+                            break
+                    st.session_state.group_name = user_group
+                    group_filter = user_group
 
                 st.subheader("Group Chat")
                 # Enforce group message visibility: agents only see their group, admin sees selected group
@@ -2582,8 +2583,13 @@ else:
                     # Only show messages for selected group; if not selected, show none
                     view_group = group_filter if group_filter else None
                 else:
-                    # Agents always see only their group
-                    view_group = st.session_state.group_name
+                    # Agents always see only their group (look up each time)
+                    user_group = None
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            user_group = u[3]
+                            break
+                    view_group = user_group
                 # Harden: never allow None or empty group to fetch all messages
                 if view_group is not None and str(view_group).strip() != "":
                     messages = get_group_messages(view_group)
@@ -2620,8 +2626,16 @@ else:
                     with col2:
                         if st.form_submit_button("Send"):
                             if message:
-                                # Admin: send to selected group; Agent: send to their own group
-                                send_to_group = group_filter if st.session_state.role == "admin" else st.session_state.group_name
+                                # Admin: send to selected group; Agent: always look up group from users table
+                                if st.session_state.role == "admin":
+                                    send_to_group = group_filter
+                                else:
+                                    # Always look up the user's group from the users table
+                                    send_to_group = None
+                                    for u in get_all_users():
+                                        if u[1] == st.session_state.username:
+                                            send_to_group = u[3]
+                                            break
                                 if send_to_group:
                                     send_group_message(st.session_state.username, message, send_to_group)
                                 else:
