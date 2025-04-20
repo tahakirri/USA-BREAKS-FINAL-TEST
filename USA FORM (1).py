@@ -2292,7 +2292,9 @@ else:
     show_notifications()
 
     with st.sidebar:
-        st.title(f"👋 Welcome, {st.session_state.username}")
+        # Sidebar welcome text color: dark in light mode, white in dark mode
+        welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
+        st.markdown(f'<h2 style="color: {welcome_color};">👋 Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
         
         # Theme toggle
         col1, col2 = st.columns([1, 6])
@@ -2577,10 +2579,11 @@ else:
                 else:
                     # Agents always see only their group
                     view_group = st.session_state.group_name
-                if view_group:
+                # Harden: never allow None or empty group to fetch all messages
+                if view_group is not None and str(view_group).strip() != "":
                     messages = get_group_messages(view_group)
                 else:
-                    messages = []  # No group selected, show no messages
+                    messages = []  # No group selected or group is blank, show no messages
                 st.markdown('''<style>
                 .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
                 .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
