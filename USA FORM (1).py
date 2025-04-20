@@ -1733,35 +1733,35 @@ def inject_custom_css():
             'table_row_odd': '#0f172a',
             'table_border': '#334155'
         },
-        'light_cool': {
-            'bg': '#f5f7fa',           # Very light gray-blue background
-            'sidebar': '#ffffff',      # Crisp white sidebar
-            'card': '#ffffff',         # White cards
-            'text': '#1a202c',        # Deep charcoal (high contrast)
+'light': {
+            'bg': '#f8fafc',  # Soft, light neutral background
+            'sidebar': '#ffffff',  # Pure white sidebar
+            'card': '#ffffff',  # White cards
+            'text': '#2d3748',  # Slightly softer dark text
             'text_secondary': '#4a5568',
-            'border': '#e2e8f0',       # Soft gray border
-            'accent': '#4299e1',       # Bright sky blue
-            'accent_hover': '#3182ce',
-            'muted': '#718096',        # Medium gray
+            'border': '#e2e8f0',  # Soft, muted border
+            'accent': '#3182ce',  # Softer blue accent
+            'accent_hover': '#2c5282',
+            'muted': '#718096',  # Softer muted text
             'input_bg': '#ffffff',
-            'input_text': '#1a202c',
-            'my_message_bg': '#4299e1',  # Sky blue message
+            'input_text': '#2d3748',
+            'my_message_bg': '#3182ce',  # Blue message background
             'other_message_bg': '#f7fafc',
-            'hover_bg': '#ebf4ff',      # Light blue hover
+            'hover_bg': '#edf2f7',
             'notification_bg': '#ffffff',
-            'notification_text': '#1a202c',
-            'button_bg': '#4299e1',     # Sky blue button
+            'notification_text': '#2d3748',
+            'button_bg': '#3182ce',  # Soft blue buttons
             'button_text': '#ffffff',
-            'button_hover': '#3182ce',
+            'button_hover': '#2c5282',
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#1a202c',
-            'dropdown_hover': '#ebf4ff',
-            'table_header': '#f0f5ff',  # Very light blue header
+            'dropdown_text': '#2d3748',
+            'dropdown_hover': '#edf2f7',
+            'table_header': '#f7fafc',  # Very light blue-gray header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f5f7fa',
+            'table_row_odd': '#f8fafc',
             'table_border': '#e2e8f0'
         }
-            }
+    }
 
     # Use the appropriate color scheme based on the session state
     c = colors['dark'] if st.session_state.color_mode == 'dark' else colors['light']
