@@ -3466,17 +3466,20 @@ else:
                 color = "green" if result == "PASS" else "red"
                 st.write(f"<span style='color:{color}'>{number[-6:]}: {result} ({pattern})</span>", unsafe_allow_html=True)
 
-def get_new_messages(last_check_time):
-    """Get new messages since last check"""
+def get_new_messages(last_check_time, group_name=None):
+    """Get new messages since last check for the specified group only."""
+    # Never allow None, empty, or blank group_name to fetch all messages
+    if group_name is None or str(group_name).strip() == "":
+        return []
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT id, sender, message, timestamp, mentions 
-            FROM group_messages 
-            WHERE timestamp > ?
+            SELECT id, sender, message, timestamp, mentions, group_name
+            FROM group_messages
+            WHERE timestamp > ? AND group_name = ?
             ORDER BY timestamp DESC
-        """, (last_check_time,))
+        """, (last_check_time, group_name))
         return cursor.fetchall()
     finally:
         conn.close()
@@ -3484,18 +3487,28 @@ def get_new_messages(last_check_time):
 def handle_message_check():
     if not st.session_state.authenticated:
         return {"new_messages": False, "messages": []}
-    
+
     current_time = datetime.now()
     if 'last_message_check' not in st.session_state:
         st.session_state.last_message_check = current_time
-    
-    new_messages = get_new_messages(st.session_state.last_message_check.strftime("%Y-%m-%d %H:%M:%S"))
+
+    # Determine group_name for this user (agent or admin)
+    if st.session_state.role == "admin":
+        group_name = st.session_state.get("admin_chat_group")
+    else:
+        group_name = getattr(st.session_state, "group_name", None)
+
+    new_messages = get_new_messages(
+        st.session_state.last_message_check.strftime("%Y-%m-%d %H:%M:%S"),
+        group_name
+    )
     st.session_state.last_message_check = current_time
-    
+
     if new_messages:
         messages_data = []
         for msg in new_messages:
-            msg_id, sender, message, ts, mentions = msg
+            # Now msg includes group_name as last field
+            msg_id, sender, message, ts, mentions, _group_name = msg
             if sender != st.session_state.username:  # Don't notify about own messages
                 mentions_list = mentions.split(',') if mentions else []
                 if st.session_state.username in mentions_list:
