@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#0f172a',
-            'sidebar': '#1e293b',
-            'card': '#1e293b',
-            'text': '#e2e8f0',
-            'text_secondary': '#94a3b8',
-            'border': '#334155',
-            'accent': '#2563eb',  # Bright blue
-            'accent_hover': '#1d4ed8',
-            'muted': '#94a3b8',
-            'input_bg': '#1e293b',
-            'input_text': '#e2e8f0',
-            'my_message_bg': '#2563eb',
-            'other_message_bg': '#334155',
-            'hover_bg': '#334155',
-            'notification_bg': '#1e293b',
-            'notification_text': '#e2e8f0',
-            'button_bg': '#2563eb',
+            'bg': '#f8fafc',
+            'sidebar': '#ffffff',
+            'card': '#ffffff',
+            'text': '#1e293b',
+            'text_secondary': '#475569',
+            'border': '#e2e8f0',
+            'accent': '#4f46e5',       # Rich indigo
+            'accent_hover': '#f59e0b', # Amber hover (warm contrast)
+            'muted': '#64748b',
+            'input_bg': '#ffffff',
+            'input_text': '#1e293b',
+            'my_message_bg': '#4f46e5',  # Indigo message
+            'other_message_bg': '#eef2ff', # Light indigo tint
+            'hover_bg': '#fffbeb',      # Light amber hover (visible)
+            'notification_bg': '#ffffff',
+            'notification_text': '#1e293b',
+            'button_bg': '#4f46e5',     # Indigo button
             'button_text': '#ffffff',
-            'button_hover': '#1d4ed8',
-            'dropdown_bg': '#1e293b',
-            'dropdown_text': '#e2e8f0',
-            'dropdown_hover': '#334155',
-            'table_header': '#1e293b',
-            'table_row_even': '#1e293b',
-            'table_row_odd': '#0f172a',
-            'table_border': '#334155'
+            'button_hover': '#f59e0b',  # Amber hover
+            'dropdown_bg': '#ffffff',
+            'dropdown_text': '#1e293b',
+            'dropdown_hover': '#fffbeb',
+            'table_header': '#e0e7ff',  # Light indigo header
+            'table_row_even': '#ffffff',
+            'table_row_odd': '#f8fafc',
+            'table_border': '#e2e8f0'
         },
 'light': {
             'bg': '#f0fdfa',           # Very light teal tint
