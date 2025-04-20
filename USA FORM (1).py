@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#3a404a'
         },
 'light': {
-            'bg': '#1a1c24',           # Soft navy-gray (reduced eye strain)
-            'sidebar': '#232834',      # Slightly elevated
-            'card': '#232834',         # Cards with 10% contrast
-            'text': '#e0e3eb',         # Warm off-white (easier on eyes)
-            'text_secondary': '#8a93a7', # Muted blue-gray
-            'border': '#2f3542',       # Subtle borders
-            'accent': '#5d8bf4',       # Comfortable blue (better than harsh teal)
-            'accent_hover': '#7ba4f8', # Softer hover
-            'muted': '#6b7a90',        # Desaturated
-            'input_bg': '#232834',
-            'input_text': '#e0e3eb',
-            'my_message_bg': '#5d8bf4',  # Message bubbles
-            'other_message_bg': '#2a2f3d',
-            'hover_bg': '#2a2f3d',      # Visible but gentle
-            'notification_bg': '#3e64ff', # Alert-blue
-            'notification_text': '#ffffff',
-            'button_bg': '#5d8bf4',
-            'button_text': '#ffffff',
-            'button_hover': '#7ba4f8',
-            'dropdown_bg': '#232834',
-            'dropdown_text': '#e0e3eb',
-            'dropdown_hover': '#2a2f3d',
-            'table_header': '#232834',
-            'table_row_even': '#1a1c24',
-            'table_row_odd': '#232834',
-            'table_border': '#2f3542'
+            'bg': '#f0f9ff',           # Light sky blue tint
+            'sidebar': '#ffffff',
+            'card': '#ffffff',
+            'text': '#0f172a',        # Near-black (high contrast)
+            'text_secondary': '#334155',
+            'border': '#bae6fd',       # Soft sky blue border
+            'accent': '#0ea5e9',       # Vibrant sky blue
+            'accent_hover': '#f97316', # Tangerine hover (bold contrast)
+            'muted': '#64748b',
+            'input_bg': '#ffffff',
+            'input_text': '#0f172a',
+            'my_message_bg': '#0ea5e9',  # Sky blue message
+            'other_message_bg': '#f8fafc',
+            'hover_bg': '#ffedd5',      # Light tangerine hover (visible)
+            'notification_bg': '#ffffff',
+            'notification_text': '#0f172a',
+            'button_bg': '#0ea5e9',     # Sky blue button
+            'button_text': '#0f172a',   # Near-black text (high contrast)
+            'button_hover': '#f97316',  # Tangerine hover
+            'dropdown_bg': '#ffffff',
+            'dropdown_text': '#0f172a',
+            'dropdown_hover': '#ffedd5',
+            'table_header': '#e0f2fe', # Light sky blue header
+            'table_row_even': '#ffffff',
+            'table_row_odd': '#f0f9ff',
+            'table_border': '#bae6fd'
         }
     }
 
