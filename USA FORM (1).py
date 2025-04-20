@@ -2408,22 +2408,22 @@ else:
             st.subheader("🔍 Search Requests")
             search_query = st.text_input("Search requests...")
             # Filter requests by group
-            if group_filter:
-                all_requests = search_requests(search_query) if search_query else get_requests()
-                # Only show requests for this group
-                requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
-            else:
-                # If agent, restrict to their group only
-                if st.session_state.role == "agent":
-                    user_group = None
-                    for u in get_all_users():
-                        if u[1] == st.session_state.username:
-                            user_group = u[3]
-                            break
+            if st.session_state.role == "admin":
+                # Admin can filter by any group
+                if group_filter:
                     all_requests = search_requests(search_query) if search_query else get_requests()
-                    requests = [r for r in all_requests if (len(r) > 7 and r[7] == user_group)]
+                    requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
                 else:
                     requests = search_requests(search_query) if search_query else get_requests()
+            else:
+                # Agents can only see their own group, regardless of filter
+                user_group = None
+                for u in get_all_users():
+                    if u[1] == st.session_state.username:
+                        user_group = u[3]
+                        break
+                all_requests = search_requests(search_query) if search_query else get_requests()
+                requests = [r for r in all_requests if (len(r) > 7 and r[7] == user_group)]
             
             st.subheader("All Requests")
             for req in requests:
@@ -2559,7 +2559,12 @@ else:
                     group_filter = st.session_state.group_name
 
                 st.subheader("Group Chat")
-                messages = get_group_messages(group_filter)
+                # Enforce group message visibility: agents only see their group, admin sees selected group
+                if st.session_state.role == "admin":
+                    view_group = group_filter
+                else:
+                    view_group = st.session_state.group_name
+                messages = get_group_messages(view_group)
                 st.markdown('''<style>
                 .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
                 .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
@@ -2589,7 +2594,9 @@ else:
                     with col2:
                         if st.form_submit_button("Send"):
                             if message:
-                                send_group_message(st.session_state.username, message, group_filter)
+                                # Admin: send to selected group; Agent: send to their own group
+                                send_to_group = group_filter if st.session_state.role == "admin" else st.session_state.group_name
+                                send_group_message(st.session_state.username, message, send_to_group)
                                 st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
