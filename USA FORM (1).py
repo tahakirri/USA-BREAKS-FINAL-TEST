@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#0f172a',           # Deep navy (slightly softer than pure black)
-            'sidebar': '#1e293b',      # Dark slate sidebar
-            'card': '#1e293b',         # Elevated card color
-            'text': '#e2e8f0',         # Soft white (reduced eye strain)
-            'text_secondary': '#94a3b8', # Muted gray-blue
-            'border': '#334155',       # Subtle border (30% darker than cards)
-            'accent': '#0d9488',       # Professional teal (vibrant but not loud)
-            'accent_hover': '#5eead4', # Light teal hover (high visibility)
-            'muted': '#64748b',        # Inactive elements
-            'input_bg': '#1e293b',
-            'input_text': '#e2e8f0',
-            'my_message_bg': '#0d9488',  # Teal message bubbles
-            'other_message_bg': '#1e293b',
-            'hover_bg': '#1e3a8a',      # Deep blue hover (subtle but noticeable)
-            'notification_bg': '#1e40af', # Alert blue
+            'bg': '#121212',           # Rich near-black (softer than #000)
+            'sidebar': '#1e1e1e',      # Elevated sidebar
+            'card': '#1e1e1e',         # Cards with slight contrast
+            'text': '#f5f5f5',         # Crisp white text
+            'text_secondary': '#b0b0b0', # Muted secondary text
+            'border': '#2e2e2e',       # Subtle borders
+            'accent': '#3b82f6',       # Trustworthy blue (like Azure/Facebook)
+            'accent_hover': '#60a5fa', # Brighter hover state
+            'muted': '#6b7280',        # Disabled elements
+            'input_bg': '#1e1e1e',
+            'input_text': '#f5f5f5',
+            'my_message_bg': '#3b82f6',  # Accent-colored messages
+            'other_message_bg': '#1e1e1e',
+            'hover_bg': '#2e2e2e',      # Subtle hover layer
+            'notification_bg': '#1d4ed8', # Alert-blue notifications
             'notification_text': '#ffffff',
-            'button_bg': '#0d9488',     # Teal primary button
-            'button_text': '#ffffff',   # White text for contrast
-            'button_hover': '#5eead4',  # Light teal hover
-            'dropdown_bg': '#1e293b',
-            'dropdown_text': '#e2e8f0',
-            'dropdown_hover': '#1e3a8a',
-            'table_header': '#1e293b',
-            'table_row_even': '#0f172a',
-            'table_row_odd': '#1e293b',
-            'table_border': '#334155'
+            'button_bg': '#3b82f6',     # Primary button
+            'button_text': '#ffffff',   # White text
+            'button_hover': '#60a5fa',  # Lightened hover
+            'dropdown_bg': '#1e1e1e',
+            'dropdown_text': '#f5f5f5',
+            'dropdown_hover': '#2e2e2e',
+            'table_header': '#1e1e1e',
+            'table_row_even': '#121212',
+            'table_row_odd': '#1e1e1e',
+            'table_border': '#2e2e2e'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
