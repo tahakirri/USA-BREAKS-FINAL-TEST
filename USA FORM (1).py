@@ -2561,10 +2561,15 @@ else:
                 st.subheader("Group Chat")
                 # Enforce group message visibility: agents only see their group, admin sees selected group
                 if st.session_state.role == "admin":
-                    view_group = group_filter
+                    # Only show messages for selected group; if not selected, show none
+                    view_group = group_filter if group_filter else None
                 else:
+                    # Agents always see only their group
                     view_group = st.session_state.group_name
-                messages = get_group_messages(view_group)
+                if view_group:
+                    messages = get_group_messages(view_group)
+                else:
+                    messages = []  # No group selected, show no messages
                 st.markdown('''<style>
                 .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
                 .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
