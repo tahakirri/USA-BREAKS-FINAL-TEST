@@ -1734,7 +1734,6 @@ def inject_custom_css():
             'table_border': '#2e2e2e'
         },
 'light': {
-        'light_orange': {
             'bg': '#f9fafb',           # Soft off-white
             'sidebar': '#ffffff',      # Pure white
             'card': '#ffffff',         # Clean white cards
@@ -1761,7 +1760,6 @@ def inject_custom_css():
             'table_row_even': '#ffffff',
             'table_row_odd': '#f9fafb',
             'table_border': '#e5e7eb'
-        }
         }
     }
 
