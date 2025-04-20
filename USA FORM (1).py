@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#1f1d2c',           # Deep navy with purple undertones
-            'sidebar': '#252331',
-            'card': '#252331',
-            'text': '#faf3e0',          # Warm off-white text
-            'text_secondary': '#b5aebd',
-            'border': '#3a3847',
-            'accent': '#fda4af',        # Soft coral
-            'accent_hover': '#7dd3fc', # Sky blue hover (cool contrast)
-            'muted': '#8d8a99',
-            'input_bg': '#252331',
-            'input_text': '#faf3e0',
-            'my_message_bg': '#fda4af',  # Coral message
-            'other_message_bg': '#252331',
-            'hover_bg': '#9f1239',       # Deep rose hover
-            'notification_bg': '#252331',
-            'notification_text': '#faf3e0',
-            'button_bg': '#fda4af',      # Coral button
-            'button_text': '#1f1d2c',    # Dark text
-            'button_hover': '#7dd3fc',   # Sky hover
-            'dropdown_bg': '#252331',
-            'dropdown_text': '#faf3e0',
-            'dropdown_hover': '#9f1239',
-            'table_header': '#252331',
-            'table_row_even': '#1f1d2c',
-            'table_row_odd': '#252331',
-            'table_border': '#3a3847'
+            'bg': '#1c1917',           # Rich dark brown (almost black)
+            'sidebar': '#292524',
+            'card': '#292524',
+            'text': '#f5f5f4',         # Warm light gray
+            'text_secondary': '#a8a29e',
+            'border': '#44403c',
+            'accent': '#facc15',        # Soft gold
+            'accent_hover': '#5eead4', # Teal hover (refreshing)
+            'muted': '#78716c',
+            'input_bg': '#292524',
+            'input_text': '#f5f5f4',
+            'my_message_bg': '#facc15',  # Gold message
+            'other_message_bg': '#292524',
+            'hover_bg': '#854d0e',       # Dark amber hover
+            'notification_bg': '#292524',
+            'notification_text': '#f5f5f4',
+            'button_bg': '#facc15',      # Gold button
+            'button_text': '#1c1917',    # Near-black text
+            'button_hover': '#5eead4',   # Teal hover
+            'dropdown_bg': '#292524',
+            'dropdown_text': '#f5f5f4',
+            'dropdown_hover': '#854d0e',
+            'table_header': '#292524',
+            'table_row_even': '#1c1917',
+            'table_row_odd': '#292524',
+            'table_border': '#44403c'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
