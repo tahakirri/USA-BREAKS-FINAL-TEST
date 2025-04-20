@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#1d232a',           # Soft dark blue-gray (not pure black)
-            'sidebar': '#252e38',      # Slightly elevated
-            'card': '#252e38',         # Cards with subtle contrast
-            'text': '#f0f4f8',         # Warm white (gentler than #fff)
-            'text_secondary': '#8f9eb5', # Muted blue-gray
-            'border': '#2f3a47',       # Subtle border
-            'accent': '#2dd4bf',       # Vibrant but soft teal (non-blue)
-            'accent_hover': '#f472b6', # Pink hover (clear contrast)
-            'muted': '#67778f',
-            'input_bg': '#252e38',
-            'input_text': '#f0f4f8',
-            'my_message_bg': '#2dd4bf',  # Teal message bubbles
-            'other_message_bg': '#2a3645',
-            'hover_bg': '#2a3645',      # Visible hover layer
-            'notification_bg': '#2dd4bf', # Teal alerts
-            'notification_text': '#1d232a', # Dark text for contrast
-            'button_bg': '#2dd4bf',      # Teal button
-            'button_text': '#1d232a',    # Dark text (readable on teal)
-            'button_hover': '#f472b6',   # Pink hover (high visibility)
-            'dropdown_bg': '#252e38',
-            'dropdown_text': '#f0f4f8',
-            'dropdown_hover': '#2a3645',
-            'table_header': '#252e38',
-            'table_row_even': '#1d232a',
-            'table_row_odd': '#252e38',
-            'table_border': '#2f3a47'
+            'bg': '#1e2025',           # Warm dark gray (not black)
+            'sidebar': '#282c34',      # Slightly lighter
+            'card': '#282c34',
+            'text': '#e6e9ef',         # Soft white
+            'text_secondary': '#8b95a5', # Muted gray-blue
+            'border': '#3a404a',       # Subtle border
+            'accent': '#6c7d9c',       # Dusty blue-gray (muted professional)
+            'accent_hover': '#8a9bbd', # Slightly brighter hover
+            'muted': '#677287',
+            'input_bg': '#282c34',
+            'input_text': '#e6e9ef',
+            'my_message_bg': '#6c7d9c',  # Muted message bubbles
+            'other_message_bg': '#2d3139',
+            'hover_bg': '#2d3139',      # Very subtle hover
+            'notification_bg': '#4a5a7a', # Muted alert
+            'notification_text': '#e6e9ef',
+            'button_bg': '#6c7d9c',
+            'button_text': '#ffffff',   # Pure white for contrast
+            'button_hover': '#8a9bbd',  # Lighter hover
+            'dropdown_bg': '#282c34',
+            'dropdown_text': '#e6e9ef',
+            'dropdown_hover': '#2d3139',
+            'table_header': '#282c34',
+            'table_row_even': '#1e2025',
+            'table_row_odd': '#282c34',
+            'table_border': '#3a404a'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
