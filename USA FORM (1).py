@@ -1737,7 +1737,7 @@ def inject_custom_css():
             'table_row_odd': '#1e293b',
             'table_border': '#334155'
         },
-'light': {
+        'light': {
         'bg': '#f0f9ff',           
         'sidebar': '#ffffff',
         'card': '#ffffff',
