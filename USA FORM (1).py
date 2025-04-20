@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#e2e8f0'
         },
 'light': {
-            'bg': '#f0fdfa',           # Very light teal tint
+            'bg': '#f8fafc',
             'sidebar': '#ffffff',
             'card': '#ffffff',
-            'text': '#0f172a',         # Near-black for contrast
-            'text_secondary': '#334155',
-            'border': '#cbd5e1',      # Light gray
-            'accent': '#0d9488',       # Calm teal
-            'accent_hover': '#f97316', # Coral hover (high contrast)
+            'text': '#1e293b',
+            'text_secondary': '#475569',
+            'border': '#e2e8f0',
+            'accent': '#4f46e5',       # Rich indigo
+            'accent_hover': '#f59e0b', # Amber hover (warm contrast)
             'muted': '#64748b',
             'input_bg': '#ffffff',
-            'input_text': '#0f172a',
-            'my_message_bg': '#0d9488',  # Teal message
-            'other_message_bg': '#f1f5f9',
-            'hover_bg': '#f0fdf4',     # Mint green hover (subtle but visible)
+            'input_text': '#1e293b',
+            'my_message_bg': '#4f46e5',  # Indigo message
+            'other_message_bg': '#eef2ff', # Light indigo tint
+            'hover_bg': '#fffbeb',      # Light amber hover (visible)
             'notification_bg': '#ffffff',
-            'notification_text': '#0f172a',
-            'button_bg': '#0d9488',    # Teal button
+            'notification_text': '#1e293b',
+            'button_bg': '#4f46e5',     # Indigo button
             'button_text': '#ffffff',
-            'button_hover': '#f97316',  # Coral hover (stands out)
+            'button_hover': '#f59e0b',  # Amber hover
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#0f172a',
-            'dropdown_hover': '#f0fdf4',
-            'table_header': '#ccfbf1',  # Light teal header
+            'dropdown_text': '#1e293b',
+            'dropdown_hover': '#fffbeb',
+            'table_header': '#e0e7ff',  # Light indigo header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f0fdfa',
-            'table_border': '#cbd5e1'
+            'table_row_odd': '#f8fafc',
+            'table_border': '#e2e8f0'
         }
     }
 
