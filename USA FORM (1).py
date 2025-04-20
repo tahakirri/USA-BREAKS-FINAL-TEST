@@ -1745,7 +1745,7 @@ def inject_custom_css():
         },
         'light': {
             'bg': '#f8fafc',  # Soft, light neutral background
-            'sidebar': '#ffffff',  # Pure white sidebar
+            'sidebar': '#fef4f4',  # Pure white sidebar
             'card': '#ffffff',  # White cards
             'text': '#2d3748',  # Slightly softer dark text
             'text_secondary': '#4a5568',
