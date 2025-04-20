@@ -73,7 +73,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
                 password TEXT,
-                role TEXT CHECK(role IN ('agent', 'admin', 'qa'))
+                role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
+                group_name TEXT
             )
         """)
         
@@ -95,7 +96,8 @@ def init_db():
                 identifier TEXT,
                 comment TEXT,
                 timestamp TEXT,
-                completed INTEGER DEFAULT 0
+                completed INTEGER DEFAULT 0,
+                group_name TEXT
             )
         """)
         
@@ -116,7 +118,8 @@ def init_db():
                 sender TEXT,
                 message TEXT,
                 timestamp TEXT,
-                mentions TEXT
+                mentions TEXT,
+                group_name TEXT
             )
         """)
 
@@ -304,7 +307,7 @@ def toggle_chat_killswitch(enable):
     finally:
         conn.close()
 
-def add_request(agent_name, request_type, identifier, comment):
+def add_request(agent_name, request_type, identifier, comment, group_name=None):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -313,10 +316,16 @@ def add_request(agent_name, request_type, identifier, comment):
     try:
         cursor = conn.cursor()
         timestamp = get_casablanca_time()
-        cursor.execute("""
-            INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp) 
-            VALUES (?, ?, ?, ?, ?)
-        """, (agent_name, request_type, identifier, comment, timestamp))
+        if group_name is not None:
+            cursor.execute("""
+                INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp, group_name) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (agent_name, request_type, identifier, comment, timestamp, group_name))
+        else:
+            cursor.execute("""
+                INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp) 
+                VALUES (?, ?, ?, ?, ?)
+            """, (agent_name, request_type, identifier, comment, timestamp))
         
         request_id = cursor.lastrowid
         
@@ -443,7 +452,7 @@ def search_mistakes(query):
     finally:
         conn.close()
 
-def send_group_message(sender, message):
+def send_group_message(sender, message, group_name=None):
     if is_killswitch_enabled() or is_chat_killswitch_enabled():
         st.error("Chat is currently locked. Please contact the developer.")
         return False
@@ -452,20 +461,29 @@ def send_group_message(sender, message):
     try:
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
-        cursor.execute("""
-            INSERT INTO group_messages (sender, message, timestamp, mentions) 
-            VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+        if group_name is not None:
+            cursor.execute("""
+                INSERT INTO group_messages (sender, message, timestamp, mentions, group_name) 
+                VALUES (?, ?, ?, ?, ?)
+            """, (sender, message, get_casablanca_time(), ','.join(mentions), group_name))
+        else:
+            cursor.execute("""
+                INSERT INTO group_messages (sender, message, timestamp, mentions) 
+                VALUES (?, ?, ?, ?)
+            """, (sender, message, get_casablanca_time(), ','.join(mentions)))
         conn.commit()
         return True
     finally:
         conn.close()
 
-def get_group_messages():
+def get_group_messages(group_name=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
+        if group_name is not None:
+            cursor.execute("SELECT * FROM group_messages WHERE group_name = ? ORDER BY timestamp DESC LIMIT 50", (group_name,))
+        else:
+            cursor.execute("SELECT * FROM group_messages ORDER BY timestamp DESC LIMIT 50")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -474,12 +492,12 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role FROM users")
+        cursor.execute("SELECT id, username, role, group_name FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_user(username, password, role):
+def add_user(username, password, role, group_name=None):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -487,8 +505,12 @@ def add_user(username, password, role):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                      (username, hash_password(password), role))
+        if group_name is not None:
+            cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)",
+                           (username, hash_password(password), role, group_name))
+        else:
+            cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                           (username, hash_password(password), role))
         conn.commit()
         return True
     finally:
@@ -1717,7 +1739,7 @@ def inject_custom_css():
     colors = {
         'dark': {
             'bg': '#0f172a',
-            'sidebar': '#0b1d39',
+            'sidebar': '#1e293b',
             'card': '#1e293b',
             'text': '#e2e8f0',
             'text_secondary': '#94a3b8',
@@ -1745,7 +1767,7 @@ def inject_custom_css():
         },
         'light': {
             'bg': '#f8fafc',  # Soft, light neutral background
-            'sidebar': '#fef4f4',  # Pure white sidebar
+            'sidebar': '#ffffff',  # Pure white sidebar
             'card': '#ffffff',  # White cards
             'text': '#2d3748',  # Slightly softer dark text
             'text_secondary': '#4a5568',
@@ -2337,6 +2359,13 @@ else:
 
     if st.session_state.current_section == "requests":
         if not is_killswitch_enabled():
+            # Group selection for admin
+            group_filter = None
+            if st.session_state.role == "admin":
+                all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
+                group_filter = st.selectbox("Select Group to View Requests", all_groups, key="admin_request_group")
+            else:
+                group_filter = st.session_state.group_name if hasattr(st.session_state, 'group_name') else None
             with st.expander("➕ Submit New Request"):
                 with st.form("request_form"):
                     cols = st.columns([1, 3])
@@ -2345,17 +2374,28 @@ else:
                     comment = st.text_area("Comment")
                     if st.form_submit_button("Submit"):
                         if identifier and comment:
-                            if add_request(st.session_state.username, request_type, identifier, comment):
+                            # Determine group for request
+                            user_group = None
+                            for u in get_all_users():
+                                if u[1] == st.session_state.username:
+                                    user_group = u[3]
+                                    break
+                            if add_request(st.session_state.username, request_type, identifier, comment, user_group):
                                 st.success("Request submitted successfully!")
                                 st.rerun()
         
             st.subheader("🔍 Search Requests")
             search_query = st.text_input("Search requests...")
-            requests = search_requests(search_query) if search_query else get_requests()
+            # Filter requests by group
+            if group_filter:
+                all_requests = search_requests(search_query) if search_query else get_requests()
+                requests = [r for r in all_requests if len(r) > 7 and r[7] == group_filter]
+            else:
+                requests = search_requests(search_query) if search_query else get_requests()
             
             st.subheader("All Requests")
             for req in requests:
-                req_id, agent, req_type, identifier, comment, timestamp, completed = req
+                req_id, agent, req_type, identifier, comment, timestamp, completed, group_name = req
                 with st.container():
                     cols = st.columns([0.1, 0.9])
                     with cols[0]:
@@ -2450,9 +2490,9 @@ else:
                 const container = document.getElementById('notification-container');
                 if (Notification.permission === 'default') {
                     container.innerHTML = `
-                        <div style="padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;">
-                            <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
-                            <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
+                        <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
+                            <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
+                            <button onclick=\"requestNotificationPermission()\" style=\"margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;\">
                                 Enable Notifications
                             </button>
                         </div>
@@ -2472,17 +2512,21 @@ else:
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-
-                    # Group Chat only for non-VIP users
-                    st.subheader("Group Chat")
-                    messages = get_group_messages()
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    for msg in reversed(messages):
-                        msg_id, sender, message, ts, mentions = msg
-                        is_sent = sender == st.session_state.username
-                        is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
-                        
-                        st.markdown(f"""
+                # Group chat group selection
+                group_filter = None
+                if st.session_state.role == "admin":
+                    all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
+                    group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
+                else:
+                    group_filter = st.session_state.group_name if hasattr(st.session_state, 'group_name') else None
+                st.subheader("Group Chat")
+                messages = get_group_messages(group_filter)
+                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                for msg in reversed(messages):
+                    msg_id, sender, message, ts, mentions, group_name = msg
+                    is_sent = sender == st.session_state.username
+                    is_mentioned = st.session_state.username in (mentions.split(',') if mentions else [])
+                    st.markdown(f"""
                         <div class="chat-message {'sent' if is_sent else 'received'}">
                             <div class="message-avatar">
                                 {sender[0].upper()}
@@ -3062,11 +3106,14 @@ else:
                 else:
                     role = "agent"  # Default role for accounts created by other admins
                     st.info("Note: New accounts will be created as agent accounts.")
-                
+                # Group selection for all new users
+                group_name = st.text_input("Group Name (required)")
                 if st.form_submit_button("Add User"):
-                    if user and pwd:
-                        add_user(user, pwd, role)
+                    if user and pwd and group_name:
+                        add_user(user, pwd, role, group_name)
                         st.rerun()
+                    elif not group_name:
+                        st.error("Group name is required.")
         
         st.subheader("Existing Users")
         users = get_all_users()
@@ -3074,17 +3121,39 @@ else:
         # Create tabs for different user types
         user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
         
+        # Group editing for admin
+        if st.session_state.username.lower() == "taha kirri":
+            st.write("### Change Agent Group")
+            agent_users = [user for user in users if user[2] == "agent"]
+            if agent_users:
+                agent_names = [f"{u[1]} (Current: {u[3]})" for u in agent_users]
+                selected_agent = st.selectbox("Select Agent", agent_names, key="edit_agent_group")
+                new_group = st.text_input("New Group Name", key="edit_group_name")
+                if st.button("Change Group"):
+                    agent_id = agent_users[agent_names.index(selected_agent)][0]
+                    # Update group in DB
+                    conn = get_db_connection()
+                    try:
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE users SET group_name = ? WHERE id = ?", (new_group, agent_id))
+                        conn.commit()
+                        st.success("Group updated!")
+                        st.rerun()
+                    finally:
+                        conn.close()
+        
         with user_tabs[0]:
             # All users view
             st.write("### All Users")
             
             # Create a dataframe for better display
             user_data = []
-            for uid, uname, urole in users:
+            for uid, uname, urole, gname in users:
                 user_data.append({
                     "ID": uid,
                     "Username": uname,
-                    "Role": urole
+                    "Role": urole,
+                    "Group": gname
                 })
             
             df = pd.DataFrame(user_data)
