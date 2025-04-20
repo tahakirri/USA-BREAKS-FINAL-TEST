@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#121212',           # Rich near-black (softer than #000)
-            'sidebar': '#1e1e1e',      # Elevated sidebar
-            'card': '#1e1e1e',         # Cards with slight contrast
-            'text': '#f5f5f5',         # Crisp white text
-            'text_secondary': '#b0b0b0', # Muted secondary text
-            'border': '#2e2e2e',       # Subtle borders
-            'accent': '#3b82f6',       # Trustworthy blue (like Azure/Facebook)
-            'accent_hover': '#60a5fa', # Brighter hover state
-            'muted': '#6b7280',        # Disabled elements
-            'input_bg': '#1e1e1e',
-            'input_text': '#f5f5f5',
-            'my_message_bg': '#3b82f6',  # Accent-colored messages
-            'other_message_bg': '#1e1e1e',
-            'hover_bg': '#2e2e2e',      # Subtle hover layer
-            'notification_bg': '#1d4ed8', # Alert-blue notifications
+            'bg': '#1a1c24',           # Soft navy-gray (reduced eye strain)
+            'sidebar': '#232834',      # Slightly elevated
+            'card': '#232834',         # Cards with 10% contrast
+            'text': '#e0e3eb',         # Warm off-white (easier on eyes)
+            'text_secondary': '#8a93a7', # Muted blue-gray
+            'border': '#2f3542',       # Subtle borders
+            'accent': '#5d8bf4',       # Comfortable blue (better than harsh teal)
+            'accent_hover': '#7ba4f8', # Softer hover
+            'muted': '#6b7a90',        # Desaturated
+            'input_bg': '#232834',
+            'input_text': '#e0e3eb',
+            'my_message_bg': '#5d8bf4',  # Message bubbles
+            'other_message_bg': '#2a2f3d',
+            'hover_bg': '#2a2f3d',      # Visible but gentle
+            'notification_bg': '#3e64ff', # Alert-blue
             'notification_text': '#ffffff',
-            'button_bg': '#3b82f6',     # Primary button
-            'button_text': '#ffffff',   # White text
-            'button_hover': '#60a5fa',  # Lightened hover
-            'dropdown_bg': '#1e1e1e',
-            'dropdown_text': '#f5f5f5',
-            'dropdown_hover': '#2e2e2e',
-            'table_header': '#1e1e1e',
-            'table_row_even': '#121212',
-            'table_row_odd': '#1e1e1e',
-            'table_border': '#2e2e2e'
+            'button_bg': '#5d8bf4',
+            'button_text': '#ffffff',
+            'button_hover': '#7ba4f8',
+            'dropdown_bg': '#232834',
+            'dropdown_text': '#e0e3eb',
+            'dropdown_hover': '#2a2f3d',
+            'table_header': '#232834',
+            'table_row_even': '#1a1c24',
+            'table_row_odd': '#232834',
+            'table_border': '#2f3542'
         },
 'light': {
             'bg': '#f9fafb',           # Soft off-white
