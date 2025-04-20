@@ -635,13 +635,22 @@ def add_hold_image(uploader, image_data):
         conn.close()
 
 def clear_hold_images():
-{{ ... }}
-    """Send a message in the VIP-only chat"""
-    if is_killswitch_enabled() or is_chat_killswitch_enabled():
-        st.error("Chat is currently locked. Please contact the developer.")
-        return False
-    
-    if notdef send_group_message(sender, message):
+    """Clear all hold images from the database"""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            DELETE FROM hold_images
+        """)
+        conn.commit()
+        return cursor.rowcount  # Return number of images deleted
+    except sqlite3.Error as e:
+        print(f"Error clearing hold images: {e}")
+        return 0
+    finally:
+        conn.close()
+
+def send_group_message(sender, message):
     if is_killswitch_enabled() or is_chat_killswitch_enabled():
         st.error("Chat is currently locked. Please contact the developer.")
         return False
@@ -655,10 +664,10 @@ def clear_hold_images():
         cursor.execute("SELECT group_id FROM users WHERE username = ?", (sender,))
         group_id = cursor.fetchone()[0]
         
-        cursor.execute """
+        cursor.execute("""
             INSERT INTO group_messages (sender, message, timestamp, mentions) 
             VALUES (?, ?, ?, ?)
-        """, (sender, message, get_casablanca_time(), ','.join(mentions))
+        """, (sender, message, get_casablanca_time(), ','.join(mentions)))
         conn.commit()
         return True
     finally:
@@ -667,16 +676,19 @@ def clear_hold_images():
 def get_vip_messages():
     """Get messages from the VIP-only chat"""
     conn = get_db_connection()
-{{ ... }}
-                </div>
-                """, unsafe_allow_html=True)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM vip_messages ORDER BY timestamp DESC")
+        return cursor.fetchall()
+    finally:
+        conn.close()", unsafe_allow_html=True)
         else:
             st.error("System is currently locked. Access to mistakes is disabled.")
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
             # Add notification permission request
-            st.markdown """
+            st.markdown('''
             <div id="notification-container"></div>
             <script>
                 function requestNotificationPermission() {
@@ -690,12 +702,13 @@ def get_vip_messages():
                 }
                 requestNotificationPermission();
             </script>
-            ""    <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
-                            <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
-                                Enable Notifications
-                            </button>
-                        </div>
-                    `;
+            <div>
+                <p style="margin: 0; color: #e2e8f0;">Would you like to receive notifications for new messages?</p>
+                <button onclick="requestNotificationPermission()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
+                    Enable Notifications
+                </button>
+            </div>
+            ''', unsafe_allow_html=True)
 {{ ... }}
                 df = pd.DataFrame(data)
                 st.dataframe(df)
@@ -712,7 +725,8 @@ def get_vip_messages():
             with st.form("killswitch_form"):
                 enable_switch = st.checkbox("Enable Killswitch", value=current)
                 submitted = st.form_submit_button("Update Killswitch")
-                    toggle_chat_killswitch(True)
+                if submitted:
+                    toggle_killswitch(enable_switch)
                     st.rerun()
             
             st.markdown("---")
@@ -956,14 +970,14 @@ def get_vip_messages():
             agent_break_dashboard()
     
     elif st.session_state.current_section == "fancy_number":
-        st.title("📱 Lycamobile Fancy Number Checker")
+        st.title(" Lycamobile Fancy Number Checker")
         st.subheader("Official Policy: Analyzes last 6 digits only for qualifying patterns")
 
         phone_input = st.text_input("Enter Phone Number", placeholder="e.g., 1555123456 or 44207123456")
 
         col1, col2 = st.columns([1, 2])
         with col1:
-            if st.button("🔍 Check Number"):
+            if st.button(" Check Number"):
                 if not phone_input:
                     st.warning("Please enter a phone number")
                 else:
@@ -977,7 +991,7 @@ def get_vip_messages():
                     if is_fancy:
                         st.markdown(f"""
                         <div class="result-box fancy-result">
-                            <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                            <h3><span class="fancy-number"> {formatted_num} </span></h3>
                             <p>FANCY NUMBER DETECTED!</p>
                             <p><strong>Pattern:</strong> {pattern}</p>
                         </div>
