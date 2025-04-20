@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#1c1917',           # Rich dark brown (almost black)
-            'sidebar': '#292524',
-            'card': '#292524',
-            'text': '#f5f5f4',         # Warm light gray
-            'text_secondary': '#a8a29e',
-            'border': '#44403c',
-            'accent': '#facc15',        # Soft gold
-            'accent_hover': '#5eead4', # Teal hover (refreshing)
-            'muted': '#78716c',
-            'input_bg': '#292524',
-            'input_text': '#f5f5f4',
-            'my_message_bg': '#facc15',  # Gold message
-            'other_message_bg': '#292524',
-            'hover_bg': '#854d0e',       # Dark amber hover
-            'notification_bg': '#292524',
-            'notification_text': '#f5f5f4',
-            'button_bg': '#facc15',      # Gold button
-            'button_text': '#1c1917',    # Near-black text
-            'button_hover': '#5eead4',   # Teal hover
-            'dropdown_bg': '#292524',
-            'dropdown_text': '#f5f5f4',
-            'dropdown_hover': '#854d0e',
-            'table_header': '#292524',
-            'table_row_even': '#1c1917',
-            'table_row_odd': '#292524',
-            'table_border': '#44403c'
+            'bg': '#0f172a',           # Deep navy (slightly softer than pure black)
+            'sidebar': '#1e293b',      # Dark slate sidebar
+            'card': '#1e293b',         # Elevated card color
+            'text': '#e2e8f0',         # Soft white (reduced eye strain)
+            'text_secondary': '#94a3b8', # Muted gray-blue
+            'border': '#334155',       # Subtle border (30% darker than cards)
+            'accent': '#0d9488',       # Professional teal (vibrant but not loud)
+            'accent_hover': '#5eead4', # Light teal hover (high visibility)
+            'muted': '#64748b',        # Inactive elements
+            'input_bg': '#1e293b',
+            'input_text': '#e2e8f0',
+            'my_message_bg': '#0d9488',  # Teal message bubbles
+            'other_message_bg': '#1e293b',
+            'hover_bg': '#1e3a8a',      # Deep blue hover (subtle but noticeable)
+            'notification_bg': '#1e40af', # Alert blue
+            'notification_text': '#ffffff',
+            'button_bg': '#0d9488',     # Teal primary button
+            'button_text': '#ffffff',   # White text for contrast
+            'button_hover': '#5eead4',  # Light teal hover
+            'dropdown_bg': '#1e293b',
+            'dropdown_text': '#e2e8f0',
+            'dropdown_hover': '#1e3a8a',
+            'table_header': '#1e293b',
+            'table_row_even': '#0f172a',
+            'table_row_odd': '#1e293b',
+            'table_border': '#334155'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
