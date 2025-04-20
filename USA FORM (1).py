@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#0f172a',
-            'sidebar': '#1e293b',
-            'card': '#1e293b',
-            'text': '#f1f5f9',         # Light gray
+            'bg': '#020617',           # Near-black
+            'sidebar': '#0f172a',      # Dark navy
+            'card': '#0f172a',
+            'text': '#e2e8f0',         # Light gray text
             'text_secondary': '#94a3b8',
-            'border': '#334155',
-            'accent': '#94a3b8',       # Muted slate
-            'accent_hover': '#f87171', # Cherry hover (bright)
+            'border': '#1e293b',       # Dark border
+            'accent': '#34d399',       # Vibrant emerald
+            'accent_hover': '#fb7185', # Rose hover (contrast)
             'muted': '#64748b',
-            'input_bg': '#1e293b',
-            'input_text': '#f1f5f9',
-            'my_message_bg': '#94a3b8',  # Slate message
-            'other_message_bg': '#1e293b',
-            'hover_bg': '#475569',      # Darker slate hover
-            'notification_bg': '#1e293b',
-            'notification_text': '#f1f5f9',
-            'button_bg': '#94a3b8',    # Slate button
-            'button_text': '#0f172a',   # Near-black text
-            'button_hover': '#f87171', # Cherry hover
-            'dropdown_bg': '#1e293b',
-            'dropdown_text': '#f1f5f9',
-            'dropdown_hover': '#475569',
-            'table_header': '#1e293b',
-            'table_row_even': '#0f172a',
-            'table_row_odd': '#1e293b',
-            'table_border': '#334155'
+            'input_bg': '#0f172a',
+            'input_text': '#e2e8f0',
+            'my_message_bg': '#34d399',  # Emerald message
+            'other_message_bg': '#0f172a',
+            'hover_bg': '#065f46',      # Dark emerald hover
+            'notification_bg': '#0f172a',
+            'notification_text': '#e2e8f0',
+            'button_bg': '#34d399',     # Emerald button
+            'button_text': '#020617',   # Near-black text
+            'button_hover': '#fb7185',  # Rose hover
+            'dropdown_bg': '#0f172a',
+            'dropdown_text': '#e2e8f0',
+            'dropdown_hover': '#065f46',
+            'table_header': '#0f172a',
+            'table_row_even': '#020617',
+            'table_row_odd': '#0f172a',
+            'table_border': '#1e293b'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
