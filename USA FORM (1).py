@@ -1717,7 +1717,7 @@ def inject_custom_css():
     colors = {
         'dark': {
             'bg': '#0f172a',
-            'sidebar': '#1e293b',
+            'sidebar': '#0b1d39',
             'card': '#1e293b',
             'text': '#e2e8f0',
             'text_secondary': '#94a3b8',
