@@ -1706,32 +1706,32 @@ def inject_custom_css():
     # Define color schemes for both modes
     colors = {
         'dark': {
-            'bg': '#1e1b2b',           # Deep purple-tinged dark
-            'sidebar': '#2a2438',       # Soft purple sidebar
-            'card': '#2a2438',
-            'text': '#f5f0ff',          # Lavender-white text
-            'text_secondary': '#b8b2cc',
-            'border': '#3e3a4d',       # Muted purple border
-            'accent': '#a78bfa',        # Soft vibrant lavender
-            'accent_hover': '#6ee7b7', # Mint hover (fresh contrast)
-            'muted': '#7e7c8c',
-            'input_bg': '#2a2438',
-            'input_text': '#f5f0ff',
-            'my_message_bg': '#a78bfa',  # Lavender message
-            'other_message_bg': '#2a2438',
-            'hover_bg': '#4c1d95',       # Deep purple hover
-            'notification_bg': '#2a2438',
-            'notification_text': '#f5f0ff',
-            'button_bg': '#a78bfa',      # Lavender button
-            'button_text': '#1e1b2b',    # Dark text (contrast)
-            'button_hover': '#6ee7b7',   # Mint hover
-            'dropdown_bg': '#2a2438',
-            'dropdown_text': '#f5f0ff',
-            'dropdown_hover': '#4c1d95',
-            'table_header': '#2a2438',
-            'table_row_even': '#1e1b2b',
-            'table_row_odd': '#2a2438',
-            'table_border': '#3e3a4d'
+            'bg': '#1f1d2c',           # Deep navy with purple undertones
+            'sidebar': '#252331',
+            'card': '#252331',
+            'text': '#faf3e0',          # Warm off-white text
+            'text_secondary': '#b5aebd',
+            'border': '#3a3847',
+            'accent': '#fda4af',        # Soft coral
+            'accent_hover': '#7dd3fc', # Sky blue hover (cool contrast)
+            'muted': '#8d8a99',
+            'input_bg': '#252331',
+            'input_text': '#faf3e0',
+            'my_message_bg': '#fda4af',  # Coral message
+            'other_message_bg': '#252331',
+            'hover_bg': '#9f1239',       # Deep rose hover
+            'notification_bg': '#252331',
+            'notification_text': '#faf3e0',
+            'button_bg': '#fda4af',      # Coral button
+            'button_text': '#1f1d2c',    # Dark text
+            'button_hover': '#7dd3fc',   # Sky hover
+            'dropdown_bg': '#252331',
+            'dropdown_text': '#faf3e0',
+            'dropdown_hover': '#9f1239',
+            'table_header': '#252331',
+            'table_row_even': '#1f1d2c',
+            'table_row_odd': '#252331',
+            'table_border': '#3a3847'
         },
 'light': {
             'bg': '#f0f9ff',           # Light sky blue tint
