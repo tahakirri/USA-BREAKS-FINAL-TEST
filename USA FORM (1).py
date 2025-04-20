@@ -1750,9 +1750,9 @@ def inject_custom_css():
             'hover_bg': '#edf2f7',
             'notification_bg': '#ffffff',
             'notification_text': '#2d3748',
-            'button_bg': '#3182ce',  # Soft blue buttons
+            'button_bg': '#ff6161',  # Soft blue buttons
             'button_text': '#ffffff',
-            'button_hover': '#2c5282',
+            'button_hover': '#d51010',
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#2d3748',
             'dropdown_hover': '#edf2f7',
