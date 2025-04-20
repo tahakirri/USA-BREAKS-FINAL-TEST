@@ -2145,27 +2145,10 @@ def inject_custom_css():
         
         .theme-toggle label {{
             margin-right: 0.5rem;
-    page_title="Lyca Management System",
-    page_icon=":office:",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+        }}
+    </style>
+''', unsafe_allow_html=True)
 
-/* Chat Message Styling */
-.chat-message {
-    display: flex;
-    margin-bottom: 1rem;
-    max-width: 80%;
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* ... rest of the code remains the same ... */
-        "username": None,
-        "current_section": "requests",
-        "last_request_count": 0,
-        "last_mistake_count": 0,
-        "last_message_ids": []
-    })
 
 init_db()
 init_break_session_state()
