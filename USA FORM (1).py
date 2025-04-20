@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#e2e8f0'
         },
 'light': {
-            'bg': '#ecfdf5',           # Light emerald tint
+            'bg': '#f0f9ff',           # Light sky blue tint
             'sidebar': '#ffffff',
             'card': '#ffffff',
-            'text': '#0f172a',
+            'text': '#0f172a',        # Near-black (high contrast)
             'text_secondary': '#334155',
-            'border': '#d1fae5',       # Soft emerald border
-            'accent': '#10b981',       # Vibrant emerald
-            'accent_hover': '#f43f5e', # Rose hover (bold contrast)
+            'border': '#bae6fd',       # Soft sky blue border
+            'accent': '#0ea5e9',       # Vibrant sky blue
+            'accent_hover': '#f97316', # Tangerine hover (bold contrast)
             'muted': '#64748b',
             'input_bg': '#ffffff',
             'input_text': '#0f172a',
-            'my_message_bg': '#10b981',  # Emerald message
-            'other_message_bg': '#f0fdf4',
-            'hover_bg': '#fff1f2',      # Light rose hover (high visibility)
+            'my_message_bg': '#0ea5e9',  # Sky blue message
+            'other_message_bg': '#f8fafc',
+            'hover_bg': '#ffedd5',      # Light tangerine hover (visible)
             'notification_bg': '#ffffff',
             'notification_text': '#0f172a',
-            'button_bg': '#10b981',     # Emerald button
-            'button_text': '#ffffff',
-            'button_hover': '#f43f5e',  # Rose hover
+            'button_bg': '#0ea5e9',     # Sky blue button
+            'button_text': '#0f172a',   # Near-black text (high contrast)
+            'button_hover': '#f97316',  # Tangerine hover
             'dropdown_bg': '#ffffff',
             'dropdown_text': '#0f172a',
-            'dropdown_hover': '#fff1f2',
-            'table_header': '#d1fae5',  # Light emerald header
+            'dropdown_hover': '#ffedd5',
+            'table_header': '#e0f2fe', # Light sky blue header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#ecfdf5',
-            'table_border': '#d1fae5'
+            'table_row_odd': '#f0f9ff',
+            'table_border': '#bae6fd'
         }
     }
 
