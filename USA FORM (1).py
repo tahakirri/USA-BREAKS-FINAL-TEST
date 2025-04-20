@@ -2193,6 +2193,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Custom sidebar background color for light/dark mode
+sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
+st.markdown(f'''
+    <style>
+    [data-testid="stSidebar"] > div:first-child {{
+        background-color: {sidebar_bg} !important;
+        transition: background-color 0.2s;
+    }}
+    </style>
+''', unsafe_allow_html=True)
+
 if "authenticated" not in st.session_state:
     st.session_state.update({
         "authenticated": False,
@@ -2601,7 +2612,10 @@ else:
                             if message:
                                 # Admin: send to selected group; Agent: send to their own group
                                 send_to_group = group_filter if st.session_state.role == "admin" else st.session_state.group_name
-                                send_group_message(st.session_state.username, message, send_to_group)
+                                if send_to_group:
+                                    send_group_message(st.session_state.username, message, send_to_group)
+                                else:
+                                    st.warning("No group selected for chat.")
                                 st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
