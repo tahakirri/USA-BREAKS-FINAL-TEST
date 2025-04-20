@@ -77,6 +77,11 @@ def init_db():
                 group_name TEXT
             )
         """)
+        # MIGRATION: Add group_name if not exists
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
+        except Exception:
+            pass
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vip_messages (
@@ -100,6 +105,11 @@ def init_db():
                 group_name TEXT
             )
         """)
+        # MIGRATION: Add group_name if not exists
+        try:
+            cursor.execute("ALTER TABLE requests ADD COLUMN group_name TEXT")
+        except Exception:
+            pass
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS mistakes (
@@ -122,6 +132,11 @@ def init_db():
                 group_name TEXT
             )
         """)
+        # MIGRATION: Add group_name if not exists
+        try:
+            cursor.execute("ALTER TABLE group_messages ADD COLUMN group_name TEXT")
+        except Exception:
+            pass
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS system_settings (
