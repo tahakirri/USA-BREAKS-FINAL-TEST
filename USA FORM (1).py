@@ -1734,32 +1734,32 @@ def inject_custom_css():
             'table_border': '#334155'
         },
 'light': {
-            'bg': '#f9fafb',           # Warm off-white
-            'sidebar': '#ffffff',      # White sidebar
+            'bg': '#f8fafc',           # Soft, light neutral background
+            'sidebar': '#ffffff',      # Pure white sidebar
             'card': '#ffffff',         # White cards
-            'text': '#374151',         # Warm dark gray
-            'text_secondary': '#6b7280',
-            'border': '#e5e7eb',       # Warm gray border
-            'accent': '#3b82f6',       # Vibrant blue
-            'accent_hover': '#2563eb',
-            'muted': '#6b7280',        # Warm gray
+            'text': '#2d3748',         # Slightly softer dark text
+            'text_secondary': '#4a5568',
+            'border': '#e2e8f0',       # Soft, muted border
+            'accent': '#3182ce',       # Softer blue accent
+            'accent_hover': '#2c5282',
+            'muted': '#718096',        # Softer muted text
             'input_bg': '#ffffff',
-            'input_text': '#374151',
-            'my_message_bg': '#3b82f6',  # Bright blue message
-            'other_message_bg': '#f9fafb',
-            'hover_bg': '#f3f4f6',      # Warm light gray hover
+            'input_text': '#2d3748',
+            'my_message_bg': '#3182ce',  # Blue message background
+            'other_message_bg': '#f7fafc',
+            'hover_bg': '#edf2f7',
             'notification_bg': '#ffffff',
-            'notification_text': '#374151',
-            'button_bg': '#3b82f6',     # Vibrant blue button
+            'notification_text': '#2d3748',
+            'button_bg': '#3182ce',     # Soft blue buttons
             'button_text': '#ffffff',
-            'button_hover': '#2563eb',
+            'button_hover': '#2c5282',
             'dropdown_bg': '#ffffff',
-            'dropdown_text': '#374151',
-            'dropdown_hover': '#f3f4f6',
-            'table_header': '#f3f4f6',  # Warm light gray header
+            'dropdown_text': '#2d3748',
+            'dropdown_hover': '#edf2f7',
+            'table_header': '#f7fafc',  # Very light blue-gray header
             'table_row_even': '#ffffff',
-            'table_row_odd': '#f9fafb',
-            'table_border': '#e5e7eb''
+            'table_row_odd': '#f8fafc',
+            'table_border': '#e2e8f0'
         }
     }
 
