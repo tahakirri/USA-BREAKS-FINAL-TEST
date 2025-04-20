@@ -682,8 +682,6 @@ def get_vip_messages():
         return cursor.fetchall()
     finally:
         conn.close()
-        else:
-            st.error("System is currently locked. Access to mistakes is disabled.")
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
