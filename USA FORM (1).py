@@ -1009,6 +1009,16 @@ def admin_break_dashboard():
         save_break_data()
     
     # Template Activation Management
+    # Inject CSS to fix white-on-white metric text
+    st.markdown("""
+    <style>
+    /* Make st.metric values black and bold for visibility */
+    div[data-testid="stMetricValue"] {
+        color: black !important;
+        font-weight: bold;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     st.subheader("🔄 Template Activation")
     st.info("Only activated templates will be available for agents to book breaks from.")
     
