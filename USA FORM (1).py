@@ -2729,6 +2729,18 @@ else:
                             st.rerun()
                     except Exception as e:
                         st.error(f"Error uploading image: {str(e)}")
+                # Add clear button with confirmation
+                with st.form("clear_hold_images_form"):
+                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD images")
+                    if st.form_submit_button("Clear HOLD Images"):
+                        if confirm_clear_hold:
+                            if clear_hold_images():
+                                st.success("All HOLD images deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete HOLD images.")
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
             # Display images (visible to all users)
             images = get_hold_images()
             if images:
@@ -3209,15 +3221,23 @@ else:
             status = "🔴 ACTIVE" if current else "🟢 INACTIVE"
             st.write(f"Current Status: {status}")
             
-            col1, col2 = st.columns(2)
-            if current:
-                if col1.button("Deactivate Killswitch"):
-                    toggle_killswitch(False)
-                    st.rerun()
-            else:
-                if col1.button("Activate Killswitch"):
-                    toggle_killswitch(True)
-                    st.rerun()
+            with st.form("killswitch_form"):
+                col1, col2 = st.columns(2)
+                confirm_killswitch = st.checkbox("I understand and want to change the killswitch status")
+                if current:
+                    if col1.form_submit_button("Deactivate Killswitch"):
+                        if confirm_killswitch:
+                            toggle_killswitch(False)
+                            st.rerun()
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
+                else:
+                    if col1.form_submit_button("Activate Killswitch"):
+                        if confirm_killswitch:
+                            toggle_killswitch(True)
+                            st.rerun()
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
             
             st.markdown("---")
             
@@ -3226,15 +3246,23 @@ else:
             chat_status = "🔴 ACTIVE" if current_chat else "🟢 INACTIVE"
             st.write(f"Current Status: {chat_status}")
             
-            col1, col2 = st.columns(2)
-            if current_chat:
-                if col1.button("Deactivate Chat Killswitch"):
-                    toggle_chat_killswitch(False)
-                    st.rerun()
-            else:
-                if col1.button("Activate Chat Killswitch"):
-                    toggle_chat_killswitch(True)
-                    st.rerun()
+            with st.form("chat_killswitch_form"):
+                col1, col2 = st.columns(2)
+                confirm_chat_killswitch = st.checkbox("I understand and want to change the chat killswitch status")
+                if current_chat:
+                    if col1.form_submit_button("Deactivate Chat Killswitch"):
+                        if confirm_chat_killswitch:
+                            toggle_chat_killswitch(False)
+                            st.rerun()
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
+                else:
+                    if col1.form_submit_button("Activate Chat Killswitch"):
+                        if confirm_chat_killswitch:
+                            toggle_chat_killswitch(True)
+                            st.rerun()
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
             
             st.markdown("---")
         
@@ -3397,11 +3425,17 @@ else:
                         key="delete_user_select"
                     )
                     
+                    confirm_delete_user = st.checkbox("I understand and want to delete this user")
                     if st.form_submit_button("Delete User") and not is_killswitch_enabled():
-                        user_id = int(user_to_delete.split(' - ')[0])
-                        if delete_user(user_id):
-                            st.success(f"User deleted successfully!")
-                            st.rerun()
+                        if confirm_delete_user:
+                            user_id = int(user_to_delete.split(' - ')[0])
+                            if delete_user(user_id):
+                                st.success(f"User deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete user.")
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
         
         with user_tabs[1]:
             # Admins view
