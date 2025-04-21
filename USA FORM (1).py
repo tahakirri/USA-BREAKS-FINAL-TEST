@@ -10,6 +10,14 @@ import pandas as pd
 import json
 import pytz
 
+# --- Show logged-in username in the top bar ---
+if 'username' in st.session_state:
+    st.markdown(f"""
+        <div style='background: #f0f2f6; padding: 0.7em 1em; border-radius: 8px; margin-bottom: 1em; font-size: 1.1em; font-weight: bold; color: #222; display: flex; align-items: center;'>
+            👤 Logged in as: <span style='margin-left: 0.5em; color: #2563eb'>{st.session_state['username']}</span>
+        </div>
+    """, unsafe_allow_html=True)
+
 # --------------------------
 # Timezone Utility Functions
 # --------------------------
