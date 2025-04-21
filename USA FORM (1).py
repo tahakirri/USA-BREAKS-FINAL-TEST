@@ -151,6 +151,8 @@ def init_db():
                 chat_killswitch_enabled INTEGER DEFAULT 0
             )
         """)
+        # Ensure there is always a row with id=1
+        cursor.execute("INSERT OR IGNORE INTO system_settings (id, killswitch_enabled, chat_killswitch_enabled) VALUES (1, 0, 0)")
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS request_comments (
