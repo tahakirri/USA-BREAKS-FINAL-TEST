@@ -2748,9 +2748,23 @@ else:
                     mime="text/csv"
                 )
                 
-                if st.button("Clear All Records"):
-                    clear_late_logins()
-                    st.rerun()
+                if 'confirm_clear_late_login' not in st.session_state:
+                    st.session_state.confirm_clear_late_login = False
+                if not st.session_state.confirm_clear_late_login:
+                    if st.button("Clear All Records"):
+                        st.session_state.confirm_clear_late_login = True
+                else:
+                    st.warning("⚠️ Are you sure you want to clear all late login records? This cannot be undone!")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("Yes, Clear All Late Logins"):
+                            clear_late_logins()
+                            st.session_state.confirm_clear_late_login = False
+                            st.rerun()
+                    with col2:
+                        if st.button("Cancel"):
+                            st.session_state.confirm_clear_late_login = False
+                            st.rerun()
             else:
                 st.info("No late login records found")
         else:
@@ -2925,10 +2939,23 @@ else:
                     mime="text/csv"
                 )
                 
-                # Only admin can clear records
-                if st.session_state.role == "admin" and st.button("Clear All Records"):
-                    clear_quality_issues()
-                    st.rerun()
+                if 'confirm_clear_quality_issues' not in st.session_state:
+                    st.session_state.confirm_clear_quality_issues = False
+                if not st.session_state.confirm_clear_quality_issues:
+                    if st.button("Clear All Records"):
+                        st.session_state.confirm_clear_quality_issues = True
+                else:
+                    st.warning("⚠️ Are you sure you want to clear all quality issue records? This cannot be undone!")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("Yes, Clear All Quality Issues"):
+                            clear_quality_issues()
+                            st.session_state.confirm_clear_quality_issues = False
+                            st.rerun()
+                    with col2:
+                        if st.button("Cancel"):
+                            st.session_state.confirm_clear_quality_issues = False
+                            st.rerun()
             else:
                 st.info("No quality issue records found")
         else:
@@ -3043,9 +3070,23 @@ else:
                     mime="text/csv"
                 )
                 
-                if st.button("Clear All Records"):
-                    clear_midshift_issues()
-                    st.rerun()
+                if 'confirm_clear_midshift_issues' not in st.session_state:
+                    st.session_state.confirm_clear_midshift_issues = False
+                if not st.session_state.confirm_clear_midshift_issues:
+                    if st.button("Clear All Records"):
+                        st.session_state.confirm_clear_midshift_issues = True
+                else:
+                    st.warning("⚠️ Are you sure you want to clear all mid-shift issue records? This cannot be undone!")
+                    col1, col2 = st.columns([1, 1])
+                    with col1:
+                        if st.button("Yes, Clear All Mid-shift Issues"):
+                            clear_midshift_issues()
+                            st.session_state.confirm_clear_midshift_issues = False
+                            st.rerun()
+                    with col2:
+                        if st.button("Cancel"):
+                            st.session_state.confirm_clear_midshift_issues = False
+                            st.rerun()
             else:
                 st.info("No mid-shift issue records found")
         else:
