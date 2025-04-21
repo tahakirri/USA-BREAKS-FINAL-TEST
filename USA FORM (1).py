@@ -152,8 +152,6 @@ def init_db():
                 timestamp TEXT
             )
         """)
-        except Exception:
-            pass
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS system_settings (
