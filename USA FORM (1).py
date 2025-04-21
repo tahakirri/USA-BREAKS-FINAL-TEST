@@ -2369,7 +2369,7 @@ else:
             nav_options.extend([
                 ("📋 Requests", "requests"),
                 ("☕ Breaks", "breaks"),
-                ("⏸️HOLD", "hold"),
+                ("📊HOLD", "hold"),
                 ("❌ Mistakes", "mistakes"),
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
