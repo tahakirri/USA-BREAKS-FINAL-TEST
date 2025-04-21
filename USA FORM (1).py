@@ -2369,7 +2369,7 @@ else:
             nav_options.extend([
                 ("📋 Requests", "requests"),
                 ("☕ Breaks", "breaks"),
-                ("📊HOLD", "hold"),
+                ("📊 Live KPIs ", "Live KPIs"),
                 ("❌ Mistakes", "mistakes"),
                 ("💬 Chat", "chat"),
                 ("⏰ Late Login", "late_login"),
@@ -2713,9 +2713,9 @@ else:
         else:
             st.error("System is currently locked. Access to chat is disabled.")
 
-    elif st.session_state.current_section == "hold":
+    elif st.session_state.current_section == "Live KPIs":
         if not is_killswitch_enabled():
-            st.subheader("📋 HOLD Table")
+            st.subheader("📋 AHT Table")
             import pandas as pd
             # --- HOLD Table Functions (inlined, was: from hold_tables import ...) ---
             import io
