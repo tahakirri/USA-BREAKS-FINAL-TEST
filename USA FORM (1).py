@@ -3404,13 +3404,36 @@ else:
             else:
                 st.info("No QA users found")
 
-        st.subheader("🔑 Password Management")
+        st.subheader("\ud83d\udd11 Password Management")
         
         # Get all users
         users = get_all_users()
         
-        # Filter users based on role
+        # --- Taha Kirri: Promote/Demote Admin ---
         if st.session_state.username.lower() == "taha kirri":
+            st.subheader("\ud83d\udd11 Admin Role Management (Taha Only)")
+            with st.form("admin_role_management_form"):
+                # List all users except taha kirri
+                promote_users = [user for user in users if user[1].lower() != "taha kirri"]
+                selected_user = st.selectbox(
+                    "Select User to Promote/Demote",
+                    [f"{user[1]} (Current: {user[2]})" for user in promote_users],
+                    key="promote_demote_select"
+                )
+                action = st.radio("Action", ["Promote to Admin", "Demote to Agent"], key="admin_action_radio")
+                if st.form_submit_button("Update Role"):
+                    if selected_user:
+                        username = selected_user.split(" (Current:")[0]
+                        new_role = "admin" if action == "Promote to Admin" else "agent"
+                        conn = get_db_connection()
+                        try:
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE users SET role = ? WHERE username = ?", (new_role, username))
+                            conn.commit()
+                            st.success(f"Updated {username} to role: {new_role}")
+                            st.rerun()
+                        finally:
+                            conn.close()
             # Taha can reset passwords for all users
             with st.form("reset_password_form_admin"):
                 st.write("Reset Password for Admin/QA Users")
