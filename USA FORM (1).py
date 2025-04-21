@@ -10,6 +10,16 @@ import pandas as pd
 import json
 import pytz
 
+# --- Streamlit page config must be first ---
+try:
+    st.set_page_config(
+        page_title="USA Chat & Breaks",
+        page_icon="🇺🇸",
+        layout="wide"
+    )
+except Exception:
+    pass
+
 # --- Show logged-in username in the top bar ---
 if 'username' in st.session_state:
     st.markdown(f"""
