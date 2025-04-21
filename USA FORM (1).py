@@ -1741,7 +1741,7 @@ def inject_custom_css():
             'input_bg': '#1e293b',
             'input_text': '#f1f5f9',
             'placeholder_text': '#94a3b8',  # Light gray for placeholder in dark mode
-            'my_message_bg': '#94a3b8',  # Slate message
+            'my_message_bg': '#385c8e',  # Slate message
             'other_message_bg': '#1e293b',
             'hover_bg': '#475569',      # Darker slate hover
             'notification_bg': '#1e293b',
@@ -1770,7 +1770,7 @@ def inject_custom_css():
         'input_bg': '#ffffff',
         'input_text': '#0f172a',
         'placeholder_text': '#475569',  # Darker gray (visible but subtle)
-        'my_message_bg': '#0ea5e9',  
+        'my_message_bg': '#385c8e',  
         'other_message_bg': '#f8fafc',
         'hover_bg': '#ffedd5',      
         'notification_bg': '#ffffff',
