@@ -1869,31 +1869,6 @@ def inject_custom_css():
             transform: translateY(-2px);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
-
-        /* Table Styling for Light/Dark Mode */
-        .stDataFrame, .stTable, .stDataFrame table, .stTable table {{
-            background-color: {c['table_row_even']} !important;
-            color: {c['text']} !important;
-        }}
-        .stDataFrame th, .stTable th {{
-            background-color: {c['table_header']} !important;
-            color: {c['text']} !important;
-        }}
-        .stDataFrame td, .stTable td {{
-            background-color: {c['table_row_even']} !important;
-            color: {c['text']} !important;
-            border-bottom: 1px solid {c['table_border']} !important;
-        }}
-        .stDataFrame tr:nth-child(even), .stTable tr:nth-child(even) {{
-            background-color: {c['table_row_even']} !important;
-        }}
-        .stDataFrame tr:nth-child(odd), .stTable tr:nth-child(odd) {{
-            background-color: {c['table_row_odd']} !important;
-        }}
-        .stDataFrame tr:hover, .stTable tr:hover {{
-            background-color: {c['hover_bg']} !important;
-        }}
-        /* End Table Styling */
         
         /* Dropdown and Date Picker Styling */
         .stSelectbox [data-baseweb="select"],
