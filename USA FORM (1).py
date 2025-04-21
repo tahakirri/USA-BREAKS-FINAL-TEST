@@ -2729,18 +2729,6 @@ else:
                             st.rerun()
                     except Exception as e:
                         st.error(f"Error uploading image: {str(e)}")
-                # Add clear button with confirmation
-                with st.form("clear_hold_images_form"):
-                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD images")
-                    if st.form_submit_button("Clear HOLD Images"):
-                        if confirm_clear_hold:
-                            if clear_hold_images():
-                                st.success("All HOLD images deleted successfully!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete HOLD images.")
-                        else:
-                            st.warning("Please confirm by checking the checkbox.")
             # Display images (visible to all users)
             images = get_hold_images()
             if images:
