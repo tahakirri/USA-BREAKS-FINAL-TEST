@@ -10,24 +10,6 @@ import pandas as pd
 import json
 import pytz
 
-# --- Streamlit page config must be first ---
-try:
-    st.set_page_config(
-        page_title="USA Chat & Breaks",
-        page_icon="🇺🇸",
-        layout="wide"
-    )
-except Exception:
-    pass
-
-# --- Show logged-in username in the top bar ---
-if 'username' in st.session_state:
-    st.markdown(f"""
-        <div style='background: #f0f2f6; padding: 0.7em 1em; border-radius: 8px; margin-bottom: 1em; font-size: 1.1em; font-weight: bold; color: #222; display: flex; align-items: center;'>
-            👤 Logged in as: <span style='margin-left: 0.5em; color: #2563eb'>{st.session_state['username']}</span>
-        </div>
-    """, unsafe_allow_html=True)
-
 # --------------------------
 # Timezone Utility Functions
 # --------------------------
@@ -2747,6 +2729,18 @@ else:
                             st.rerun()
                     except Exception as e:
                         st.error(f"Error uploading image: {str(e)}")
+                # Add clear button with confirmation
+                with st.form("clear_hold_images_form"):
+                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD images")
+                    if st.form_submit_button("Clear HOLD Images"):
+                        if confirm_clear_hold:
+                            if clear_hold_images():
+                                st.success("All HOLD images deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete HOLD images.")
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
             # Display images (visible to all users)
             images = get_hold_images()
             if images:
