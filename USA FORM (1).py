@@ -1737,7 +1737,7 @@ def inject_custom_css():
             'table_row_odd': '#1e293b',
             'table_border': '#334155'
         },
-        'light': {
+'light': {
         'bg': '#f0f9ff',           
         'sidebar': '#ffffff',
         'card': '#ffffff',
@@ -1769,8 +1769,7 @@ def inject_custom_css():
     }
 
     # Use the appropriate color scheme based on the session state
-    color_mode = st.session_state.get('color_mode', 'light')
-    c = colors['dark'] if color_mode == 'dark' else colors['light']
+    c = colors['dark'] if st.session_state.color_mode == 'dark' else colors['light']
     
     st.markdown(f"""
     <style>
@@ -1869,15 +1868,11 @@ def inject_custom_css():
         }}
         
         /* Template and stats numbers (Total Templates, Active Templates) */
-        .template-stats-number, .template-info-number {
+        .template-stats-number, .template-info-number {{
             color: {c['text']} !important;
             font-weight: bold;
             font-size: 2rem;
-        }
-        /* Explicitly fix white-on-white in light mode */
-        body[data-theme="light"] .template-stats-number, body[data-theme="light"] .template-info-number {
-            color: {c['text']} !important;
-        }
+        }}
         
         /* Input Fields and Labels */
         .stTextInput input, 
