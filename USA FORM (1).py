@@ -2719,20 +2719,21 @@ else:
             import pandas as pd
             # --- HOLD Table Functions (inlined, was: from hold_tables import ...) ---
             import io
-            hold_tables_storage = []
+            if 'hold_tables_storage' not in st.session_state:
+                st.session_state.hold_tables_storage = []
 
             def add_hold_table(uploader, table_data):
                 import datetime
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                hold_tables_storage.clear()  # Only keep the latest table
-                hold_tables_storage.append((len(hold_tables_storage)+1, uploader, table_data, timestamp))
+                st.session_state.hold_tables_storage.clear()  # Only keep the latest table
+                st.session_state.hold_tables_storage.append((len(st.session_state.hold_tables_storage)+1, uploader, table_data, timestamp))
                 return True
 
             def get_hold_tables():
-                return hold_tables_storage[::-1]  # Most recent first
+                return st.session_state.hold_tables_storage[::-1]  # Most recent first
 
             def clear_hold_tables():
-                hold_tables_storage.clear()
+                st.session_state.hold_tables_storage.clear()
                 return True
             # --- END HOLD Table Functions ---
             # Only show table paste option to admin users
@@ -2782,7 +2783,12 @@ else:
                 """, unsafe_allow_html=True)
                 try:
                     df = pd.read_csv(io.StringIO(table_data))
-                    st.dataframe(df, use_container_width=True)
+                    search_query = st.text_input("🔍 Search in table", key="hold_table_search")
+                    if search_query:
+                        filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
+                        st.dataframe(filtered_df, use_container_width=True)
+                    else:
+                        st.dataframe(df, use_container_width=True)
                 except Exception as e:
                     st.error(f"Error displaying table: {str(e)}")
             else:
