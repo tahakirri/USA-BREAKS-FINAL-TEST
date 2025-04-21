@@ -143,6 +143,17 @@ def init_db():
             cursor.execute("ALTER TABLE group_messages ADD COLUMN reactions TEXT DEFAULT '{}' ")
         except Exception:
             pass
+        # HOLD TABLE: Add hold_tables table if not exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS hold_tables (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uploader TEXT,
+                table_data TEXT,
+                timestamp TEXT
+            )
+        """)
+        except Exception:
+            pass
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS system_settings (
@@ -2717,24 +2728,41 @@ else:
         if not is_killswitch_enabled():
             st.subheader("📋 AHT Table")
             import pandas as pd
-            # --- HOLD Table Functions (inlined, was: from hold_tables import ...) ---
+            # --- HOLD Table Functions (now using SQLite for persistence) ---
             import io
-            if 'hold_tables_storage' not in st.session_state:
-                st.session_state.hold_tables_storage = []
-
             def add_hold_table(uploader, table_data):
-                import datetime
-                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                st.session_state.hold_tables_storage.clear()  # Only keep the latest table
-                st.session_state.hold_tables_storage.append((len(st.session_state.hold_tables_storage)+1, uploader, table_data, timestamp))
-                return True
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    # Only keep the latest table: clear any existing records
+                    cursor.execute("DELETE FROM hold_tables")
+                    import datetime
+                    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    cursor.execute("INSERT INTO hold_tables (uploader, table_data, timestamp) VALUES (?, ?, ?)", (uploader, table_data, timestamp))
+                    conn.commit()
+                    return True
+                finally:
+                    conn.close()
 
             def get_hold_tables():
-                return st.session_state.hold_tables_storage[::-1]  # Most recent first
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT id, uploader, table_data, timestamp FROM hold_tables ORDER BY id DESC LIMIT 1")
+                    result = cursor.fetchall()
+                    return result
+                finally:
+                    conn.close()
 
             def clear_hold_tables():
-                st.session_state.hold_tables_storage.clear()
-                return True
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM hold_tables")
+                    conn.commit()
+                    return True
+                finally:
+                    conn.close()
             # --- END HOLD Table Functions ---
             # Only show table paste option to admin users
             if st.session_state.role == "admin":
@@ -2782,6 +2810,8 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 try:
+                    import pandas as pd
+                    import io
                     df = pd.read_csv(io.StringIO(table_data))
                     search_query = st.text_input("🔍 Search in table", key="hold_table_search")
                     if search_query:
