@@ -2644,7 +2644,26 @@ else:
                 </style>''', unsafe_allow_html=True)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                 for msg in reversed(messages):
-                    msg_id, sender, message, ts, mentions, group_name = msg
+                    # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
+                    if isinstance(msg, dict):
+                        msg_id = msg.get('id')
+                        sender = msg.get('sender')
+                        message = msg.get('message')
+                        ts = msg.get('timestamp')
+                        mentions = msg.get('mentions')
+                        group_name = msg.get('group_name')
+                        reactions = msg.get('reactions', {})
+                    else:
+                        # fallback for tuple
+                        if len(msg) == 7:
+                            msg_id, sender, message, ts, mentions, group_name, reactions = msg
+                            try:
+                                reactions = json.loads(reactions) if reactions else {}
+                            except Exception:
+                                reactions = {}
+                        else:
+                            msg_id, sender, message, ts, mentions, group_name = msg
+                            reactions = {}
                     is_sent = sender == st.session_state.username
                     st.markdown(f"""
                     <div class="chat-message {'sent' if is_sent else 'received'}">
@@ -2652,6 +2671,9 @@ else:
                         <div class="message-content">
                             <div>{message}</div>
                             <div class="message-meta">{sender} • {ts}</div>
+                            <div style='margin-top: 4px;'>
+                                {' '.join([f'<button style=\'background:none;border:none;cursor:pointer;font-size:1.2em;\' onclick=\'window.location.search+="&react={msg_id}_{emoji}"\'>{emoji} {len(users)}</button>' for emoji, users in reactions.items()])}
+                            </div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
