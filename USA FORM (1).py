@@ -2831,21 +2831,6 @@ else:
                     <p><small>Uploaded at: {timestamp}</small></p>
                 </div>
                 """, unsafe_allow_html=True)
-                try:
-                    import pandas as pd
-                    import io
-                    df = pd.read_csv(io.StringIO(table_data))
-                    search_query = st.text_input("🔍 Search in table", key="hold_table_search")
-                    if search_query:
-                        filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
-                        st.dataframe(filtered_df, use_container_width=True)
-                    else:
-                        st.dataframe(df, use_container_width=True)
-                except Exception as e:
-                    st.error(f"Error displaying table: {str(e)}")
-            else:
-                st.info("No HOLD tables available")
-        else:
             st.error("System is currently locked. Access to HOLD images is disabled.")
 
     elif st.session_state.current_section == "late_login":
