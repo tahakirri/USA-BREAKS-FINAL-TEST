@@ -2715,53 +2715,61 @@ else:
 
     elif st.session_state.current_section == "hold":
         if not is_killswitch_enabled():
-            st.subheader("🖼️ HOLD Images")
-            # Only show upload option to admin users
+            st.subheader("📋 HOLD Table")
+            import pandas as pd
+            from hold_tables import add_hold_table, get_hold_tables, clear_hold_tables
+            # Only show table paste option to admin users
             if st.session_state.role == "admin":
-                uploaded_file = st.file_uploader("Upload HOLD Image", type=['png', 'jpg', 'jpeg'])
-                if uploaded_file is not None:
-                    try:
-                        # Convert the file to bytes
-                        img_bytes = uploaded_file.getvalue()
-                        # Clear existing images before adding new one
-                        clear_hold_images()
-                        # Add to database
-                        if add_hold_image(st.session_state.username, img_bytes):
-                            st.success("Image uploaded successfully!")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Error uploading image: {str(e)}")
-                # Add clear button with confirmation
-                with st.form("clear_hold_images_form"):
-                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD images")
-                    if st.form_submit_button("Clear HOLD Images"):
-                        if confirm_clear_hold:
-                            if clear_hold_images():
-                                st.success("All HOLD images deleted successfully!")
+                st.write("Paste a table copied from Excel (CSV or tab-separated):")
+                pasted_table = st.text_area("Paste table here", height=150)
+                if st.button("Save HOLD Table"):
+                    if pasted_table.strip():
+                        try:
+                            # Try to parse as DataFrame
+                            try:
+                                df = pd.read_csv(pd.compat.StringIO(pasted_table), sep=None, engine='python')
+                            except Exception:
+                                df = pd.read_csv(pd.compat.StringIO(pasted_table), sep='\t')
+                            table_data = df.to_csv(index=False)
+                            clear_hold_tables()  # Only keep latest
+                            if add_hold_table(st.session_state.username, table_data):
+                                st.success("Table saved successfully!")
                                 st.rerun()
                             else:
-                                st.error("Failed to delete HOLD images.")
+                                st.error("Failed to save table.")
+                        except Exception as e:
+                            st.error(f"Error parsing table: {str(e)}")
+                    else:
+                        st.warning("Please paste a table.")
+                # Add clear button with confirmation
+                with st.form("clear_hold_tables_form"):
+                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD tables")
+                    if st.form_submit_button("Clear HOLD Tables"):
+                        if confirm_clear_hold:
+                            if clear_hold_tables():
+                                st.success("All HOLD tables deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete HOLD tables.")
                         else:
                             st.warning("Please confirm by checking the checkbox.")
-            # Display images (visible to all users)
-            images = get_hold_images()
-            if images:
-                # Get only the most recent image
-                img = images[0]  # Since images are ordered by timestamp DESC
-                img_id, uploader, img_data, timestamp = img
+            # Display most recent table (visible to all users)
+            tables = get_hold_tables()
+            if tables:
+                table_id, uploader, table_data, timestamp = tables[0]
                 st.markdown(f"""
-                <div style="border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                <div style='border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;'>
                     <p><strong>Uploaded by:</strong> {uploader}</p>
                     <p><small>Uploaded at: {timestamp}</small></p>
                 </div>
                 """, unsafe_allow_html=True)
                 try:
-                    image = Image.open(io.BytesIO(img_data))
-                    st.image(image, use_container_width=True)  # Updated parameter
+                    df = pd.read_csv(pd.compat.StringIO(table_data))
+                    st.dataframe(df, use_container_width=True)
                 except Exception as e:
-                    st.error(f"Error displaying image: {str(e)}")
+                    st.error(f"Error displaying table: {str(e)}")
             else:
-                st.info("No HOLD images available")
+                st.info("No HOLD tables available")
         else:
             st.error("System is currently locked. Access to HOLD images is disabled.")
 
