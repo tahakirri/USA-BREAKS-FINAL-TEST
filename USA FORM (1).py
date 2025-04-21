@@ -2686,7 +2686,6 @@ else:
                         if 'chat_input' not in st.session_state:
                             st.session_state['chat_input'] = ''
                         st.session_state['chat_input'] += emoji
-                        st.experimental_rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
                 with st.form("chat_form", clear_on_submit=True):
                     message = st.text_input("Type your message...", key="chat_input")
