@@ -2717,7 +2717,24 @@ else:
         if not is_killswitch_enabled():
             st.subheader("📋 HOLD Table")
             import pandas as pd
-            from hold_tables import add_hold_table, get_hold_tables, clear_hold_tables
+            # --- HOLD Table Functions (inlined, was: from hold_tables import ...) ---
+            import io
+            hold_tables_storage = []
+
+            def add_hold_table(uploader, table_data):
+                import datetime
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                hold_tables_storage.clear()  # Only keep the latest table
+                hold_tables_storage.append((len(hold_tables_storage)+1, uploader, table_data, timestamp))
+                return True
+
+            def get_hold_tables():
+                return hold_tables_storage[::-1]  # Most recent first
+
+            def clear_hold_tables():
+                hold_tables_storage.clear()
+                return True
+            # --- END HOLD Table Functions ---
             # Only show table paste option to admin users
             if st.session_state.role == "admin":
                 st.write("Paste a table copied from Excel (CSV or tab-separated):")
