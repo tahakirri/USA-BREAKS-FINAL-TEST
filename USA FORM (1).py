@@ -1741,7 +1741,7 @@ def inject_custom_css():
             'input_bg': '#1e293b',
             'input_text': '#f1f5f9',
             'placeholder_text': '#94a3b8',  # Light gray for placeholder in dark mode
-            'my_message_bg': '#385c8e',  # Slate message
+            'my_message_bg': '#94a3b8',  # Slate message
             'other_message_bg': '#1e293b',
             'hover_bg': '#475569',      # Darker slate hover
             'notification_bg': '#1e293b',
@@ -1770,7 +1770,7 @@ def inject_custom_css():
         'input_bg': '#ffffff',
         'input_text': '#0f172a',
         'placeholder_text': '#475569',  # Darker gray (visible but subtle)
-        'my_message_bg': '#385c8e',  
+        'my_message_bg': '#0ea5e9',  
         'other_message_bg': '#f8fafc',
         'hover_bg': '#ffedd5',      
         'notification_bg': '#ffffff',
@@ -2013,7 +2013,7 @@ def inject_custom_css():
         
         .sent .message-content {{
             background-color: {c['my_message_bg']};
-            color: #ffffff;
+            color: #222 !important;
             border-bottom-right-radius: 0.25rem;
             margin-left: 1rem;
             border: 1px solid {c['accent_hover']};
