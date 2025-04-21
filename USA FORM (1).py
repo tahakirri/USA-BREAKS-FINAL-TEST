@@ -2666,14 +2666,12 @@ else:
                             msg_id, sender, message, ts, mentions, group_name = msg
                             reactions = {}
                     is_sent = sender == st.session_state.username
-                    reaction_buttons = ' '.join([f'<span style="font-size:1.2em;">{emoji} {len(users)}</span>' for emoji, users in reactions.items()])
                     st.markdown(f"""
                     <div class="chat-message {'sent' if is_sent else 'received'}">
                         <div class="message-avatar">{sender[0].upper()}</div>
                         <div class="message-content">
                             <div>{message}</div>
                             <div class="message-meta">{sender} • {ts}</div>
-                            {f"<div style='margin-top: 4px;'>{reaction_buttons}</div>" if reaction_buttons else ''}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
