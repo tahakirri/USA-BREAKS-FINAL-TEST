@@ -74,12 +74,18 @@ def init_db():
                 username TEXT UNIQUE,
                 password TEXT,
                 role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
-                group_name TEXT
+                group_name TEXT,
+                is_vip INTEGER DEFAULT 0
             )
         """)
         # MIGRATION: Add group_name if not exists
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
+        except Exception:
+            pass
+        # MIGRATION: Add is_vip if not exists
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0")
         except Exception:
             pass
         
@@ -460,12 +466,12 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, group_name FROM users")
+        cursor.execute("SELECT id, username, role, group_name, is_vip FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_user(username, password, role, group_name=None):
+def add_user(username, password, role, group_name=None, is_vip=0):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -475,11 +481,11 @@ def add_user(username, password, role, group_name=None):
         cursor = conn.cursor()
         try:
             if group_name is not None:
-                cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)",
-                               (username, hash_password(password), role, group_name))
+                cursor.execute("INSERT INTO users (username, password, role, group_name, is_vip) VALUES (?, ?, ?, ?, ?)",
+                               (username, hash_password(password), role, group_name, is_vip))
             else:
-                cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                               (username, hash_password(password), role))
+                cursor.execute("INSERT INTO users (username, password, role, is_vip) VALUES (?, ?, ?, ?)",
+                               (username, hash_password(password), role, is_vip))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
