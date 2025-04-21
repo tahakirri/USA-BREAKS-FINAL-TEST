@@ -2643,6 +2643,7 @@ else:
                 .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
                 </style>''', unsafe_allow_html=True)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                # Chat message rendering
                 for msg in reversed(messages):
                     # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
                     if isinstance(msg, dict):
@@ -2677,6 +2678,18 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
+
+                # Emoji picker for chat input
+                emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
+                st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
+                emoji_cols = st.columns(len(emoji_choices))
+                for i, emoji in enumerate(emoji_choices):
+                    if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
+                        if 'chat_input' not in st.session_state:
+                            st.session_state['chat_input'] = ''
+                        st.session_state['chat_input'] += emoji
+                        st.experimental_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
                 with st.form("chat_form", clear_on_submit=True):
                     message = st.text_input("Type your message...", key="chat_input")
                     col1, col2 = st.columns([5,1])
