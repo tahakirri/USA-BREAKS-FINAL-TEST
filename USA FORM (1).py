@@ -2734,8 +2734,7 @@ else:
                     cursor = conn.cursor()
                     # Only keep the latest table: clear any existing records
                     cursor.execute("DELETE FROM hold_tables")
-                    import datetime
-                    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    timestamp = get_casablanca_time()  # Ensure Casablanca time
                     cursor.execute("INSERT INTO hold_tables (uploader, table_data, timestamp) VALUES (?, ?, ?)", (uploader, table_data, timestamp))
                     conn.commit()
                     return True
