@@ -2744,9 +2744,9 @@ else:
                         try:
                             # Try to parse as DataFrame
                             try:
-                                df = pd.read_csv(pd.compat.StringIO(pasted_table), sep=None, engine='python')
+                                df = pd.read_csv(io.StringIO(pasted_table), sep=None, engine='python')
                             except Exception:
-                                df = pd.read_csv(pd.compat.StringIO(pasted_table), sep='\t')
+                                df = pd.read_csv(io.StringIO(pasted_table), sep='\t')
                             table_data = df.to_csv(index=False)
                             clear_hold_tables()  # Only keep latest
                             if add_hold_table(st.session_state.username, table_data):
@@ -2781,7 +2781,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
                 try:
-                    df = pd.read_csv(pd.compat.StringIO(table_data))
+                    df = pd.read_csv(io.StringIO(table_data))
                     st.dataframe(df, use_container_width=True)
                 except Exception as e:
                     st.error(f"Error displaying table: {str(e)}")
