@@ -1123,38 +1123,48 @@ def admin_break_dashboard():
         
         limits = st.session_state.break_limits[selected_template]
         
-        st.write("Lunch Break Limits")
-        cols = st.columns(len(template["lunch_breaks"]))
-        for i, time in enumerate(template["lunch_breaks"]):
-            with cols[i]:
-                limits["lunch"][time] = st.number_input(
-                    f"Max at {time}",
-                    min_value=1,
-                    value=limits["lunch"].get(time, 5),
-                    key=f"lunch_limit_{time}"
-                )
+        # Validate break times before rendering limits
+        if not template["lunch_breaks"]:
+            st.error("Please fill all the lunch break times before saving or editing limits.")
+        else:
+            st.write("Lunch Break Limits")
+            cols = st.columns(len(template["lunch_breaks"]))
+            for i, time in enumerate(template["lunch_breaks"]):
+                with cols[i]:
+                    limits["lunch"][time] = st.number_input(
+                        f"Max at {time}",
+                        min_value=1,
+                        value=limits["lunch"].get(time, 5),
+                        key=f"lunch_limit_{time}"
+                    )
         
-        st.write("Early Tea Break Limits")
-        cols = st.columns(len(template["tea_breaks"]["early"]))
-        for i, time in enumerate(template["tea_breaks"]["early"]):
-            with cols[i]:
-                limits["early_tea"][time] = st.number_input(
-                    f"Max at {time}",
-                    min_value=1,
-                    value=limits["early_tea"].get(time, 3),
-                    key=f"early_tea_limit_{time}"
-                )
+        if not template["tea_breaks"]["early"]:
+            st.error("Please fill all the early tea break times before saving or editing limits.")
+        else:
+            st.write("Early Tea Break Limits")
+            cols = st.columns(len(template["tea_breaks"]["early"]))
+            for i, time in enumerate(template["tea_breaks"]["early"]):
+                with cols[i]:
+                    limits["early_tea"][time] = st.number_input(
+                        f"Max at {time}",
+                        min_value=1,
+                        value=limits["early_tea"].get(time, 3),
+                        key=f"early_tea_limit_{time}"
+                    )
         
-        st.write("Late Tea Break Limits")
-        cols = st.columns(len(template["tea_breaks"]["late"]))
-        for i, time in enumerate(template["tea_breaks"]["late"]):
-            with cols[i]:
-                limits["late_tea"][time] = st.number_input(
-                    f"Max at {time}",
-                    min_value=1,
-                    value=limits["late_tea"].get(time, 3),
-                    key=f"late_tea_limit_{time}"
-                )
+        if not template["tea_breaks"]["late"]:
+            st.error("Please fill all the late tea break times before saving or editing limits.")
+        else:
+            st.write("Late Tea Break Limits")
+            cols = st.columns(len(template["tea_breaks"]["late"]))
+            for i, time in enumerate(template["tea_breaks"]["late"]):
+                with cols[i]:
+                    limits["late_tea"][time] = st.number_input(
+                        f"Max at {time}",
+                        min_value=1,
+                        value=limits["late_tea"].get(time, 3),
+                        key=f"late_tea_limit_{time}"
+                    )
         
         # Consolidated save button
         if st.button("Save All Changes", type="primary"):
