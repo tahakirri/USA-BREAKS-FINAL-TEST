@@ -74,18 +74,12 @@ def init_db():
                 username TEXT UNIQUE,
                 password TEXT,
                 role TEXT CHECK(role IN ('agent', 'admin', 'qa')),
-                group_name TEXT,
-                is_vip INTEGER DEFAULT 0
+                group_name TEXT
             )
         """)
         # MIGRATION: Add group_name if not exists
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
-        except Exception:
-            pass
-        # MIGRATION: Add is_vip if not exists
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0")
         except Exception:
             pass
         
@@ -135,12 +129,18 @@ def init_db():
                 message TEXT,
                 timestamp TEXT,
                 mentions TEXT,
-                group_name TEXT
+                group_name TEXT,
+                reactions TEXT DEFAULT '{}'
             )
         """)
         # MIGRATION: Add group_name if not exists
         try:
             cursor.execute("ALTER TABLE group_messages ADD COLUMN group_name TEXT")
+        except Exception:
+            pass
+        # MIGRATION: Add reactions column if not exists
+        try:
+            cursor.execute("ALTER TABLE group_messages ADD COLUMN reactions TEXT DEFAULT '{}' ")
         except Exception:
             pass
 
@@ -435,16 +435,17 @@ def send_group_message(sender, message, group_name=None):
     try:
         cursor = conn.cursor()
         mentions = re.findall(r'@(\w+)', message)
+        reactions_json = json.dumps({})
         if group_name is not None:
             cursor.execute("""
-                INSERT INTO group_messages (sender, message, timestamp, mentions, group_name) 
-                VALUES (?, ?, ?, ?, ?)
-            """, (sender, message, get_casablanca_time(), ','.join(mentions), group_name))
+                INSERT INTO group_messages (sender, message, timestamp, mentions, group_name, reactions) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (sender, message, get_casablanca_time(), ','.join(mentions), group_name, reactions_json))
         else:
             cursor.execute("""
-                INSERT INTO group_messages (sender, message, timestamp, mentions) 
-                VALUES (?, ?, ?, ?)
-            """, (sender, message, get_casablanca_time(), ','.join(mentions)))
+                INSERT INTO group_messages (sender, message, timestamp, mentions, reactions) 
+                VALUES (?, ?, ?, ?, ?)
+            """, (sender, message, get_casablanca_time(), ','.join(mentions), reactions_json))
         conn.commit()
         return True
     finally:
@@ -458,7 +459,43 @@ def get_group_messages(group_name=None):
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM group_messages WHERE group_name = ? ORDER BY timestamp DESC LIMIT 50", (group_name,))
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        messages = []
+        for row in rows:
+            msg = dict(zip([column[0] for column in cursor.description], row))
+            # Parse reactions JSON
+            if 'reactions' in msg and msg['reactions']:
+                try:
+                    msg['reactions'] = json.loads(msg['reactions'])
+                except Exception:
+                    msg['reactions'] = {}
+            else:
+                msg['reactions'] = {}
+            messages.append(msg)
+        return messages
+    finally:
+        conn.close()
+
+def add_reaction_to_message(message_id, emoji, username):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT reactions FROM group_messages WHERE id = ?", (message_id,))
+        row = cursor.fetchone()
+        if not row:
+            return False
+        reactions = json.loads(row[0]) if row[0] else {}
+        if emoji not in reactions:
+            reactions[emoji] = []
+        if username in reactions[emoji]:
+            reactions[emoji].remove(username)  # Toggle off
+            if not reactions[emoji]:
+                del reactions[emoji]
+        else:
+            reactions[emoji].append(username)
+        cursor.execute("UPDATE group_messages SET reactions = ? WHERE id = ?", (json.dumps(reactions), message_id))
+        conn.commit()
+        return True
     finally:
         conn.close()
 
@@ -466,12 +503,12 @@ def get_all_users():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, group_name, is_vip FROM users")
+        cursor.execute("SELECT id, username, role, group_name FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
 
-def add_user(username, password, role, group_name=None, is_vip=0):
+def add_user(username, password, role, group_name=None):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -481,11 +518,11 @@ def add_user(username, password, role, group_name=None, is_vip=0):
         cursor = conn.cursor()
         try:
             if group_name is not None:
-                cursor.execute("INSERT INTO users (username, password, role, group_name, is_vip) VALUES (?, ?, ?, ?, ?)",
-                               (username, hash_password(password), role, group_name, is_vip))
+                cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)",
+                               (username, hash_password(password), role, group_name))
             else:
-                cursor.execute("INSERT INTO users (username, password, role, is_vip) VALUES (?, ?, ?, ?)",
-                               (username, hash_password(password), role, is_vip))
+                cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                               (username, hash_password(password), role))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -3404,36 +3441,13 @@ else:
             else:
                 st.info("No QA users found")
 
-        st.subheader("\ud83d\udd11 Password Management")
+        st.subheader("🔑 Password Management")
         
         # Get all users
         users = get_all_users()
         
-        # --- Taha Kirri: Promote/Demote Admin ---
+        # Filter users based on role
         if st.session_state.username.lower() == "taha kirri":
-            st.subheader("\ud83d\udd11 Admin Role Management (Taha Only)")
-            with st.form("admin_role_management_form"):
-                # List all users except taha kirri
-                promote_users = [user for user in users if user[1].lower() != "taha kirri"]
-                selected_user = st.selectbox(
-                    "Select User to Promote/Demote",
-                    [f"{user[1]} (Current: {user[2]})" for user in promote_users],
-                    key="promote_demote_select"
-                )
-                action = st.radio("Action", ["Promote to Admin", "Demote to Agent"], key="admin_action_radio")
-                if st.form_submit_button("Update Role"):
-                    if selected_user:
-                        username = selected_user.split(" (Current:")[0]
-                        new_role = "admin" if action == "Promote to Admin" else "agent"
-                        conn = get_db_connection()
-                        try:
-                            cursor = conn.cursor()
-                            cursor.execute("UPDATE users SET role = ? WHERE username = ?", (new_role, username))
-                            conn.commit()
-                            st.success(f"Updated {username} to role: {new_role}")
-                            st.rerun()
-                        finally:
-                            conn.close()
             # Taha can reset passwords for all users
             with st.form("reset_password_form_admin"):
                 st.write("Reset Password for Admin/QA Users")
