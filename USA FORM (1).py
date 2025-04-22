@@ -2322,12 +2322,12 @@ else:
         
         new_requests = len(current_requests) - st.session_state.last_request_count
         if new_requests > 0 and st.session_state.last_request_count > 0:
-            st.toast(f"📋 {new_requests} new request(s) submitted!")
+            st.toast(f"📋 {new_requests} new request(s) submitted!", duration=5)
         st.session_state.last_request_count = len(current_requests)
         
         new_mistakes = len(current_mistakes) - st.session_state.last_mistake_count
         if new_mistakes > 0 and st.session_state.last_mistake_count > 0:
-            st.toast(f"❌ {new_mistakes} new mistake(s) reported!")
+            st.toast(f"❌ {new_mistakes} new mistake(s) reported!", duration=5)
         st.session_state.last_mistake_count = len(current_mistakes)
         
         current_message_ids = [msg[0] for msg in current_messages]
@@ -2336,9 +2336,9 @@ else:
             if msg[1] != st.session_state.username:
                 mentions = msg[4].split(',') if msg[4] else []
                 if st.session_state.username in mentions:
-                    st.toast(f"💬 You were mentioned by {msg[1]}!")
+                    st.toast(f"💬 You were mentioned by {msg[1]}!", duration=5)
                 else:
-                    st.toast(f"💬 New message from {msg[1]}!")
+                    st.toast(f"💬 New message from {msg[1]}!", duration=5)
         st.session_state.last_message_ids = current_message_ids
 
     show_notifications()
