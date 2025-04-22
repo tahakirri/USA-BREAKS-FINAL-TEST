@@ -3699,24 +3699,29 @@ else:
                 except Exception:
                     st.warning("No break templates found. Please add templates.json.")
 
-                for u in agent_templates:
-                    if u[2] != "agent":
-                        continue
-                    username = u[1]
-                    group = u[3]
-                    current_templates = [t.strip() for t in (u[4] or '').split(',') if t.strip()]
-                    with st.expander(f"{username} ({group})", expanded=False):
-                        new_templates = st.multiselect(
-                            f"Edit templates for {username}",
-                            templates_list,
-                            default=current_templates,
-                            key=f"edit_templates_{username}"
-                        )
-                        if st.button(f"Save for {username}", key=f"save_templates_{username}"):
-                            from update_agent_templates import update_agent_templates
-                            update_agent_templates(username, new_templates)
-                            st.success(f"Templates updated for {username}!")
-                            st.experimental_rerun()
+                # --- Refactored: Single agent dropdown ---
+                agent_choices = [(u[1], u[3]) for u in agent_templates if u[2] == "agent"]
+                agent_labels = [f"{name} ({group})" if group else name for name, group in agent_choices]
+                agent_usernames = [name for name, _ in agent_choices]
+                selected_idx = st.selectbox("Select agent to edit templates:", options=list(range(len(agent_labels))), format_func=lambda i: agent_labels[i] if i is not None else "Select...", key="admin_agent_select") if agent_labels else None
+                if agent_labels and selected_idx is not None:
+                    username = agent_usernames[selected_idx]
+                    # Get current templates
+                    agent_row = next(u for u in agent_templates if u[1] == username)
+                    current_templates = [t.strip() for t in (agent_row[4] or '').split(',') if t.strip()]
+                    st.write(f"**Editing templates for:** {username}")
+                    new_templates = st.multiselect(
+                        f"Edit templates for {username}",
+                        templates_list,
+                        default=current_templates,
+                        key=f"edit_templates_{username}"
+                    )
+                    if st.button(f"Save for {username}", key=f"save_templates_{username}"):
+                        from update_agent_templates import update_agent_templates
+                        update_agent_templates(username, new_templates)
+                        st.success(f"Templates updated for {username}!")
+                        st.experimental_rerun()
+
 
             
             agent_data = []
