@@ -3481,6 +3481,28 @@ else:
                     st.info("Note: New accounts will be created as agent accounts.")
                 # Group selection for all new users
                 group_name = st.text_input("Group Name (required)")
+
+                # --- Break Templates Selection for Agents ---
+                selected_templates = []
+                if role == "agent":
+                    # Load templates from templates.json
+                    templates = []
+                    try:
+                        with open("templates.json", "r") as f:
+                            templates = list(json.load(f).keys())
+                    except Exception:
+                        st.warning("No break templates found. Please add templates.json.")
+                    if templates:
+                        selected_templates = st.multiselect(
+                            "Select break templates agent can book from:",
+                            templates,
+                            help="Choose one or more break templates for this agent"
+                        )
+                    else:
+                        selected_templates = []
+                else:
+                    selected_templates = []
+
                 if st.form_submit_button("Add User"):
                     def is_password_complex(password):
                         if len(password) < 8:
@@ -3499,7 +3521,8 @@ else:
                         if not is_password_complex(pwd):
                             st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
                         else:
-                            result = add_user(user, pwd, role, group_name)
+                            # Pass selected_templates for agent, or empty for admin
+                            result = add_user(user, pwd, role, group_name, selected_templates)
                             if result == "exists":
                                 st.error("User already exists. Please choose a different username.")
                             elif result:
@@ -3507,6 +3530,7 @@ else:
                                 st.rerun()
                             else:
                                 st.error("Failed to add user. Please try again.")
+
                     elif not group_name:
                         st.error("Group name is required.")
         
