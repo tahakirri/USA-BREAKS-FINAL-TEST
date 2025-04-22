@@ -82,6 +82,11 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
         except Exception:
             pass
+        # MIGRATION: Add is_vip if not exists
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0")
+        except Exception:
+            pass
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vip_messages (
