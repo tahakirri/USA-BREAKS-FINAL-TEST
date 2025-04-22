@@ -3566,48 +3566,6 @@ else:
             else:
                 st.info("No QA users found")
 
-        st.subheader("🔑 Password Management")
-        
-        # Get all users
-        users = get_all_users()
-        
-        # Filter users based on role
-        if st.session_state.username.lower() == "taha kirri":
-            # Taha can reset passwords for all users
-            with st.form("reset_password_form_admin"):
-                st.write("Reset Password for Admin/QA Users")
-                admin_qa_users = [user for user in users if user[2] in ["admin", "qa"]]
-                selected_admin = st.selectbox(
-                    "Select Admin/QA User",
-                    [user[1] for user in admin_qa_users],
-                    key="admin_select"
-                )
-                new_admin_pwd = st.text_input("New Password", type="password", key="admin_pwd")
-                
-                if st.form_submit_button("Reset Password"):
-                    if selected_admin and new_admin_pwd:
-                        if reset_password(selected_admin, new_admin_pwd):
-                            st.success(f"Password reset for {selected_admin}")
-                            st.rerun()
-        
-        # All admins can reset agent passwords
-        with st.form("reset_password_form_agent"):
-            st.write("Reset Password for Agent Users")
-            agent_users = [user for user in users if user[2] == "agent"]
-            selected_agent = st.selectbox(
-                "Select Agent",
-                [user[1] for user in agent_users],
-                key="agent_select"
-            )
-            new_agent_pwd = st.text_input("New Password", type="password", key="agent_pwd")
-            
-            if st.form_submit_button("Reset Password"):
-                if selected_agent and new_agent_pwd:
-                    if reset_password(selected_agent, new_agent_pwd):
-                        st.success(f"Password reset for {selected_agent}")
-                        st.rerun()
-        
-        st.markdown("---")
 
     elif st.session_state.current_section == "breaks":
         if st.session_state.role == "admin":
