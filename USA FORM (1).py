@@ -3692,19 +3692,32 @@ else:
             if st.session_state.role == "admin":
                 st.subheader("Agent Break Template Assignments")
                 agent_templates = get_all_users(include_templates=True)
-                agent_data = [
-                    {
-                        "Username": u[1],
-                        "Group": u[3],
-                        "Templates": u[4] if u[4] else "-"
-                    }
-                    for u in agent_templates if u[2] == "agent"
-                ]
-                if agent_data:
-                    df = pd.DataFrame(agent_data)
-                    st.dataframe(df, use_container_width=True)
-                else:
-                    st.info("No agents found.")
+                templates_list = []
+                try:
+                    with open("templates.json", "r") as f:
+                        templates_list = list(json.load(f).keys())
+                except Exception:
+                    st.warning("No break templates found. Please add templates.json.")
+
+                for u in agent_templates:
+                    if u[2] != "agent":
+                        continue
+                    username = u[1]
+                    group = u[3]
+                    current_templates = [t.strip() for t in (u[4] or '').split(',') if t.strip()]
+                    with st.expander(f"{username} ({group})", expanded=False):
+                        new_templates = st.multiselect(
+                            f"Edit templates for {username}",
+                            templates_list,
+                            default=current_templates,
+                            key=f"edit_templates_{username}"
+                        )
+                        if st.button(f"Save for {username}", key=f"save_templates_{username}"):
+                            from update_agent_templates import update_agent_templates
+                            update_agent_templates(username, new_templates)
+                            st.success(f"Templates updated for {username}!")
+                            st.experimental_rerun()
+
             
             agent_data = []
             for uid, uname, urole, gname in agent_users:
