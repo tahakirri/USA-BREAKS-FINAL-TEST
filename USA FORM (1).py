@@ -15,58 +15,63 @@ import pytz
 # --------------------------
 
 def get_casablanca_time():
-    """Get current time in Casablanca, Morocco timezone"""
+    """Return the current time in Casablanca, Morocco timezone as a string."""
     morocco_tz = pytz.timezone('Africa/Casablanca')
     return datetime.now(morocco_tz).strftime("%Y-%m-%d %H:%M:%S")
 
+
 def convert_to_casablanca_date(date_str):
-    """Convert a date string to Casablanca timezone"""
+    """Convert a date string to a date object in Casablanca timezone. Return None if invalid."""
     try:
         dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
-        morocco_tz = pytz.timezone('Africa/Casablanca')
-        return dt.date()  # Simplified since stored times are already in Casablanca time
-    except:
+        return dt.date()  # Assumes input is already Casablanca time
+    except (ValueError, TypeError):
         return None
 
+
 def get_date_range_casablanca(date):
-    """Get start and end of day in Casablanca time"""
+    """Return start and end datetime of a day in Casablanca timezone. Return (None, None) if error."""
     try:
         start = datetime.combine(date, time.min)
         end = datetime.combine(date, time.max)
         return start, end
     except Exception as e:
-        st.error(f"Error processing date: {str(e)}")
+        st.error(f"Error processing date: {e}")
         return None, None
 
 # --------------------------
 # Database Functions
 # --------------------------
 
+from contextlib import contextmanager
+
+@contextmanager
 def get_db_connection():
-    """Create and return a database connection."""
+    """Context manager for SQLite database connection."""
     os.makedirs("data", exist_ok=True)
-    return sqlite3.connect("data/requests.db")
+    conn = sqlite3.connect("data/requests.db")
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def authenticate(username, password):
-    conn = get_db_connection()
-    try:
+    """Authenticate user and return their role if credentials are valid."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         hashed_password = hash_password(password)
         cursor.execute("SELECT role FROM users WHERE LOWER(username) = LOWER(?) AND password = ?", 
                       (username, hashed_password))
         result = cursor.fetchone()
         return result[0] if result else None
-    finally:
-        conn.close()
 
 def init_db():
-    conn = get_db_connection()
-    try:
+    """Initialize the database with all required tables."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
-        
         # Create tables if they don't exist
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -77,12 +82,6 @@ def init_db():
                 group_name TEXT
             )
         """)
-        # MIGRATION: Add group_name if not exists
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
-        except Exception:
-            pass
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vip_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,7 +91,6 @@ def init_db():
                 mentions TEXT
             )
         """)
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,12 +103,6 @@ def init_db():
                 group_name TEXT
             )
         """)
-        # MIGRATION: Add group_name if not exists
-        try:
-            cursor.execute("ALTER TABLE requests ADD COLUMN group_name TEXT")
-        except Exception:
-            pass
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS mistakes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +113,6 @@ def init_db():
                 timestamp TEXT
             )
         """)
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS group_messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,17 +124,6 @@ def init_db():
                 reactions TEXT DEFAULT '{}'
             )
         """)
-        # MIGRATION: Add group_name if not exists
-        try:
-            cursor.execute("ALTER TABLE group_messages ADD COLUMN group_name TEXT")
-        except Exception:
-            pass
-        # MIGRATION: Add reactions column if not exists
-        try:
-            cursor.execute("ALTER TABLE group_messages ADD COLUMN reactions TEXT DEFAULT '{}' ")
-        except Exception:
-            pass
-        # HOLD TABLE: Add hold_tables table if not exists
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS hold_tables (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,7 +132,6 @@ def init_db():
                 timestamp TEXT
             )
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS system_settings (
                 id INTEGER PRIMARY KEY,
@@ -160,9 +139,7 @@ def init_db():
                 chat_killswitch_enabled INTEGER DEFAULT 0
             )
         """)
-        # Ensure there is always a row with id=1
         cursor.execute("INSERT OR IGNORE INTO system_settings (id, killswitch_enabled, chat_killswitch_enabled) VALUES (1, 0, 0)")
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS request_comments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,7 +150,6 @@ def init_db():
                 FOREIGN KEY(request_id) REFERENCES requests(id)
             )
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS hold_images (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -182,7 +158,6 @@ def init_db():
                 timestamp TEXT
             )
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS late_logins (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,7 +168,6 @@ def init_db():
                 timestamp TEXT
             )
         """)
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quality_issues (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -251,54 +225,45 @@ def init_db():
         conn.close()
 
 def is_killswitch_enabled():
-    conn = get_db_connection()
-    try:
+    """Return True if the system killswitch is enabled."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT killswitch_enabled FROM system_settings WHERE id = 1")
         result = cursor.fetchone()
         return bool(result[0]) if result else False
-    finally:
-        conn.close()
 
 def is_chat_killswitch_enabled():
-    conn = get_db_connection()
-    try:
+    """Return True if the chat killswitch is enabled."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT chat_killswitch_enabled FROM system_settings WHERE id = 1")
         result = cursor.fetchone()
         return bool(result[0]) if result else False
-    finally:
-        conn.close()
 
 def toggle_killswitch(enable):
-    conn = get_db_connection()
-    try:
+    """Enable or disable the system killswitch."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE system_settings SET killswitch_enabled = ? WHERE id = 1",
                       (1 if enable else 0,))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def toggle_chat_killswitch(enable):
-    conn = get_db_connection()
-    try:
+    """Enable or disable the chat killswitch."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE system_settings SET chat_killswitch_enabled = ? WHERE id = 1",
                       (1 if enable else 0,))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def add_request(agent_name, request_type, identifier, comment, group_name=None):
+    """Add a new request and its initial comment. Returns True if successful."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         timestamp = get_casablanca_time()
         if group_name is not None:
@@ -311,33 +276,26 @@ def add_request(agent_name, request_type, identifier, comment, group_name=None):
                 INSERT INTO requests (agent_name, request_type, identifier, comment, timestamp) 
                 VALUES (?, ?, ?, ?, ?)
             """, (agent_name, request_type, identifier, comment, timestamp))
-        
         request_id = cursor.lastrowid
-        
         cursor.execute("""
             INSERT INTO request_comments (request_id, user, comment, timestamp)
             VALUES (?, ?, ?, ?)
         """, (request_id, agent_name, f"Request created: {comment}", timestamp))
-        
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def get_requests():
-    conn = get_db_connection()
-    try:
+    """Return all requests ordered by timestamp descending."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM requests ORDER BY timestamp DESC")
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def search_requests(query):
-    conn = get_db_connection()
-    try:
+    """Search requests by agent name, type, identifier, or comment."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
-        query = f"%{query.lower()}%"
+        q = f"%{query.lower()}%"
         cursor.execute("""
             SELECT * FROM requests 
             WHERE LOWER(agent_name) LIKE ? 
@@ -345,33 +303,27 @@ def search_requests(query):
             OR LOWER(identifier) LIKE ? 
             OR LOWER(comment) LIKE ?
             ORDER BY timestamp DESC
-        """, (query, query, query, query))
+        """, (q, q, q, q))
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def update_request_status(request_id, completed):
+    """Update the status of a request to completed or not."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE requests SET completed = ? WHERE id = ?",
                       (1 if completed else 0, request_id))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def add_request_comment(request_id, user, comment):
+    """Add a comment to a request."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO request_comments (request_id, user, comment, timestamp)
@@ -379,12 +331,10 @@ def add_request_comment(request_id, user, comment):
         """, (request_id, user, comment, get_casablanca_time()))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def get_request_comments(request_id):
-    conn = get_db_connection()
-    try:
+    """Return all comments for a given request, ordered by timestamp ascending."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT * FROM request_comments 
@@ -392,16 +342,13 @@ def get_request_comments(request_id):
             ORDER BY timestamp ASC
         """, (request_id,))
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def add_mistake(team_leader, agent_name, ticket_id, error_description):
+    """Add a new mistake entry. Returns True if successful."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO mistakes (team_leader, agent_name, ticket_id, error_description, timestamp) 
@@ -409,17 +356,13 @@ def add_mistake(team_leader, agent_name, ticket_id, error_description):
         """, (team_leader, agent_name, ticket_id, error_description, get_casablanca_time()))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def get_mistakes():
-    conn = get_db_connection()
-    try:
+    """Return all mistakes ordered by timestamp descending."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM mistakes ORDER BY timestamp DESC")
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def search_mistakes(query):
     conn = get_db_connection()
@@ -463,11 +406,10 @@ def send_group_message(sender, message, group_name=None):
         conn.close()
 
 def get_group_messages(group_name=None):
-    # Harden: Never allow None, empty, or blank group_name to fetch all messages
+    """Return the latest 50 group messages for a given group, with parsed reactions."""
     if group_name is None or str(group_name).strip() == "":
         return []
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM group_messages WHERE group_name = ? ORDER BY timestamp DESC LIMIT 50", (group_name,))
         rows = cursor.fetchall()
@@ -484,12 +426,10 @@ def get_group_messages(group_name=None):
                 msg['reactions'] = {}
             messages.append(msg)
         return messages
-    finally:
-        conn.close()
 
 def add_reaction_to_message(message_id, emoji, username):
-    conn = get_db_connection()
-    try:
+    """Add or remove a user's reaction to a group message."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT reactions FROM group_messages WHERE id = ?", (message_id,))
         row = cursor.fetchone()
@@ -507,25 +447,21 @@ def add_reaction_to_message(message_id, emoji, username):
         cursor.execute("UPDATE group_messages SET reactions = ? WHERE id = ?", (json.dumps(reactions), message_id))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def get_all_users():
-    conn = get_db_connection()
-    try:
+    """Return all users with id, username, role, and group_name."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, username, role, group_name FROM users")
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def add_user(username, password, role, group_name=None):
+    """Add a new user. Returns True if successful, or 'exists' if user already exists."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
     import sqlite3
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         try:
             if group_name is not None:
@@ -538,47 +474,37 @@ def add_user(username, password, role, group_name=None):
             return True
         except sqlite3.IntegrityError:
             return "exists"
-    finally:
-        conn.close()
 
 def delete_user(user_id):
+    """Delete a user by their ID."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         return True
-    finally:
-        conn.close()
         
 def reset_password(username, new_password):
-    """Reset a user's password"""
+    """Reset a user's password."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         hashed_password = hash_password(new_password)
         cursor.execute("UPDATE users SET password = ? WHERE username = ?", 
                      (hashed_password, username))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def add_hold_image(uploader, image_data):
+    """Add an image to the hold_images table."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO hold_images (uploader, image_data, timestamp) 
@@ -586,74 +512,58 @@ def add_hold_image(uploader, image_data):
         """, (uploader, image_data, get_casablanca_time()))
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def get_hold_images():
-    conn = get_db_connection()
-    try:
+    """Return all hold images ordered by timestamp descending."""
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM hold_images ORDER BY timestamp DESC")
         return cursor.fetchall()
-    finally:
-        conn.close()
 
 def clear_hold_images():
+    """Delete all hold images."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM hold_images")
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def clear_all_requests():
+    """Delete all requests and request comments."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM requests")
         cursor.execute("DELETE FROM request_comments")
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def clear_all_mistakes():
+    """Delete all mistakes."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM mistakes")
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def clear_all_group_messages():
+    """Delete all group messages."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-        
-    conn = get_db_connection()
-    try:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM group_messages")
         conn.commit()
         return True
-    finally:
-        conn.close()
 
 def add_late_login(agent_name, presence_time, login_time, reason):
     if is_killswitch_enabled():
