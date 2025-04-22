@@ -603,6 +603,15 @@ def get_hold_images():
     finally:
         conn.close()
 
+def get_hold_tables():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM hold_tables ORDER BY timestamp DESC")
+        return cursor.fetchall()
+    finally:
+        conn.close()
+
 def clear_hold_images():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
