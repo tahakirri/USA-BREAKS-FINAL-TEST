@@ -2623,115 +2623,112 @@ else:
                             send_vip_message(st.session_state.username, vip_message_input.strip())
                             st.session_state['vip_chat_message'] = ''
                             st.rerun()
-
-                # Group Chat Tab
-                with selected_tab[1]:
-                    st.subheader("Group Chat")
-                    # Enforce group message visibility: agents only see their group, admin sees selected group
-                    if st.session_state.role == "admin":
-                        # Only show messages for selected group; if not selected, show none
-                        view_group = group_filter if group_filter else None
-                    else:
-                        # Agents always see only their group (look up each time)
-                        user_group = None
-                        for u in get_all_users():
-                            if u[1] == st.session_state.username:
-                                user_group = u[3]
-                                break
-                        view_group = user_group
-                    # Harden: never allow None or empty group to fetch all messages
-                    if view_group is not None and str(view_group).strip() != "":
-                        messages = get_group_messages(view_group)
-                    else:
-                        messages = []  # No group selected or group is blank, show no messages
-                        if st.session_state.role == "agent":
-                            st.warning("You are not assigned to a group. Please contact an admin.")
-                    st.markdown('''<style>
-                    .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
-                    .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
-                    .chat-message.sent {flex-direction: row-reverse;}
-                    .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
-                    .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
-                    .chat-message.sent .message-content {background: #dbeafe;}
-                    .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
-                    </style>''', unsafe_allow_html=True)
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    # Chat message rendering
-                    for msg in reversed(messages):
-                        # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
-                        if isinstance(msg, dict):
-                            msg_id = msg.get('id')
-                            sender = msg.get('sender')
-                            message = msg.get('message')
-                            ts = msg.get('timestamp')
-                            mentions = msg.get('mentions')
-                            group_name = msg.get('group_name')
-                            reactions = msg.get('reactions', {})
-                        else:
-                            # fallback for tuple
-                            if len(msg) == 7:
-                                msg_id, sender, message, ts, mentions, group_name, reactions = msg
-                                try:
-                                    reactions = json.loads(reactions) if reactions else {}
-                                except Exception:
-                                    reactions = {}
-                            else:
-                                msg_id, sender, message, ts, mentions, group_name = msg
-                                reactions = {}
-                        is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {{'sent' if is_sent else 'received'}}">
-                            <div class="message-avatar">{{sender[0].upper()}}</div>
-                            <div class="message-content">
-                                <div>{{message}}</div>
-                                <div class="message-meta">{{sender}} • {{ts}}</div>
-                            </div>
+        
+        st.subheader("🔍 Search Requests")
+        search_query = st.text_input("Search requests...")
+        # Filter requests by group
+        if st.session_state.role == "admin":
+            # Admin can filter by any group
+            if group_filter:
+                all_requests = search_requests(search_query) if search_query else get_requests()
+                requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
+            else:
+                requests = search_requests(search_query) if search_query else get_requests()
+        else:
+            # Agents can only see their own group, regardless of filter
+            user_group = None
+            for u in get_all_users():
+                if u[1] == st.session_state.username:
+                    user_group = u[3]
+                    break
+            all_requests = search_requests(search_query) if search_query else get_requests()
+            requests = [r for r in all_requests if (len(r) > 7 and r[7] == user_group)]
+        
+        st.subheader("All Requests")
+        for req in requests:
+            req_id, agent, req_type, identifier, comment, timestamp, completed, group_name = req
+            with st.container():
+                cols = st.columns([0.1, 0.9])
+                with cols[0]:
+                    st.checkbox("Done", value=bool(completed), 
+                               key=f"check_{req_id}", 
+                               on_change=update_request_status,
+                               args=(req_id, not completed))
+                with cols[1]:
+                    st.markdown(f"""
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between;">
+                            <h4>#{req_id} - {req_type}</h4>
+                            <small>{timestamp}</small>
                         </div>
+                        <p>Agent: {agent}</p>
+                        <p>Identifier: {identifier}</p>
+                        <div style="margin-top: 1rem;">
+                            <h5>Status Updates:</h5>
+                    """, unsafe_allow_html=True)
+                    
+                    comments = get_request_comments(req_id)
+                    for comment in comments:
+                        cmt_id, _, user, cmt_text, cmt_time = comment
+                        st.markdown(f"""
+                            <div class="comment-box">
+                                <div class="comment-user">
+                                    <small><strong>{user}</strong></small>
+                                    <small>{cmt_time}</small>
+                                </div>
+                                <div class="comment-text">{cmt_text}</div>
+                            </div>
                         """, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-
-                    # --- Unified Emoji Picker and Input for Group Chat ---
-                    st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
-                    emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
-                    emoji_cols = st.columns(len(emoji_choices))
-                    for i, emoji in enumerate(emoji_choices):
-                        if emoji_cols[i].button(emoji, key=f"group_emoji_picker_{emoji}"):
-                            if 'group_chat_message' not in st.session_state:
-                                st.session_state['group_chat_message'] = ''
-                            st.session_state['group_chat_message'] += emoji
+                    
                     st.markdown("</div>", unsafe_allow_html=True)
-                    with st.form("group_chat_form", clear_on_submit=True):
-                        group_message_input = st.text_area("Type your message...", key="group_chat_message")
-                        send_btn = st.form_submit_button("Send")
-                        if send_btn and group_message_input.strip():
-                            # Admin: send to selected group; Agent: always look up group from users table
-                            if st.session_state.role == "admin":
-                                send_to_group = group_filter
-            st.subheader("📋 AHT Table")
-            import pandas as pd
-            # --- HOLD Table Functions (now using SQLite for persistence) ---
-            import io
-            def add_hold_table(uploader, table_data):
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    # Only keep the latest table: clear any existing records
-                    cursor.execute("DELETE FROM hold_tables")
-                    timestamp = get_casablanca_time()  # Ensure Casablanca time
-                    cursor.execute("INSERT INTO hold_tables (uploader, table_data, timestamp) VALUES (?, ?, ?)", (uploader, table_data, timestamp))
-                    conn.commit()
-                    return True
-                finally:
-                    conn.close()
+                    
+                    if st.session_state.role == "admin":
+                        with st.form(key=f"comment_form_{req_id}"):
+                            new_comment = st.text_input("Add status update/comment")
+                            if st.form_submit_button("Add Comment"):
+                                if new_comment:
+                                    add_request_comment(req_id, st.session_state.username, new_comment)
+                                    st.rerun()
+        else:
+            st.error("System is currently locked. Access to requests is disabled.")
 
-            def get_hold_tables():
-                conn = get_db_connection()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT id, uploader, table_data, timestamp FROM hold_tables ORDER BY id DESC LIMIT 1")
-                    result = cursor.fetchall()
-                    return result
-                finally:
+elif st.session_state.current_section == "mistakes":
+    if not is_killswitch_enabled():
+        # Only show mistake reporting form to admin users
+        if st.session_state.role == "admin":
+            with st.expander("➕ Report New Mistake"):
+                with st.form("mistake_form"):
+                    cols = st.columns(3)
+                    agent_name = cols[0].text_input("Agent Name")
+                    ticket_id = cols[1].text_input("Ticket ID")
+                    error_description = st.text_area("Error Description")
+                    if st.form_submit_button("Submit"):
+                        if agent_name and ticket_id and error_description:
+                            add_mistake(st.session_state.username, agent_name, ticket_id, error_description)
+                            st.success("Mistake reported successfully!")
+                            st.rerun()
+        
+        st.subheader("🔍 Search Mistakes")
+        search_query = st.text_input("Search mistakes...")
+        mistakes = search_mistakes(search_query) if search_query else get_mistakes()
+        
+        st.subheader("Mistakes Log")
+        for mistake in mistakes:
+            m_id, tl, agent, ticket, error, ts = mistake
+            st.markdown(f"""
+            <div class="card">
+                <div style="display: flex; justify-content: space-between;">
+                    <h4>#{m_id}</h4>
+                    <small>{ts}</small>
+                </div>
+                <p>Agent: {agent}</p>
+                <p>Ticket: {ticket}</p>
+                <p>Error: {error}</p>
+                <p><small>Reported by: {tl}</small></p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.error("System is currently locked. Access to mistakes is disabled.")
                     conn.close()
 
             def clear_hold_tables():
