@@ -2691,6 +2691,50 @@ else:
                 .chat-message.sent .message-content {background: #dbeafe;}
                 .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
                 </style>''', unsafe_allow_html=True)
+                # --- Browser Notification Integration ---
+                import json
+                # Only notify for new messages for the current group, not sent by the user
+                # Fetch new messages since last check
+                if 'last_message_check' not in st.session_state:
+                    st.session_state.last_message_check = datetime.now()
+                from datetime import datetime
+                def get_new_messages_for_notification():
+                    last_check = st.session_state.last_message_check.strftime('%Y-%m-%d %H:%M:%S')
+                    group_name = view_group
+                    new_msgs = get_new_messages(last_check, group_name)
+                    st.session_state.last_message_check = datetime.now()
+                    messages_data = []
+                    for msg in new_msgs:
+                        msg_id, sender, message, ts, mentions, _group_name = msg
+                        if sender != st.session_state.username:
+                            mentions_list = mentions.split(',') if mentions else []
+                            if st.session_state.username in mentions_list:
+                                message = f"@{st.session_state.username} {message}"
+                            messages_data.append({"sender": sender, "message": message})
+                    return messages_data
+                messages_data = get_new_messages_for_notification()
+                st.components.v1.html(f"""
+                <script>
+                const messages = {json.dumps(messages_data)};
+                // Request notification permission on load
+                if (Notification && Notification.permission !== "granted") {{
+                    Notification.requestPermission();
+                }}
+                function showNotification(sender, message) {{
+                    if (Notification.permission === "granted") {{
+                        new Notification(`New message from ${{sender}}`, {{
+                            body: message,
+                            icon: "https://cdn-icons-png.flaticon.com/512/561/561127.png"
+                        }});
+                    }}
+                }}
+                if (messages.length > 0) {{
+                    messages.forEach(msg => {{
+                        showNotification(msg.sender, msg.message);
+                    }});
+                }}
+                </script>
+                """, height=0)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                 # Chat message rendering
                 for msg in reversed(messages):
