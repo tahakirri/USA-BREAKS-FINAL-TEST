@@ -2318,6 +2318,12 @@ if not st.session_state.authenticated:
     
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # Registration section
+    import register_form_component
+    with st.expander("Don't have an account? Register here!"):
+        register_form_component.registration_form()
+
+
 else:
     if is_killswitch_enabled():
         st.markdown("""
