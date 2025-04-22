@@ -2605,130 +2605,108 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    # Notification JS is rendered elsewhere via st.markdown
 
-                    # --- VIP Chat Message Input Form ---
+                    # --- Unified Emoji Picker and Input for VIP Chat ---
+                    st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
+                    emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
+                    emoji_cols = st.columns(len(emoji_choices))
+                    for i, emoji in enumerate(emoji_choices):
+                        if emoji_cols[i].button(emoji, key=f"vip_emoji_picker_{emoji}"):
+                            if 'vip_chat_message' not in st.session_state:
+                                st.session_state['vip_chat_message'] = ''
+                            st.session_state['vip_chat_message'] += emoji
+                    st.markdown("</div>", unsafe_allow_html=True)
                     with st.form("vip_chat_form", clear_on_submit=True):
                         vip_message_input = st.text_area("Type your message...", key="vip_chat_message")
                         send_btn = st.form_submit_button("Send")
                         if send_btn and vip_message_input.strip():
                             send_vip_message(st.session_state.username, vip_message_input.strip())
+                            st.session_state['vip_chat_message'] = ''
                             st.rerun()
 
-                group_filter = None
-                if st.session_state.role == "admin":
-                    all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
-                    group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
-                else:
-                    # Always look up the user's group from the users table each time
-                    user_group = None
-                    for u in get_all_users():
-                        if u[1] == st.session_state.username:
-                            user_group = u[3]
-                            break
-                    st.session_state.group_name = user_group
-                    group_filter = user_group
-
-                st.subheader("Group Chat")
-                # Enforce group message visibility: agents only see their group, admin sees selected group
-                if st.session_state.role == "admin":
-                    # Only show messages for selected group; if not selected, show none
-                    view_group = group_filter if group_filter else None
-                else:
-                    # Agents always see only their group (look up each time)
-                    user_group = None
-                    for u in get_all_users():
-                        if u[1] == st.session_state.username:
-                            user_group = u[3]
-                            break
-                    view_group = user_group
-                # Harden: never allow None or empty group to fetch all messages
-                if view_group is not None and str(view_group).strip() != "":
-                    messages = get_group_messages(view_group)
-                else:
-                    messages = []  # No group selected or group is blank, show no messages
-                    if st.session_state.role == "agent":
-                        st.warning("You are not assigned to a group. Please contact an admin.")
-                st.markdown('''<style>
-                .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
-                .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
-                .chat-message.sent {flex-direction: row-reverse;}
-                .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
-                .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
-                .chat-message.sent .message-content {background: #dbeafe;}
-                .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
-                </style>''', unsafe_allow_html=True)
-                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                # Chat message rendering
-                for msg in reversed(messages):
-                    # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
-                    if isinstance(msg, dict):
-                        msg_id = msg.get('id')
-                        sender = msg.get('sender')
-                        message = msg.get('message')
-                        ts = msg.get('timestamp')
-                        mentions = msg.get('mentions')
-                        group_name = msg.get('group_name')
-                        reactions = msg.get('reactions', {})
+                # Group Chat Tab
+                with selected_tab[1]:
+                    st.subheader("Group Chat")
+                    # Enforce group message visibility: agents only see their group, admin sees selected group
+                    if st.session_state.role == "admin":
+                        # Only show messages for selected group; if not selected, show none
+                        view_group = group_filter if group_filter else None
                     else:
-                        # fallback for tuple
-                        if len(msg) == 7:
-                            msg_id, sender, message, ts, mentions, group_name, reactions = msg
-                            try:
-                                reactions = json.loads(reactions) if reactions else {}
-                            except Exception:
-                                reactions = {}
+                        # Agents always see only their group (look up each time)
+                        user_group = None
+                        for u in get_all_users():
+                            if u[1] == st.session_state.username:
+                                user_group = u[3]
+                                break
+                        view_group = user_group
+                    # Harden: never allow None or empty group to fetch all messages
+                    if view_group is not None and str(view_group).strip() != "":
+                        messages = get_group_messages(view_group)
+                    else:
+                        messages = []  # No group selected or group is blank, show no messages
+                        if st.session_state.role == "agent":
+                            st.warning("You are not assigned to a group. Please contact an admin.")
+                    st.markdown('''<style>
+                    .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
+                    .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
+                    .chat-message.sent {flex-direction: row-reverse;}
+                    .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
+                    .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
+                    .chat-message.sent .message-content {background: #dbeafe;}
+                    .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
+                    </style>''', unsafe_allow_html=True)
+                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                    # Chat message rendering
+                    for msg in reversed(messages):
+                        # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
+                        if isinstance(msg, dict):
+                            msg_id = msg.get('id')
+                            sender = msg.get('sender')
+                            message = msg.get('message')
+                            ts = msg.get('timestamp')
+                            mentions = msg.get('mentions')
+                            group_name = msg.get('group_name')
+                            reactions = msg.get('reactions', {})
                         else:
-                            msg_id, sender, message, ts, mentions, group_name = msg
-                            reactions = {}
-                    is_sent = sender == st.session_state.username
-                    st.markdown(f"""
-                    <div class="chat-message {{'sent' if is_sent else 'received'}}">
-                        <div class="message-avatar">{{sender[0].upper()}}</div>
-                        <div class="message-content">
-                            <div>{{message}}</div>
-                            <div class="message-meta">{{sender}} • {{ts}}</div>
+                            # fallback for tuple
+                            if len(msg) == 7:
+                                msg_id, sender, message, ts, mentions, group_name, reactions = msg
+                                try:
+                                    reactions = json.loads(reactions) if reactions else {}
+                                except Exception:
+                                    reactions = {}
+                            else:
+                                msg_id, sender, message, ts, mentions, group_name = msg
+                                reactions = {}
+                        is_sent = sender == st.session_state.username
+                        st.markdown(f"""
+                        <div class="chat-message {{'sent' if is_sent else 'received'}}">
+                            <div class="message-avatar">{{sender[0].upper()}}</div>
+                            <div class="message-content">
+                                <div>{{message}}</div>
+                                <div class="message-meta">{{sender}} • {{ts}}</div>
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-                # Emoji picker for chat input
-                emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
-                st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
-                emoji_cols = st.columns(len(emoji_choices))
-                for i, emoji in enumerate(emoji_choices):
-                    if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
-                        if 'chat_input' not in st.session_state:
-                            st.session_state['chat_input'] = ''
-                        st.session_state['chat_input'] += emoji
-                st.markdown("</div>", unsafe_allow_html=True)
-                with st.form("chat_form", clear_on_submit=True):
-                    message = st.text_input("Type your message...", key="chat_input")
-                    col1, col2 = st.columns([5,1])
-                    with col2:
-                        if st.form_submit_button("Send"):
-                            if message:
-                                # Admin: send to selected group; Agent: always look up group from users table
-                                if st.session_state.role == "admin":
-                                    send_to_group = group_filter
-                                else:
-                                    # Always look up the user's group from the users table
-                                    send_to_group = None
-                                    for u in get_all_users():
-                                        if u[1] == st.session_state.username:
-                                            send_to_group = u[3]
-                                            break
-                                if send_to_group:
-                                    send_group_message(st.session_state.username, message, send_to_group)
-                                else:
-                                    st.warning("No group selected for chat.")
-                                st.rerun()
-        else:
-            st.error("System is currently locked. Access to chat is disabled.")
-
-    elif st.session_state.current_section == "Live KPIs":
-        if not is_killswitch_enabled():
+                    # --- Unified Emoji Picker and Input for Group Chat ---
+                    st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
+                    emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
+                    emoji_cols = st.columns(len(emoji_choices))
+                    for i, emoji in enumerate(emoji_choices):
+                        if emoji_cols[i].button(emoji, key=f"group_emoji_picker_{emoji}"):
+                            if 'group_chat_message' not in st.session_state:
+                                st.session_state['group_chat_message'] = ''
+                            st.session_state['group_chat_message'] += emoji
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    with st.form("group_chat_form", clear_on_submit=True):
+                        group_message_input = st.text_area("Type your message...", key="group_chat_message")
+                        send_btn = st.form_submit_button("Send")
+                        if send_btn and group_message_input.strip():
+                            # Admin: send to selected group; Agent: always look up group from users table
+                            if st.session_state.role == "admin":
+                                send_to_group = group_filter
             st.subheader("📋 AHT Table")
             import pandas as pd
             # --- HOLD Table Functions (now using SQLite for persistence) ---
