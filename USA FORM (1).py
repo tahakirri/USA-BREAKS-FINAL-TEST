@@ -1391,33 +1391,8 @@ def check_break_conflicts(selected_breaks):
     return None
 
 def agent_break_dashboard():
-    st.markdown("""
-        <div style='background:linear-gradient(90deg,#3b82f6 0,#06b6d4 100%);padding:1.5rem 1rem 1rem 1rem;border-radius:1rem;margin-bottom:1.5rem;box-shadow:0 4px 24px #0002;'>
-            <h1 style='color:white;margin-bottom:0.2em;'>🕒 Break Booking</h1>
-            <span style='color:#f1f5f9;font-size:1.1em;'>Book your breaks for today below</span>
-        </div>
-    """, unsafe_allow_html=True)
-    # --- Summary Cards ---
-    st.markdown("<div style='display:flex;gap:1rem;margin-bottom:1.2rem;'>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        today = datetime.now().strftime('%Y-%m-%d')
-        total = len(st.session_state.agent_bookings.get(today, {}))
-        st.markdown(f"""
-        <div style='background:#f1f5f9;border-radius:1rem;padding:1.2rem;text-align:center;box-shadow:0 2px 8px #0001;'>
-            <span style='font-size:2em;color:#3b82f6;font-weight:bold'>{total}</span><br>
-            <span style='color:#64748b;'>Bookings Today</span>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div style='background:#f1f5f9;border-radius:1rem;padding:1.2rem;text-align:center;box-shadow:0 2px 8px #0001;'>
-            <span style='font-size:2em;color:#06b6d4;font-weight:bold'>{len(st.session_state.get('active_templates',[]))}</span><br>
-            <span style='color:#64748b;'>Active Templates</span>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.divider()
+    st.title("Break Booking")
+    st.markdown("---")
     
     if is_killswitch_enabled():
         st.error("System is currently locked. Break booking is disabled.")
@@ -1501,7 +1476,7 @@ def agent_break_dashboard():
     
     # Break selection
     with st.form("break_selection_form"):
-        st.markdown("<h4 style='margin-bottom:0.2em;color:#3b82f6;'>🥗 Lunch Break <span style='font-size:0.7em;'>(30 minutes)</span></h4>", unsafe_allow_html=True)
+        st.write("**Lunch Break** (30 minutes)")
         lunch_options = []
         for slot in template["lunch_breaks"]:
             count = count_bookings(current_date, "lunch", slot)
@@ -1521,7 +1496,7 @@ def agent_break_dashboard():
         lunch_time = lunch_values[lunch_labels.index(lunch_time)] if lunch_time in lunch_labels else ""
 
         
-        st.markdown("<h4 style='margin-bottom:0.2em;color:#06b6d4;'>☕ Early Tea Break <span style='font-size:0.7em;'>(15 minutes)</span></h4>", unsafe_allow_html=True)
+        st.write("**Early Tea Break** (15 minutes)")
         early_tea_options = []
         for slot in template["tea_breaks"]["early"]:
             count = count_bookings(current_date, "early_tea", slot)
@@ -1540,7 +1515,7 @@ def agent_break_dashboard():
         early_tea = early_tea_values[early_tea_labels.index(early_tea)] if early_tea in early_tea_labels else ""
 
         
-        st.markdown("<h4 style='margin-bottom:0.2em;color:#6366f1;'>🍪 Late Tea Break <span style='font-size:0.7em;'>(15 minutes)</span></h4>", unsafe_allow_html=True)
+        st.write("**Late Tea Break** (15 minutes)")
         late_tea_options = []
         for slot in template["tea_breaks"]["late"]:
             count = count_bookings(current_date, "late_tea", slot)
@@ -1562,7 +1537,7 @@ def agent_break_dashboard():
         # Validate and confirm
         if st.form_submit_button("Confirm Breaks"):
             if not (lunch_time and early_tea and late_tea):
-                st.error("❗ Please select <b>all three breaks</b> before confirming.", icon="⚠️")
+                st.error("Please select all three breaks before confirming.")
                 return
             
             # Check for time conflicts
@@ -2438,37 +2413,7 @@ else:
     show_notifications()
 
     with st.sidebar:
-        # --- Sidebar Branding ---
-        st.markdown("""
-        <div style='text-align:center; margin-bottom: 1rem;'>
-            <img src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png' width='80' style='border-radius:50%; box-shadow:0 2px 8px #0002;'>
-            <h2 style='margin:0; color:#3b82f6;'>Lyca<br>Management</h2>
-        </div>
-        """, unsafe_allow_html=True)
-        # --- User Info Card ---
-        st.markdown(f"""
-        <div style='background: #f1f5f9; border-radius: 1rem; padding: 1rem; margin-bottom:1rem; box-shadow:0 2px 8px #0001;'>
-            <b>User:</b> <span style='color:#0ea5e9'>{st.session_state.get('username','')}</span><br>
-            <b>Role:</b> <span style='color:#6366f1'>{st.session_state.get('role','')}</span>
-        </div>
-        """, unsafe_allow_html=True)
-        # --- Navigation ---
-        nav_sections = [
-            ("requests", "📨 Requests"),
-            ("mistakes", "❌ Mistakes"),
-            ("chat", "💬 Chat"),
-            ("Live KPIs", "📊 KPIs"),
-            ("late_login", "⏰ Late Login"),
-            ("quality_issues", "📞 Quality Issues"),
-            ("midshift_issues", "🔄 Midshift Issues"),
-            ("fancy_number", "💎 Fancy Number"),
-        ]
-        for section, label in nav_sections:
-            if st.button(label, key=f"sidebar_nav_{section}"):
-                st.session_state.current_section = section
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.write(":bulb: <i>Switch sections using the buttons above.</i>", unsafe_allow_html=True)
-
+        # Sidebar welcome text color: dark in light mode, white in dark mode
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
         # Format username for welcome message
         username_display = st.session_state.username
