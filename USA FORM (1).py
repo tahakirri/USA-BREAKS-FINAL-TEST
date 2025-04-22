@@ -9,7 +9,6 @@ import io
 import pandas as pd
 import json
 import pytz
-from streamlit_extras.cookie_manager import CookieManager
 
 # --------------------------
 # Timezone Utility Functions
@@ -2241,40 +2240,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Persistent Login with Cookies ---
-cookie_manager = CookieManager()
-cookie_manager.get_all()  # Ensure cookies are loaded
-
-COOKIE_KEY = "lyca_login"
 SESSION_DURATION_MINUTES = 10
 
-# Check cookie for persistent login
-cookie = cookie_manager.get(COOKIE_KEY)
-now_ts = int(datetime.utcnow().timestamp())
-if cookie and not st.session_state.get("authenticated", False):
-    try:
-        cookie_data = json.loads(cookie)
-        if (
-            "username" in cookie_data and
-            "role" in cookie_data and
-            "expiry" in cookie_data and
-            now_ts < cookie_data["expiry"]
-        ):
-            st.session_state.update({
-                "authenticated": True,
-                "role": cookie_data["role"],
-                "username": cookie_data["username"],
-                "last_request_count": len(get_requests()),
-                "last_mistake_count": len(get_mistakes()),
-                "last_message_ids": [msg[0] for msg in get_group_messages()]
-            })
-        else:
-            # Expired or invalid, clear
-            cookie_manager.delete(COOKIE_KEY)
-            st.session_state.clear()
-    except Exception:
-        cookie_manager.delete(COOKIE_KEY)
-        st.session_state.clear()
+def is_session_expired():
+    if not st.session_state.get("authenticated"):
+        return False
+    last_active = st.session_state.get("last_active")
+    if not last_active:
+        return False
+    now = datetime.utcnow()
+    if (now - last_active).total_seconds() > SESSION_DURATION_MINUTES * 60:
+        return True
+    return False
+
+if is_session_expired():
+    st.session_state.clear()
+    st.experimental_rerun()
 
 # Custom sidebar background color and text color for light/dark mode
 sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
@@ -2321,23 +2302,14 @@ if not st.session_state.authenticated:
                 if username and password:
                     role = authenticate(username, password)
                     if role:
-                        expiry_ts = int((datetime.utcnow() + timedelta(minutes=SESSION_DURATION_MINUTES)).timestamp())
-                        cookie_val = json.dumps({
-                            "username": username,
-                            "role": role,
-                            "expiry": expiry_ts
-                        })
-                        cookie_manager.set(
-                            COOKIE_KEY, cookie_val,
-                            expires_at=datetime.utcfromtimestamp(expiry_ts)
-                        )
                         st.session_state.update({
                             "authenticated": True,
                             "role": role,
                             "username": username,
                             "last_request_count": len(get_requests()),
                             "last_mistake_count": len(get_mistakes()),
-                            "last_message_ids": [msg[0] for msg in get_group_messages()]
+                            "last_message_ids": [msg[0] for msg in get_group_messages()],
+                            "last_active": datetime.utcnow()
                         })
                         st.rerun()
                     else:
@@ -2345,25 +2317,11 @@ if not st.session_state.authenticated:
     
     st.markdown("</div>", unsafe_allow_html=True)
 else:
-    # Expire session if needed
-    cookie = cookie_manager.get(COOKIE_KEY)
-    now_ts = int(datetime.utcnow().timestamp())
-    expired = False
-    if cookie:
-        try:
-            cookie_data = json.loads(cookie)
-            if "expiry" in cookie_data and now_ts >= cookie_data["expiry"]:
-                expired = True
-        except Exception:
-            expired = True
-    if expired:
-        cookie_manager.delete(COOKIE_KEY)
-        st.session_state.clear()
-        st.experimental_rerun()
+    # Update last_active on every interaction
+    st.session_state.last_active = datetime.utcnow()
     # Add logout button
     with st.sidebar:
         if st.button("Logout"):
-            cookie_manager.delete(COOKIE_KEY)
             st.session_state.clear()
             st.experimental_rerun()
     if is_killswitch_enabled():
