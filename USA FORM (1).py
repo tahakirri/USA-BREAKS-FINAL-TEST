@@ -1105,42 +1105,24 @@ def clear_all_bookings():
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
+    
     try:
-        # Preserve admin bookings
-        admins = [user[1] for user in get_all_users() if user[2] == 'admin']
-        preserved = {}
-        for date, bookings in st.session_state.agent_bookings.items():
-            for agent, agent_booking in bookings.items():
-                if agent in admins:
-                    if date not in preserved:
-                        preserved[date] = {}
-                    preserved[date][agent] = agent_booking
-        # Overwrite with only admin bookings
-        st.session_state.agent_bookings = preserved
-
-        # Clear the bookings file but preserve admin bookings
+        # Clear session state bookings
+        st.session_state.agent_bookings = {}
+        
+        # Clear the bookings file
         if os.path.exists('all_bookings.json'):
-            try:
-                with open('all_bookings.json', 'r') as f:
-                    all_bookings = json.load(f)
-            except Exception:
-                all_bookings = {}
-            new_bookings = {}
-            for date, bookings in all_bookings.items():
-                for agent, agent_booking in bookings.items():
-                    if agent in admins:
-                        if date not in new_bookings:
-                            new_bookings[date] = {}
-                        new_bookings[date][agent] = agent_booking
             with open('all_bookings.json', 'w') as f:
-                json.dump(new_bookings, f)
-
-        # Save state
+                json.dump({}, f)
+        
+        # Save empty state to ensure it's propagated
         save_break_data()
+        
         # Force session state refresh
         st.session_state.last_request_count = 0
         st.session_state.last_mistake_count = 0
         st.session_state.last_message_ids = []
+        
         return True
     except Exception as e:
         st.error(f"Error clearing bookings: {str(e)}")
@@ -1400,8 +1382,11 @@ def admin_break_dashboard():
                     "Agent": agent,
                     "Template": template_name or "Unknown",
                     "Lunch": breaks.get("lunch", {}).get("time", "-") if isinstance(breaks.get("lunch"), dict) else breaks.get("lunch", "-"),
+                    "Lunch Booked At": breaks.get("lunch", {}).get("booked_at", "-") if isinstance(breaks.get("lunch"), dict) else "-",
                     "Early Tea": breaks.get("early_tea", {}).get("time", "-") if isinstance(breaks.get("early_tea"), dict) else breaks.get("early_tea", "-"),
-                    "Late Tea": breaks.get("late_tea", {}).get("time", "-") if isinstance(breaks.get("late_tea"), dict) else breaks.get("late_tea", "-")
+                    "Early Tea Booked At": breaks.get("early_tea", {}).get("booked_at", "-") if isinstance(breaks.get("early_tea"), dict) else "-",
+                    "Late Tea": breaks.get("late_tea", {}).get("time", "-") if isinstance(breaks.get("late_tea"), dict) else breaks.get("late_tea", "-"),
+                    "Late Tea Booked At": breaks.get("late_tea", {}).get("booked_at", "-") if isinstance(breaks.get("late_tea"), dict) else "-"
                 }
                 bookings_data.append(booking)
             
@@ -1486,19 +1471,28 @@ def agent_break_dashboard():
     agent_id = st.session_state.username
     current_date = datetime.now().strftime('%Y-%m-%d')
     
+    # --- Clear today's bookings after 5 AM if not already cleared ---
+    # Use session_state to track last clear date
+    if 'last_booking_clear_date' not in st.session_state:
+        st.session_state.last_booking_clear_date = None
+    # --- Use Casablanca time for 5am logic ---
+    morocco_tz = pytz.timezone('Africa/Casablanca')
+    now_casa = datetime.now(morocco_tz)
+    casa_date = now_casa.strftime('%Y-%m-%d')
+    if now_casa.hour >= 5:
+        if st.session_state.last_booking_clear_date != casa_date:
+            # Clear only today's bookings (Casablanca date)
+            st.session_state.agent_bookings[casa_date] = {}
+            st.session_state.last_booking_clear_date = casa_date
+            save_break_data()
+    current_date = casa_date  # Use Casablanca date for all booking logic
     # Check if agent already has confirmed bookings
     has_confirmed_bookings = (
         current_date in st.session_state.agent_bookings and 
         agent_id in st.session_state.agent_bookings[current_date]
     )
-
-    # Casablanca time logic
-    morocco_tz = pytz.timezone('Africa/Casablanca')
-    now_casa = datetime.now(morocco_tz)
-    cutoff_time = now_casa.replace(hour=23, minute=2, second=0, microsecond=0)
-    after_cutoff = now_casa >= cutoff_time
-
-    if has_confirmed_bookings and not after_cutoff:
+    
+    if has_confirmed_bookings:
         st.success("Your breaks have been confirmed for today")
         st.subheader("Your Confirmed Breaks")
         bookings = st.session_state.agent_bookings[current_date][agent_id]
@@ -1507,8 +1501,10 @@ def agent_break_dashboard():
             if break_type in bookings and isinstance(bookings[break_type], dict):
                 template_name = bookings[break_type].get('template')
                 break
+        
         if template_name:
             st.info(f"Template: **{template_name}**")
+        
         for break_type, display_name in [
             ("lunch", "Lunch Break"),
             ("early_tea", "Early Tea Break"),
@@ -1516,19 +1512,14 @@ def agent_break_dashboard():
         ]:
             if break_type in bookings:
                 if isinstance(bookings[break_type], dict):
-                    st.write(f"**{display_name}:** {bookings[break_type]['time']}")
+                    booked_at = bookings[break_type].get('booked_at', None)
+                    if booked_at:
+                        st.write(f"**{display_name}:** {bookings[break_type]['time']}  ", f"(Booked at: {booked_at})")
+                    else:
+                        st.write(f"**{display_name}:** {bookings[break_type]['time']}")
                 else:
                     st.write(f"**{display_name}:** {bookings[break_type]}")
         return
-    elif has_confirmed_bookings and after_cutoff:
-        # Allow agent to rebook after 23:02 by clearing their booking for today
-        if st.button("It's after 23:02pm. Click to rebook your breaks for today."):
-            del st.session_state.agent_bookings[current_date][agent_id]
-            st.session_state.booking_confirmed = False
-            st.session_state.selected_template_name = None
-            st.session_state.temp_bookings = {}
-            st.success("You can now rebook your breaks for today.")
-            st.rerun()
     
     # Determine agent's assigned templates
     agent_templates = []
