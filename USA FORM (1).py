@@ -2606,6 +2606,15 @@ else:
                         """, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     # Notification JS is rendered elsewhere via st.markdown
+
+                    # --- VIP Chat Message Input Form ---
+                    with st.form("vip_chat_form", clear_on_submit=True):
+                        vip_message_input = st.text_area("Type your message...", key="vip_chat_message")
+                        send_btn = st.form_submit_button("Send")
+                        if send_btn and vip_message_input.strip():
+                            send_vip_message(st.session_state.username, vip_message_input.strip())
+                            st.rerun()
+
                 group_filter = None
                 if st.session_state.role == "admin":
                     all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
