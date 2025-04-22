@@ -2811,88 +2811,29 @@ else:
             st.markdown("""
             <div id="notification-container"></div>
             <script>
-                    group_filter = None
-                    if st.session_state.role == "admin":
-                        all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
-                        group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group_group")
-                    else:
-                        # Always look up the user's group from the users table each time
-                        user_group = None
-                        for u in get_all_users():
-                            if u[1] == st.session_state.username:
-                                user_group = u[3]
-                                break
-                        st.session_state.group_name = user_group
-                        group_filter = user_group
+            // Check if notifications are supported
+            if ('Notification' in window) {
+                const container = document.getElementById('notification-container');
+                if (Notification.permission === 'default') {
+                    container.innerHTML = `
+                        <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
+                            <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
+                            <button onclick=\"requestNotificationPermission()\" style=\"margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;\">
+                                Enable Notifications
+                            </button>
+                        </div>
+                    `;
+                }
+            }
 
-                    st.subheader("Group Chat")
-                    # Enforce group message visibility: agents only see their group, admin sees selected group
-                    if st.session_state.role == "admin":
-                        # Only show messages for selected group; if not selected, show none
-                        view_group = group_filter if group_filter else None
-                    else:
-                        # Agents always see only their group (look up each time)
-                        user_group = None
-                        for u in get_all_users():
-                            if u[1] == st.session_state.username:
-                                user_group = u[3]
-                                break
-                        view_group = user_group
-                    # Harden: never allow None or empty group to fetch all messages
-                    if view_group is not None and str(view_group).strip() != "":
-                        messages = get_group_messages(view_group)
-                    else:
-                        messages = []  # No group selected or group is blank, show no messages
-                        if st.session_state.role == "agent":
-                            st.warning("You are not assigned to a group. Please contact an admin.")
-                    st.markdown('''<style>
-                    .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
-                    .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
-                    .chat-message.sent {flex-direction: row-reverse;}
-                    .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
-                    .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
-                    .chat-message.sent .message-content {background: #dbeafe;}
-                    .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
-                    </style>''', unsafe_allow_html=True)
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    # Chat message rendering
-                    for msg in reversed(messages):
-                        # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
-                        if isinstance(msg, dict):
-                            msg_id = msg.get('id')
-                            sender = msg.get('sender')
-                            message = msg.get('message')
-                            ts = msg.get('timestamp')
-                            mentions = msg.get('mentions')
-                            group_name = msg.get('group_name')
-                            reactions = msg.get('reactions', {})
-                        else:
-                            # fallback for tuple
-                            if len(msg) == 7:
-                                msg_id, sender, message, ts, mentions, group_name, reactions = msg
-                                try:
-                                    reactions = json.loads(reactions) if reactions else {}
-                                except Exception:
-                                    reactions = {}
-                            else:
-                                msg_id, sender, message, ts, mentions, group_name = msg
-                                reactions = {}
-                        is_sent = sender == st.session_state.username
-                        chat_class = "sent" if is_sent else "received"
-                        msg_html = f'''<div class="chat-message {chat_class}">
-    <div class="message-avatar">{sender[0].upper()}</div>
-    <div class="message-content">
-        <div>{message}</div>
-        <div class="message-meta">{ts}</div>
-    </div>
-</div>'''
-                        st.markdown(msg_html, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    # --- End group chat logic ---
-            # Add notification permission request
-            st.markdown("""
-            <div id="notification-container"></div>
-            <script>
+            async function requestNotificationPermission() {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('notification-container').style.display = 'none';
+                }
+            }
+            </script>
+            """, unsafe_allow_html=True)
             // Check if notifications are supported
             if ('Notification' in window) {
                 const container = document.getElementById('notification-container');
