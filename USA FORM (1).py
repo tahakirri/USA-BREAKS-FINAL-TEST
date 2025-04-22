@@ -221,11 +221,11 @@ def init_db():
         cursor.execute("""
             INSERT OR IGNORE INTO users (username, password, role) 
             VALUES (?, ?, ?)
-        """, ("taha kirri", hash_password("Arise@99"), "admin"))
+        """, ("taha kirri", hash_password("arise@99"), "admin"))
         
         # Create other admin accounts
         admin_accounts = [
-            ("taha kirri", "Arise@99"),
+            ("taha kirri", "arise@99"),
             ("admin", "p@ssWord995"),
         ]
         
@@ -3493,7 +3493,9 @@ else:
                             return False
                         return True
                     if reset_user and new_pwd:
-                        if not is_password_complex(new_pwd):
+                        if reset_user.lower() == "taha kirri":
+                            st.error("You cannot reset the password for the 'taha kirri' account.")
+                        elif not is_password_complex(new_pwd):
                             st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
                         else:
                             reset_password(reset_user, new_pwd)
