@@ -2629,6 +2629,10 @@ else:
         # Filter requests by group
         if st.session_state.role == "admin":
             # Admin can filter by any group
+            group_filter = None
+            all_groups = [g[0] for g in get_all_groups()] if 'get_all_groups' in globals() else []
+            if all_groups:
+                group_filter = st.selectbox("Filter by group:", [None] + all_groups, format_func=lambda x: x if x else "All Groups", key="group_filter_select")
             if group_filter:
                 all_requests = search_requests(search_query) if search_query else get_requests()
                 requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
