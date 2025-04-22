@@ -2320,7 +2320,34 @@ if not st.session_state.authenticated:
 
     # Registration section
     import re
-    from user_utils import register_account, get_all_users
+    import sqlite3
+    import hashlib
+    def get_db_connection():
+        import os
+        os.makedirs("data", exist_ok=True)
+        return sqlite3.connect("data/requests.db")
+    def hash_password(password):
+        return hashlib.sha256(password.encode()).hexdigest()
+    def get_all_users():
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users")
+            return cursor.fetchall()
+        finally:
+            conn.close()
+    def register_account(username, password, role, group_name=None):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
+            if cursor.fetchone():
+                return False
+            cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)", (username, hash_password(password), role, group_name))
+            conn.commit()
+            return True
+        finally:
+            conn.close()
     with st.expander("Don't have an account? Register here!"):
         st.subheader("Create a New Account")
         username = st.text_input("Choose a Username", key="register_username")
