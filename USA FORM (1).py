@@ -221,8 +221,6 @@ def init_db():
             """, (agent_name, hash_password(workspace_id), "agent"))
         
         conn.commit()
-    finally:
-        conn.close()
 
 def is_killswitch_enabled():
     """Return True if the system killswitch is enabled."""
@@ -807,34 +805,38 @@ def bulk_update_template_times(hours):
         return False
 
 def save_break_data():
-    with open('templates.json', 'w') as f:
-        json.dump(st.session_state.templates, f)
-    with open('break_limits.json', 'w') as f:
-        json.dump(st.session_state.break_limits, f)
-    with open('all_bookings.json', 'w') as f:
-        json.dump(st.session_state.agent_bookings, f)
-    with open('active_templates.json', 'w') as f:
-        json.dump(st.session_state.active_templates, f)
+    """Save break-related session state to disk using context managers."""
+    try:
+        with open('templates.json', 'w') as f:
+            json.dump(st.session_state.templates, f)
+        with open('break_limits.json', 'w') as f:
+            json.dump(st.session_state.break_limits, f)
+        with open('all_bookings.json', 'w') as f:
+            json.dump(st.session_state.agent_bookings, f)
+        with open('active_templates.json', 'w') as f:
+            json.dump(st.session_state.active_templates, f)
+    except Exception as e:
+        st.error(f"Error saving break data: {e}")
 
 def adjust_time(time_str, offset):
+    """Adjust a time string by a given hour offset. Return original if invalid."""
     try:
         if not time_str.strip():
             return ""
         time_obj = datetime.strptime(time_str.strip(), "%H:%M")
         adjusted_time = (time_obj + timedelta(hours=offset)).time()
         return adjusted_time.strftime("%H:%M")
-    except:
+    except Exception:
         return time_str
 
 def adjust_template_times(template, offset):
-    """Safely adjust template times with proper error handling"""
+    """Return a template with all times adjusted by the given offset. On error, return empty template."""
     try:
         if not template or not isinstance(template, dict):
             return {
                 "lunch_breaks": [],
                 "tea_breaks": {"early": [], "late": []}
             }
-            
         adjusted_template = {
             "lunch_breaks": [adjust_time(t, offset) for t in template.get("lunch_breaks", [])],
             "tea_breaks": {
@@ -844,22 +846,23 @@ def adjust_template_times(template, offset):
         }
         return adjusted_template
     except Exception as e:
-        st.error(f"Error adjusting template times: {str(e)}")
+        st.error(f"Error adjusting template times: {e}")
         return {
             "lunch_breaks": [],
             "tea_breaks": {"early": [], "late": []}
         }
 
 def count_bookings(date, break_type, time_slot):
+    """Count how many agents have booked a given break type and time slot on a date."""
     count = 0
-    if date in st.session_state.agent_bookings:
-        for agent_id, breaks in st.session_state.agent_bookings[date].items():
-            if break_type == "lunch" and "lunch" in breaks and breaks["lunch"] == time_slot:
-                count += 1
-            elif break_type == "early_tea" and "early_tea" in breaks and breaks["early_tea"] == time_slot:
-                count += 1
-            elif break_type == "late_tea" and "late_tea" in breaks and breaks["late_tea"] == time_slot:
-                count += 1
+    bookings = st.session_state.agent_bookings.get(date, {})
+    for agent_id, breaks in bookings.items():
+        if break_type == "lunch" and breaks.get("lunch") == time_slot:
+            count += 1
+        elif break_type == "early_tea" and breaks.get("early_tea") == time_slot:
+            count += 1
+        elif break_type == "late_tea" and breaks.get("late_tea") == time_slot:
+            count += 1
     return count
 
 def display_schedule(template):
@@ -897,10 +900,10 @@ def display_schedule(template):
     """)
 
 def migrate_booking_data():
+    """Upgrade agent_bookings data structure to new format if needed, and save if changed."""
     if 'agent_bookings' in st.session_state:
-        for date in st.session_state.agent_bookings:
-            for agent in st.session_state.agent_bookings[date]:
-                bookings = st.session_state.agent_bookings[date][agent]
+        for date, agents in st.session_state.agent_bookings.items():
+            for agent, bookings in agents.items():
                 if "lunch" in bookings and isinstance(bookings["lunch"], str):
                     bookings["lunch"] = {
                         "time": bookings["lunch"],
@@ -919,34 +922,29 @@ def migrate_booking_data():
                         "template": "Default Template",
                         "booked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     }
-        
         save_break_data()
 
 def clear_all_bookings():
+    """Clear all agent bookings from session state and disk."""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
-    
     try:
         # Clear session state bookings
         st.session_state.agent_bookings = {}
-        
         # Clear the bookings file
         if os.path.exists('all_bookings.json'):
             with open('all_bookings.json', 'w') as f:
                 json.dump({}, f)
-        
         # Save empty state to ensure it's propagated
         save_break_data()
-        
         # Force session state refresh
         st.session_state.last_request_count = 0
         st.session_state.last_mistake_count = 0
         st.session_state.last_message_ids = []
-        
         return True
     except Exception as e:
-        st.error(f"Error clearing bookings: {str(e)}")
+        st.error(f"Error clearing bookings: {e}")
         return False
 
 def admin_break_dashboard():
