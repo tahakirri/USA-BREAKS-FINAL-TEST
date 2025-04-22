@@ -250,21 +250,6 @@ def init_db():
     finally:
         conn.close()
 
-def register_account(username, password, role, group_name=None):
-    # Returns True if created, False if exists
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
-        if cursor.fetchone():
-            return False
-        cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)", (username, hash_password(password), role, group_name))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-
-
 def is_killswitch_enabled():
     conn = get_db_connection()
     try:
@@ -2286,10 +2271,6 @@ init_db()
 init_break_session_state()
 
 if not st.session_state.authenticated:
-    # Show 'account created' notification if flagged
-    if st.session_state.get("account_created"):
-        st.toast("✅ Account created successfully! You can now log in.", duration=5)
-        st.session_state.account_created = False
     st.markdown("""
         <div class="login-container">
             <h1 style="text-align: center; margin-bottom: 2rem;">💠 Lyca Management System</h1>
@@ -2318,64 +2299,6 @@ if not st.session_state.authenticated:
     
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Registration section
-    import re
-    import sqlite3
-    import hashlib
-    def get_db_connection():
-        import os
-        os.makedirs("data", exist_ok=True)
-        return sqlite3.connect("data/requests.db")
-    def hash_password(password):
-        return hashlib.sha256(password.encode()).hexdigest()
-    def get_all_users():
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users")
-            return cursor.fetchall()
-        finally:
-            conn.close()
-    def register_account(username, password, role, group_name=None):
-        conn = get_db_connection()
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
-            if cursor.fetchone():
-                return False
-            cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)", (username, hash_password(password), role, group_name))
-            conn.commit()
-            return True
-        finally:
-            conn.close()
-    with st.expander("Don't have an account? Register here!"):
-        st.subheader("Create a New Account")
-        username = st.text_input("Choose a Username", key="register_username")
-        password = st.text_input("Choose a Password", type="password", key="register_password")
-        role = st.selectbox("Select Role", ["agent", "admin", "qa"], key="register_role")
-        # Get existing groups
-        users = get_all_users()
-        existing_groups = sorted(set([u[3] for u in users if u[3]]))
-        group_options = existing_groups + ["Create new group..."]
-        group_choice = st.selectbox("Select Group", group_options, key="register_group")
-        new_group = None
-        if group_choice == "Create new group...":
-            new_group = st.text_input("Enter New Group Name", key="register_new_group")
-        group_name = new_group if new_group else group_choice
-        if st.button("Register", key="register_submit"):
-            if not username or not password or not group_name:
-                st.warning("Please fill all fields.")
-            elif not re.match(r'^[\w\- ]+$', group_name):
-                st.warning("Group name can only contain letters, numbers, spaces, dashes, and underscores.")
-            else:
-                created = register_account(username, password, role, group_name)
-                if created:
-                    st.session_state["account_created"] = True
-                    st.rerun()
-                else:
-                    st.error("Username already exists. Please choose another.")
-
-
 else:
     if is_killswitch_enabled():
         st.markdown("""
@@ -2399,12 +2322,12 @@ else:
         
         new_requests = len(current_requests) - st.session_state.last_request_count
         if new_requests > 0 and st.session_state.last_request_count > 0:
-            st.toast(f"📋 {new_requests} new request(s) submitted!", duration=5)
+            st.toast(f"📋 {new_requests} new request(s) submitted!")
         st.session_state.last_request_count = len(current_requests)
         
         new_mistakes = len(current_mistakes) - st.session_state.last_mistake_count
         if new_mistakes > 0 and st.session_state.last_mistake_count > 0:
-            st.toast(f"❌ {new_mistakes} new mistake(s) reported!", duration=5)
+            st.toast(f"❌ {new_mistakes} new mistake(s) reported!")
         st.session_state.last_mistake_count = len(current_mistakes)
         
         current_message_ids = [msg[0] for msg in current_messages]
@@ -2413,9 +2336,9 @@ else:
             if msg[1] != st.session_state.username:
                 mentions = msg[4].split(',') if msg[4] else []
                 if st.session_state.username in mentions:
-                    st.toast(f"💬 You were mentioned by {msg[1]}!", duration=5)
+                    st.toast(f"💬 You were mentioned by {msg[1]}!")
                 else:
-                    st.toast(f"💬 New message from {msg[1]}!", duration=5)
+                    st.toast(f"💬 New message from {msg[1]}!")
         st.session_state.last_message_ids = current_message_ids
 
     show_notifications()
