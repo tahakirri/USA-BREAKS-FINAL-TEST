@@ -2693,46 +2693,56 @@ else:
                 </style>''', unsafe_allow_html=True)
                 # --- Browser Notification Integration ---
                 import json
-                # Only notify for new messages for the current group, not sent by the user
-                # Fetch new messages since last check
-                if 'last_message_check' not in st.session_state:
-                    st.session_state.last_message_check = datetime.now()
-                from datetime import datetime
-                def get_new_messages_for_notification():
-                    last_check = st.session_state.last_message_check.strftime('%Y-%m-%d %H:%M:%S')
-                    group_name = view_group
-                    new_msgs = get_new_messages(last_check, group_name)
-                    st.session_state.last_message_check = datetime.now()
-                    messages_data = []
-                    for msg in new_msgs:
-                        msg_id, sender, message, ts, mentions, _group_name = msg
-                        if sender != st.session_state.username:
-                            mentions_list = mentions.split(',') if mentions else []
-                            if st.session_state.username in mentions_list:
-                                message = f"@{st.session_state.username} {message}"
-                            messages_data.append({"sender": sender, "message": message})
-                    return messages_data
-                messages_data = get_new_messages_for_notification()
+                # Use the same polling logic as chat to avoid duplicate DB calls and errors
+                # messages is already fetched for view_group and only contains messages for the current group
+                # Filter only new messages not sent by the current user (for notification)
+                if 'last_notified_message_ids' not in st.session_state:
+                    st.session_state['last_notified_message_ids'] = set()
+                notified_ids = st.session_state['last_notified_message_ids']
+                # Find new messages (not sent by current user, not already notified)
+                messages_data = []
+                new_notified_ids = set()
+                for msg in messages:
+                    # Support both dict and tuple
+                    if isinstance(msg, dict):
+                        msg_id = msg.get('id')
+                        sender = msg.get('sender')
+                        message = msg.get('message')
+                    else:
+                        msg_id = msg[0]
+                        sender = msg[1]
+                        message = msg[2]
+                    if sender != st.session_state.username and msg_id not in notified_ids:
+                        messages_data.append({"sender": sender, "message": message})
+                        new_notified_ids.add(msg_id)
+                # Update notified IDs (keep only the last 100 for memory safety)
+                st.session_state['last_notified_message_ids'].update(new_notified_ids)
+                if len(st.session_state['last_notified_message_ids']) > 100:
+                    st.session_state['last_notified_message_ids'] = set(list(st.session_state['last_notified_message_ids'])[-100:])
                 st.components.v1.html(f"""
                 <script>
                 const messages = {json.dumps(messages_data)};
-                // Request notification permission on load
-                if (Notification && Notification.permission !== "granted") {{
-                    Notification.requestPermission();
-                }}
-                function showNotification(sender, message) {{
-                    if (Notification.permission === "granted") {{
-                        new Notification(`New message from ${{sender}}`, {{
-                            body: message,
-                            icon: "https://cdn-icons-png.flaticon.com/512/561/561127.png"
+                function requestAndShowNotifications() {{
+                    if (!('Notification' in window)) return;
+                    if (Notification.permission === "default") {{
+                        Notification.requestPermission().then(function(permission) {{
+                            if(permission !== "granted") {{
+                                window.parent.postMessage({type: 'notification-denied'}, '*');
+                            }}
                         }});
                     }}
+                    if (Notification.permission === "granted") {{
+                        if (messages.length > 0) {{
+                            messages.forEach(msg => {{
+                                new Notification(`New message from ${{msg.sender}}`, {{
+                                    body: msg.message,
+                                    icon: "https://cdn-icons-png.flaticon.com/512/561/561127.png"
+                                }});
+                            }});
+                        }}
+                    }}
                 }}
-                if (messages.length > 0) {{
-                    messages.forEach(msg => {{
-                        showNotification(msg.sender, msg.message);
-                    }});
-                }}
+                requestAndShowNotifications();
                 </script>
                 """, height=0)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
