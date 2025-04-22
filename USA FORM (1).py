@@ -2640,7 +2640,7 @@ else:
                 st.markdown('</div>', unsafe_allow_html=True)
                 with st.form("private_message_form"):
                     private_msg = st.text_input("Send a private message", key="private_msg")
-                    if st.form_submit_button("Send", key="private_send"):
+                    if st.form_submit_button("Send"):
                         if private_msg.strip():
                             send_group_message(st.session_state.username, private_msg, private_group)
                             st.rerun()
