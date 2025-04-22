@@ -28,6 +28,23 @@ def ensure_break_templates_column():
 
 ensure_break_templates_column()
 
+def ensure_group_messages_reactions_column():
+    conn = sqlite3.connect("data/requests.db")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(group_messages)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "reactions" not in columns:
+            try:
+                cursor.execute("ALTER TABLE group_messages ADD COLUMN reactions TEXT DEFAULT '{}' ")
+                conn.commit()
+            except Exception:
+                pass
+    finally:
+        conn.close()
+
+ensure_group_messages_reactions_column()
+
 # --------------------------
 # Timezone Utility Functions
 # --------------------------
@@ -1527,6 +1544,9 @@ def agent_break_dashboard():
 
     
     # Step 2: Break Selection
+    if st.session_state.selected_template_name not in st.session_state.templates:
+        st.error("Your assigned break schedule is not available. Please contact your administrator.")
+        return
     template = st.session_state.templates[st.session_state.selected_template_name]
     
     st.subheader("Step 2: Select Your Breaks")
