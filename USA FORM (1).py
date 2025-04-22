@@ -3840,7 +3840,7 @@ else:
                     if is_fancy:
                         st.markdown(f"""
                         <div class="result-box fancy-result">
-                            <h3><span class="fancy-number">✨ {formatted_num} ✨</span></h3>
+                            <h3><span class="fancy-number">&#10024; {formatted_num} &#10024;</span></h3>
                             <p>FANCY NUMBER DETECTED!</p>
                             <p><strong>Pattern:</strong> {pattern}</p>
                         </div>
