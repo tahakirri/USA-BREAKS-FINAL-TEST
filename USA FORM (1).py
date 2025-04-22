@@ -2378,7 +2378,13 @@ else:
     with st.sidebar:
         # Sidebar welcome text color: dark in light mode, white in dark mode
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
-        st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {st.session_state.username}</h2>', unsafe_allow_html=True)
+        # Format username for welcome message
+        username_display = st.session_state.username
+        if username_display.lower() == "amal hichy":
+            username_display = "Amal Hichy ❤️"
+        else:
+            username_display = username_display.title()
+        st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {username_display}</h2>', unsafe_allow_html=True)
         
         # Theme toggle
         col1, col2 = st.columns([1, 6])
