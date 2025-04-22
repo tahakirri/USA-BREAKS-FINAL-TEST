@@ -2588,13 +2588,24 @@ else:
                 tab_names = ["VIP Chat", "Group Chat"]
                 selected_tab = st.tabs(tab_names)
                 # VIP Chat Tab
-                # VIP Chat Tab rendering continues here (no JS code outside markdown)
-                # (Notification JS is rendered elsewhere via st.markdown)
-            
-            if is_chat_killswitch_enabled():
-                st.warning("Chat functionality is currently disabled by the administrator.")
-            else:
-                # Group chat group selection
+                with selected_tab[0]:
+                    st.subheader(":star: VIP Chat Room")
+                    vip_messages = get_vip_messages()
+                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                    for msg in reversed(vip_messages):
+                        msg_id, sender, message, ts, mentions = msg
+                        is_sent = sender == st.session_state.username
+                        st.markdown(f"""
+                        <div class="chat-message {'sent' if is_sent else 'received'}">
+                            <div class="message-avatar">{sender[0].upper()}</div>
+                            <div class="message-content">
+                                <div>{message}</div>
+                                <div class="message-meta">{sender} • {ts}</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    # Notification JS is rendered elsewhere via st.markdown
                 group_filter = None
                 if st.session_state.role == "admin":
                     all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
