@@ -250,6 +250,21 @@ def init_db():
     finally:
         conn.close()
 
+def register_account(username, password, role, group_name=None):
+    # Returns True if created, False if exists
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
+        if cursor.fetchone():
+            return False
+        cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)", (username, hash_password(password), role, group_name))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
 def is_killswitch_enabled():
     conn = get_db_connection()
     try:
@@ -2271,6 +2286,10 @@ init_db()
 init_break_session_state()
 
 if not st.session_state.authenticated:
+    # Show 'account created' notification if flagged
+    if st.session_state.get("account_created"):
+        st.toast("✅ Account created successfully! You can now log in.", duration=5)
+        st.session_state.account_created = False
     st.markdown("""
         <div class="login-container">
             <h1 style="text-align: center; margin-bottom: 2rem;">💠 Lyca Management System</h1>
