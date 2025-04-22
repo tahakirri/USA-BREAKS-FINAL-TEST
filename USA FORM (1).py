@@ -2691,56 +2691,6 @@ else:
                 .chat-message.sent .message-content {background: #dbeafe;}
                 .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
                 </style>''', unsafe_allow_html=True)
-                # --- Browser Notification Integration ---
-                import json
-                # Use the same polling logic as chat to avoid duplicate DB calls and errors
-                # messages is already fetched for view_group and only contains messages for the current group
-                # Filter only new messages not sent by the current user (for notification)
-                if 'last_notified_message_ids' not in st.session_state:
-                    st.session_state['last_notified_message_ids'] = set()
-                notified_ids = st.session_state['last_notified_message_ids']
-                # Find new messages (not sent by current user, not already notified)
-                messages_data = []
-                new_notified_ids = set()
-                for msg in messages:
-                    # Support both dict and tuple
-                    if isinstance(msg, dict):
-                        msg_id = msg.get('id')
-                        sender = msg.get('sender')
-                        message = msg.get('message')
-                    else:
-                        msg_id = msg[0]
-                        sender = msg[1]
-                        message = msg[2]
-                    if sender != st.session_state.username and msg_id not in notified_ids:
-                        messages_data.append({"sender": sender, "message": message})
-                        new_notified_ids.add(msg_id)
-                # Update notified IDs (keep only the last 100 for memory safety)
-                st.session_state['last_notified_message_ids'].update(new_notified_ids)
-                if len(st.session_state['last_notified_message_ids']) > 100:
-                    st.session_state['last_notified_message_ids'] = set(list(st.session_state['last_notified_message_ids'])[-100:])
-                st.components.v1.html(f"""
-                <script>
-                const messages = {json.dumps(messages_data)};
-                function requestAndShowNotifications() {{
-                    if (!('Notification' in window)) return;
-                    if (Notification.permission === "default") {{
-                        Notification.requestPermission();
-                    }}
-                    if (Notification.permission === "granted") {{
-                        if (messages.length > 0) {{
-                            messages.forEach(msg => {{
-                                new Notification(`New message from ${{msg.sender}}`, {{
-                                    body: msg.message,
-                                    icon: "https://cdn-icons-png.flaticon.com/512/561/561127.png"
-                                }});
-                            }});
-                        }}
-                    }}
-                }}
-                requestAndShowNotifications();
-                </script>
-                """, height=0)
                 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
                 # Chat message rendering
                 for msg in reversed(messages):
