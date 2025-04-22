@@ -2692,7 +2692,8 @@ else:
         else:
             st.error("System is currently locked. Access to requests is disabled.")
 
-elif st.session_state.current_section == "mistakes":
+if st.session_state.current_section == "mistakes":
+
     if not is_killswitch_enabled():
         # Only show mistake reporting form to admin users
         if st.session_state.role == "admin":
