@@ -1522,9 +1522,9 @@ def agent_break_dashboard():
         st.subheader("Step 1: Select Break Schedule")
         # Only show templates the agent is assigned to
         available_templates = [t for t in st.session_state.active_templates if t in agent_templates] if agent_templates else []
-        if not available_templates:
+        if not available_templates or not agent_templates:
             st.error("You are not assigned to any break schedule. Please contact your administrator.")
-            return
+            return  # Absolutely enforce early return
         if len(available_templates) == 1:
             # Only one template, auto-select
             st.session_state.selected_template_name = available_templates[0]
@@ -1540,7 +1540,7 @@ def agent_break_dashboard():
                 if st.button("Continue to Break Selection"):
                     st.session_state.selected_template_name = selected_template
                     st.rerun()
-            return
+            return  # Absolutely enforce early return
 
     
     # Step 2: Break Selection
