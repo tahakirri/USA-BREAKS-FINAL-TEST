@@ -523,6 +523,22 @@ def add_user(username, password, role, group_name=None):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
+    # Password complexity check (defense-in-depth)
+    def is_password_complex(password):
+        if len(password) < 8:
+            return False
+        if not re.search(r"[A-Z]", password):
+            return False
+        if not re.search(r"[a-z]", password):
+            return False
+        if not re.search(r"[0-9]", password):
+            return False
+        if not re.search(r"[^A-Za-z0-9]", password):
+            return False
+        return True
+    if not is_password_complex(password):
+        st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
+        return False
     import sqlite3
     conn = get_db_connection()
     try:
@@ -559,6 +575,22 @@ def reset_password(username, new_password):
     """Reset a user's password"""
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
+        return False
+    # Password complexity check (defense-in-depth)
+    def is_password_complex(password):
+        if len(password) < 8:
+            return False
+        if not re.search(r"[A-Z]", password):
+            return False
+        if not re.search(r"[a-z]", password):
+            return False
+        if not re.search(r"[0-9]", password):
+            return False
+        if not re.search(r"[^A-Za-z0-9]", password):
+            return False
+        return True
+    if not is_password_complex(new_password):
+        st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
         return False
         
     conn = get_db_connection()
@@ -3407,15 +3439,31 @@ else:
                 # Group selection for all new users
                 group_name = st.text_input("Group Name (required)")
                 if st.form_submit_button("Add User"):
+                    def is_password_complex(password):
+                        if len(password) < 8:
+                            return False
+                        if not re.search(r"[A-Z]", password):
+                            return False
+                        if not re.search(r"[a-z]", password):
+                            return False
+                        if not re.search(r"[0-9]", password):
+                            return False
+                        if not re.search(r"[^A-Za-z0-9]", password):
+                            return False
+                        return True
+
                     if user and pwd and group_name:
-                        result = add_user(user, pwd, role, group_name)
-                        if result == "exists":
-                            st.error("User already exists. Please choose a different username.")
-                        elif result:
-                            st.success("User added successfully!")
-                            st.rerun()
+                        if not is_password_complex(pwd):
+                            st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
                         else:
-                            st.error("Failed to add user. Please try again.")
+                            result = add_user(user, pwd, role, group_name)
+                            if result == "exists":
+                                st.error("User already exists. Please choose a different username.")
+                            elif result:
+                                st.success("User added successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to add user. Please try again.")
                     elif not group_name:
                         st.error("Group name is required.")
         
