@@ -1477,25 +1477,62 @@ def agent_break_dashboard():
     # Break selection
     with st.form("break_selection_form"):
         st.write("**Lunch Break** (30 minutes)")
+        lunch_options = []
+        for slot in template["lunch_breaks"]:
+            count = count_bookings(current_date, "lunch", slot)
+            limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("lunch", {}).get(slot, 5)
+            available = max(0, limit - count)
+            label = f"{slot} ({available} free to book)"
+            lunch_options.append((label, slot))
+        lunch_labels = ["No selection"] + [label for label, _ in lunch_options]
+        lunch_values = [""] + [value for _, value in lunch_options]
         lunch_time = st.selectbox(
             "Select Lunch Break",
-            [""] + template["lunch_breaks"],
-            format_func=lambda x: "No selection" if x == "" else x
+            lunch_labels,
+            format_func=lambda x: x,
+            index=0 if not lunch_labels else None
         )
+        # Map label back to value
+        lunch_time = lunch_values[lunch_labels.index(lunch_time)] if lunch_time in lunch_labels else ""
+
         
         st.write("**Early Tea Break** (15 minutes)")
+        early_tea_options = []
+        for slot in template["tea_breaks"]["early"]:
+            count = count_bookings(current_date, "early_tea", slot)
+            limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("early_tea", {}).get(slot, 3)
+            available = max(0, limit - count)
+            label = f"{slot} ({available} free to book)"
+            early_tea_options.append((label, slot))
+        early_tea_labels = ["No selection"] + [label for label, _ in early_tea_options]
+        early_tea_values = [""] + [value for _, value in early_tea_options]
         early_tea = st.selectbox(
             "Select Early Tea Break",
-            [""] + template["tea_breaks"]["early"],
-            format_func=lambda x: "No selection" if x == "" else x
+            early_tea_labels,
+            format_func=lambda x: x,
+            index=0 if not early_tea_labels else None
         )
+        early_tea = early_tea_values[early_tea_labels.index(early_tea)] if early_tea in early_tea_labels else ""
+
         
         st.write("**Late Tea Break** (15 minutes)")
+        late_tea_options = []
+        for slot in template["tea_breaks"]["late"]:
+            count = count_bookings(current_date, "late_tea", slot)
+            limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("late_tea", {}).get(slot, 3)
+            available = max(0, limit - count)
+            label = f"{slot} ({available} free to book)"
+            late_tea_options.append((label, slot))
+        late_tea_labels = ["No selection"] + [label for label, _ in late_tea_options]
+        late_tea_values = [""] + [value for _, value in late_tea_options]
         late_tea = st.selectbox(
             "Select Late Tea Break",
-            [""] + template["tea_breaks"]["late"],
-            format_func=lambda x: "No selection" if x == "" else x
+            late_tea_labels,
+            format_func=lambda x: x,
+            index=0 if not late_tea_labels else None
         )
+        late_tea = late_tea_values[late_tea_labels.index(late_tea)] if late_tea in late_tea_labels else ""
+
         
         # Validate and confirm
         if st.form_submit_button("Confirm Breaks"):
