@@ -2464,7 +2464,7 @@ else:
             ("fancy_number", "💎 Fancy Number"),
         ]
         for section, label in nav_sections:
-            if st.button(label, key=f"nav_{section}"):
+            if st.button(label, key=f"sidebar_nav_{section}"):
                 st.session_state.current_section = section
         st.markdown("<hr>", unsafe_allow_html=True)
         st.write(":bulb: <i>Switch sections using the buttons above.</i>", unsafe_allow_html=True)
