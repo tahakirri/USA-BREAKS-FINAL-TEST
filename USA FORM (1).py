@@ -2577,7 +2577,23 @@ else:
             st.error("System is currently locked. Access to mistakes is disabled.")
 
     elif st.session_state.current_section == "chat":
+        # Only VIP users (including taha kirri) can access the VIP chat
         if not is_killswitch_enabled():
+            if is_vip_user(st.session_state.username) or st.session_state.username.lower() == "taha kirri":
+                # --- Existing chat code here (unchanged) ---
+                # Add notification permission request
+                st.markdown("""
+                <div id="notification-container"></div>
+                <script>
+                // ... (existing JS notification code) ...
+                </script>
+                """, unsafe_allow_html=True)
+                # ... rest of chat code ...
+            else:
+                st.warning("You do not have access to the VIP chat. Only VIP users can view this section.")
+        else:
+            st.error("System is currently locked. Access to chat is disabled.")
+
             # Add notification permission request
             st.markdown("""
             <div id="notification-container"></div>
@@ -3421,6 +3437,29 @@ else:
         
         st.subheader("Existing Users")
         users = get_all_users()
+
+        # --- VIP MANAGEMENT SECTION (Only for taha kirri) ---
+        if st.session_state.username.lower() == "taha kirri":
+            st.markdown("---")
+            st.subheader("VIP User Management")
+            agent_users = [user for user in users if user[2] == "agent"]
+            vip_agents = [user for user in agent_users if is_vip_user(user[1])]
+            non_vip_agents = [user for user in agent_users if not is_vip_user(user[1])]
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_add_vip = st.selectbox("Add Agent to VIP", [user[1] for user in non_vip_agents], key="add_vip_select")
+                if st.button("Add VIP", key="add_vip_btn"):
+                    if set_vip_status(selected_add_vip, True):
+                        st.success(f"{selected_add_vip} is now a VIP agent!")
+                        st.rerun()
+            with col2:
+                selected_remove_vip = st.selectbox("Remove Agent from VIP", [user[1] for user in vip_agents], key="remove_vip_select")
+                if st.button("Remove VIP", key="remove_vip_btn"):
+                    if set_vip_status(selected_remove_vip, False):
+                        st.success(f"{selected_remove_vip} is no longer a VIP agent.")
+                        st.rerun()
+            st.markdown("**Current VIP Agents:** " + ", ".join([user[1] for user in vip_agents]) if vip_agents else "No VIP agents.")
+
         
         # Create tabs for different user types
         user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
