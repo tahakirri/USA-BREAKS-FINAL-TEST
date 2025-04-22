@@ -3480,10 +3480,25 @@ else:
                 reset_user = st.selectbox("Select User", [u[1] for u in users], key="reset_user_select")
                 new_pwd = st.text_input("New Password", type="password", key="reset_user_pwd")
                 if st.form_submit_button("Reset Password"):
+                    def is_password_complex(password):
+                        if len(password) < 8:
+                            return False
+                        if not re.search(r"[A-Z]", password):
+                            return False
+                        if not re.search(r"[a-z]", password):
+                            return False
+                        if not re.search(r"[0-9]", password):
+                            return False
+                        if not re.search(r"[^A-Za-z0-9]", password):
+                            return False
+                        return True
                     if reset_user and new_pwd:
-                        reset_password(reset_user, new_pwd)
-                        st.success(f"Password reset for {reset_user}")
-                        st.rerun()
+                        if not is_password_complex(new_pwd):
+                            st.error("Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.")
+                        else:
+                            reset_password(reset_user, new_pwd)
+                            st.success(f"Password reset for {reset_user}")
+                            st.rerun()
         # Group editing for admin
         if st.session_state.username.lower() == "taha kirri":
             st.write("### Change Agent Group")
