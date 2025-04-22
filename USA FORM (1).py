@@ -10,6 +10,24 @@ import pandas as pd
 import json
 import pytz
 
+# --- Ensure DB migration for break_templates column ---
+def ensure_break_templates_column():
+    conn = sqlite3.connect("data/requests.db")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "break_templates" not in columns:
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN break_templates TEXT")
+                conn.commit()
+            except Exception:
+                pass
+    finally:
+        conn.close()
+
+ensure_break_templates_column()
+
 # --------------------------
 # Timezone Utility Functions
 # --------------------------
@@ -1462,24 +1480,33 @@ def agent_break_dashboard():
         return
     
     # Determine agent's assigned templates
-    conn = get_db_connection()
+    agent_templates = []
     try:
+        conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT break_templates FROM users WHERE username = ?", (agent_id,))
-        row = cursor.fetchone()
+        # Defensive: Check if break_templates column exists
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "break_templates" in columns:
+            cursor.execute("SELECT break_templates FROM users WHERE username = ?", (agent_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                agent_templates = [t.strip() for t in row[0].split(',') if t.strip()]
+    except Exception:
         agent_templates = []
-        if row and row[0]:
-            agent_templates = [t.strip() for t in row[0].split(',') if t.strip()]
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except:
+            pass
 
     # Step 1: Template Selection
     if not st.session_state.selected_template_name:
         st.subheader("Step 1: Select Break Schedule")
         # Only show templates the agent is assigned to
-        available_templates = [t for t in st.session_state.active_templates if t in agent_templates] if agent_templates else st.session_state.active_templates
+        available_templates = [t for t in st.session_state.active_templates if t in agent_templates] if agent_templates else []
         if not available_templates:
-            st.error("No break schedules available. Please contact admin.")
+            st.error("You are not assigned to any break schedule. Please contact your administrator.")
             return
         if len(available_templates) == 1:
             # Only one template, auto-select
@@ -3703,36 +3730,39 @@ else:
                 agent_choices = [(u[1], u[3]) for u in agent_templates if u[2] == "agent"]
                 agent_labels = [f"{name} ({group})" if group else name for name, group in agent_choices]
                 agent_usernames = [name for name, _ in agent_choices]
-                selected_idx = st.selectbox("Select agent to edit templates:", options=list(range(len(agent_labels))), format_func=lambda i: agent_labels[i] if i is not None else "Select...", key="admin_agent_select") if agent_labels else None
-                if agent_labels and selected_idx is not None:
-                    username = agent_usernames[selected_idx]
-                    # Get current templates
-                    agent_row = next(u for u in agent_templates if u[1] == username)
-                    current_templates = [t.strip() for t in (agent_row[4] or '').split(',') if t.strip()]
-                    st.write(f"**Editing templates for:** {username}")
-                    new_templates = st.multiselect(
-                        f"Edit templates for {username}",
-                        templates_list,
-                        default=current_templates,
-                        key=f"edit_templates_{username}"
-                    )
-                    if st.button(f"Save for {username}", key=f"save_templates_{username}"):
-                        def update_agent_templates(username, templates):
-                            conn = sqlite3.connect("data/requests.db")
-                            try:
-                                cursor = conn.cursor()
-                                templates_str = ','.join(templates)
-                                cursor.execute(
-                                    "UPDATE users SET break_templates = ? WHERE username = ?",
-                                    (templates_str, username)
-                                )
-                                conn.commit()
-                                return True
-                            finally:
-                                conn.close()
-                        update_agent_templates(username, new_templates)
-                        st.success(f"Templates updated for {username}!")
-                        st.rerun()
+                if not agent_labels:
+                    st.info("No agents found or no agents assigned to any templates yet.")
+                else:
+                    selected_idx = st.selectbox("Select agent to edit templates:", options=list(range(len(agent_labels))), format_func=lambda i: agent_labels[i] if i is not None else "Select...", key="admin_agent_select")
+                    if selected_idx is not None:
+                        username = agent_usernames[selected_idx]
+                        # Get current templates
+                        agent_row = next(u for u in agent_templates if u[1] == username)
+                        current_templates = [t.strip() for t in (agent_row[4] or '').split(',') if t.strip()]
+                        st.write(f"**Editing templates for:** {username}")
+                        new_templates = st.multiselect(
+                            f"Edit templates for {username}",
+                            templates_list,
+                            default=current_templates,
+                            key=f"edit_templates_{username}"
+                        )
+                        if st.button(f"Save for {username}", key=f"save_templates_{username}"):
+                            def update_agent_templates(username, templates):
+                                conn = sqlite3.connect("data/requests.db")
+                                try:
+                                    cursor = conn.cursor()
+                                    templates_str = ','.join(templates)
+                                    cursor.execute(
+                                        "UPDATE users SET break_templates = ? WHERE username = ?",
+                                        (templates_str, username)
+                                    )
+                                    conn.commit()
+                                    return True
+                                finally:
+                                    conn.close()
+                            update_agent_templates(username, new_templates)
+                            st.success(f"Templates updated for {username}!")
+                            st.rerun()
 
 
             
