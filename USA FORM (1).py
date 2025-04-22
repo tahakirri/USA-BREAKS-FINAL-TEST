@@ -2589,11 +2589,6 @@ else:
                 </script>
                 """, unsafe_allow_html=True)
                 # ... rest of chat code ...
-            else:
-                st.warning("You do not have access to the VIP chat. Only VIP users can view this section.")
-        else:
-            st.error("System is currently locked. Access to chat is disabled.")
-
             # Add notification permission request
             st.markdown("""
             <div id="notification-container"></div>
