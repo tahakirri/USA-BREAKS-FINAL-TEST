@@ -3732,7 +3732,7 @@ else:
                                 conn.close()
                         update_agent_templates(username, new_templates)
                         st.success(f"Templates updated for {username}!")
-                        st.experimental_rerun()
+                        st.rerun()
 
 
             
