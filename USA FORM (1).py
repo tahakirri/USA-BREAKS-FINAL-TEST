@@ -10,6 +10,9 @@ import pandas as pd
 import json
 import pytz
 
+# Ensure 'data' directory exists before any DB connection
+os.makedirs("data", exist_ok=True)
+
 # --- Ensure DB migration for break_templates column ---
 def ensure_break_templates_column():
     conn = sqlite3.connect("data/requests.db")
