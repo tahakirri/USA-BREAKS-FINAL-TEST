@@ -2724,13 +2724,9 @@ else:
                 const messages = {json.dumps(messages_data)};
                 function requestAndShowNotifications() {{
                     if (!('Notification' in window)) return;
-                    if (Notification.permission === "default") {{
-                        Notification.requestPermission().then(function(permission) {{
-                            if(permission !== "granted") {{
-                                window.parent.postMessage({type: 'notification-denied'}, '*');
-                            }}
-                        }});
-                    }}
+                    if (Notification.permission === "default") {
+    Notification.requestPermission();
+}
                     if (Notification.permission === "granted") {{
                         if (messages.length > 0) {{
                             messages.forEach(msg => {{
