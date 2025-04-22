@@ -2894,7 +2894,7 @@ else:
                         <div class="message-avatar">{sender[0].upper()}</div>
                         <div class="message-content">
                             <div>{message}</div>
-                            <div class="message-meta">{sender} • {ts}</div>
+                            <div class="message-meta">{sender} &bull; {ts}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
