@@ -2588,13 +2588,8 @@ else:
                 tab_names = ["VIP Chat", "Group Chat"]
                 selected_tab = st.tabs(tab_names)
                 # VIP Chat Tab
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    document.getElementById('notification-container').style.display = 'none';
-                }
-            }
-            </script>
-            """, unsafe_allow_html=True)
+                # VIP Chat Tab rendering continues here (no JS code outside markdown)
+                # (Notification JS is rendered elsewhere via st.markdown)
             
             if is_chat_killswitch_enabled():
                 st.warning("Chat functionality is currently disabled by the administrator.")
