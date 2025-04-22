@@ -2319,9 +2319,34 @@ if not st.session_state.authenticated:
     st.markdown("</div>", unsafe_allow_html=True)
 
     # Registration section
-    import register_form_component
+    import re
+    from user_utils import register_account, get_all_users
     with st.expander("Don't have an account? Register here!"):
-        register_form_component.registration_form()
+        st.subheader("Create a New Account")
+        username = st.text_input("Choose a Username", key="register_username")
+        password = st.text_input("Choose a Password", type="password", key="register_password")
+        role = st.selectbox("Select Role", ["agent", "admin", "qa"], key="register_role")
+        # Get existing groups
+        users = get_all_users()
+        existing_groups = sorted(set([u[3] for u in users if u[3]]))
+        group_options = existing_groups + ["Create new group..."]
+        group_choice = st.selectbox("Select Group", group_options, key="register_group")
+        new_group = None
+        if group_choice == "Create new group...":
+            new_group = st.text_input("Enter New Group Name", key="register_new_group")
+        group_name = new_group if new_group else group_choice
+        if st.button("Register", key="register_submit"):
+            if not username or not password or not group_name:
+                st.warning("Please fill all fields.")
+            elif not re.match(r'^[\w\- ]+$', group_name):
+                st.warning("Group name can only contain letters, numbers, spaces, dashes, and underscores.")
+            else:
+                created = register_account(username, password, role, group_name)
+                if created:
+                    st.session_state["account_created"] = True
+                    st.rerun()
+                else:
+                    st.error("Username already exists. Please choose another.")
 
 
 else:
