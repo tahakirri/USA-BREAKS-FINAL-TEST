@@ -2630,15 +2630,15 @@ else:
                         message = msg.get('message') if isinstance(msg, dict) else msg[2]
                         ts = msg.get('timestamp') if isinstance(msg, dict) else msg[3]
                         is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">{sender[0].upper()}</div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{ts}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        chat_class = "sent" if is_sent else "received"
+                        msg_html = f'''<div class="chat-message {chat_class}">
+    <div class="message-avatar">{sender[0].upper()}</div>
+    <div class="message-content">
+        <div>{message}</div>
+        <div class="message-meta">{ts}</div>
+    </div>
+</div>'''
+                        st.markdown(msg_html, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     with st.form("private_message_form"):
                         private_msg = st.text_input("Send a private message", key="private_msg")
@@ -2716,15 +2716,15 @@ else:
                                 msg_id, sender, message, ts, mentions, group_name = msg
                                 reactions = {}
                         is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">{sender[0].upper()}</div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{ts}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        chat_class = "sent" if is_sent else "received"
+                        msg_html = f'''<div class="chat-message {chat_class}">
+    <div class="message-avatar">{sender[0].upper()}</div>
+    <div class="message-content">
+        <div>{message}</div>
+        <div class="message-meta">{ts}</div>
+    </div>
+</div>'''
+                        st.markdown(msg_html, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     # --- End group chat logic ---
             else:
@@ -2878,15 +2878,15 @@ else:
                                 msg_id, sender, message, ts, mentions, group_name = msg
                                 reactions = {}
                         is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">{sender[0].upper()}</div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{ts}</div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        chat_class = "sent" if is_sent else "received"
+                        msg_html = f'''<div class="chat-message {chat_class}">
+    <div class="message-avatar">{sender[0].upper()}</div>
+    <div class="message-content">
+        <div>{message}</div>
+        <div class="message-meta">{ts}</div>
+    </div>
+</div>'''
+                        st.markdown(msg_html, unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                     # --- End group chat logic ---
             # Add notification permission request
