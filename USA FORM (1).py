@@ -2240,18 +2240,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-SESSION_DURATION_MINUTES = 10
-
-# --- Session Timeout Management (no persistence across refresh) ---
-now = datetime.utcnow()
-if "last_active" in st.session_state:
-    inactive = (now - st.session_state.last_active).total_seconds()
-    if inactive > SESSION_DURATION_MINUTES * 60:
-        st.session_state.clear()
-        st.session_state["authenticated"] = False
-        st.session_state["timeout_message"] = "Session timed out due to inactivity. Please log in again."
-st.session_state["last_active"] = now
-
 # Custom sidebar background color and text color for light/dark mode
 sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
 sidebar_text = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
@@ -2288,9 +2276,6 @@ if not st.session_state.authenticated:
             <h1 style="text-align: center; margin-bottom: 2rem;">💠 Lyca Management System</h1>
     """, unsafe_allow_html=True)
     
-    if "timeout_message" in st.session_state:
-        st.warning(st.session_state.pop("timeout_message"))
-    
     with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -2308,11 +2293,13 @@ if not st.session_state.authenticated:
                             "last_mistake_count": len(get_mistakes()),
                             "last_message_ids": [msg[0] for msg in get_group_messages()]
                         })
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Invalid credentials")
     
     st.markdown("</div>", unsafe_allow_html=True)
+
+else:
     if is_killswitch_enabled():
         st.markdown("""
         <div class="killswitch-active">
