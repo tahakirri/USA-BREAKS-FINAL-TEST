@@ -519,7 +519,7 @@ def get_all_users():
     finally:
         conn.close()
 
-def add_user(username, password, role, group_name=None):
+def add_user(username, password, role, group_name=None, break_templates=None):
     if is_killswitch_enabled():
         st.error("System is currently locked. Please contact the developer.")
         return False
@@ -543,19 +543,35 @@ def add_user(username, password, role, group_name=None):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        # MIGRATION: Add break_templates column if not exists
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN break_templates TEXT")
+        except Exception:
+            pass
         try:
             if group_name is not None:
-                cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)",
-                               (username, hash_password(password), role, group_name))
+                if break_templates is not None:
+                    break_templates_str = ','.join(break_templates) if isinstance(break_templates, list) else str(break_templates)
+                    cursor.execute("INSERT INTO users (username, password, role, group_name, break_templates) VALUES (?, ?, ?, ?, ?)",
+                                   (username, hash_password(password), role, group_name, break_templates_str))
+                else:
+                    cursor.execute("INSERT INTO users (username, password, role, group_name) VALUES (?, ?, ?, ?)",
+                                   (username, hash_password(password), role, group_name))
             else:
-                cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                               (username, hash_password(password), role))
+                if break_templates is not None:
+                    break_templates_str = ','.join(break_templates) if isinstance(break_templates, list) else str(break_templates)
+                    cursor.execute("INSERT INTO users (username, password, role, break_templates) VALUES (?, ?, ?, ?)",
+                                   (username, hash_password(password), role, break_templates_str))
+                else:
+                    cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                                   (username, hash_password(password), role))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
             return "exists"
     finally:
         conn.close()
+
 
 def delete_user(user_id):
     if is_killswitch_enabled():
