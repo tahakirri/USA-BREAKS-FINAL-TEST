@@ -2834,11 +2834,7 @@ else:
             }
             </script>
             """, unsafe_allow_html=True)
-            // Check if notifications are supported
-            if ('Notification' in window) {
-                const container = document.getElementById('notification-container');
-                if (Notification.permission === 'default') {
-                    container.innerHTML = `
+
                         <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
                             <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
                             <button onclick=\"requestNotificationPermission()\" style=\"margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;\">
