@@ -3717,7 +3717,19 @@ else:
                         key=f"edit_templates_{username}"
                     )
                     if st.button(f"Save for {username}", key=f"save_templates_{username}"):
-                        from update_agent_templates import update_agent_templates
+                        def update_agent_templates(username, templates):
+                            conn = sqlite3.connect("data/requests.db")
+                            try:
+                                cursor = conn.cursor()
+                                templates_str = ','.join(templates)
+                                cursor.execute(
+                                    "UPDATE users SET break_templates = ? WHERE username = ?",
+                                    (templates_str, username)
+                                )
+                                conn.commit()
+                                return True
+                            finally:
+                                conn.close()
                         update_agent_templates(username, new_templates)
                         st.success(f"Templates updated for {username}!")
                         st.experimental_rerun()
