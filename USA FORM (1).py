@@ -976,11 +976,11 @@ def count_bookings(date, break_type, time_slot):
     count = 0
     if date in st.session_state.agent_bookings:
         for agent_id, breaks in st.session_state.agent_bookings[date].items():
-            if break_type == "lunch" and "lunch" in breaks and breaks["lunch"] == time_slot:
+            if break_type == "lunch" and "lunch" in breaks and isinstance(breaks["lunch"], dict) and breaks["lunch"].get("time") == time_slot:
                 count += 1
-            elif break_type == "early_tea" and "early_tea" in breaks and breaks["early_tea"] == time_slot:
+            elif break_type == "early_tea" and "early_tea" in breaks and isinstance(breaks["early_tea"], dict) and breaks["early_tea"].get("time") == time_slot:
                 count += 1
-            elif break_type == "late_tea" and "late_tea" in breaks and breaks["late_tea"] == time_slot:
+            elif break_type == "late_tea" and "late_tea" in breaks and isinstance(breaks["late_tea"], dict) and breaks["late_tea"].get("time") == time_slot:
                 count += 1
     return count
 
