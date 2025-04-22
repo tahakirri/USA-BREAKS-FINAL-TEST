@@ -1536,8 +1536,8 @@ def agent_break_dashboard():
         
         # Validate and confirm
         if st.form_submit_button("Confirm Breaks"):
-            if not (lunch_time or early_tea or late_tea):
-                st.error("Please select at least one break.")
+            if not (lunch_time and early_tea and late_tea):
+                st.error("Please select all three breaks before confirming.")
                 return
             
             # Check for time conflicts
