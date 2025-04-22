@@ -510,11 +510,14 @@ def add_reaction_to_message(message_id, emoji, username):
     finally:
         conn.close()
 
-def get_all_users():
+def get_all_users(include_templates=False):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, group_name FROM users")
+        if include_templates:
+            cursor.execute("SELECT id, username, role, group_name, break_templates FROM users")
+        else:
+            cursor.execute("SELECT id, username, role, group_name FROM users")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -1458,26 +1461,43 @@ def agent_break_dashboard():
                     st.write(f"**{display_name}:** {bookings[break_type]}")
         return
     
+    # Determine agent's assigned templates
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT break_templates FROM users WHERE username = ?", (agent_id,))
+        row = cursor.fetchone()
+        agent_templates = []
+        if row and row[0]:
+            agent_templates = [t.strip() for t in row[0].split(',') if t.strip()]
+    finally:
+        conn.close()
+
     # Step 1: Template Selection
     if not st.session_state.selected_template_name:
         st.subheader("Step 1: Select Break Schedule")
-        available_templates = st.session_state.active_templates
+        # Only show templates the agent is assigned to
+        available_templates = [t for t in st.session_state.active_templates if t in agent_templates] if agent_templates else st.session_state.active_templates
         if not available_templates:
             st.error("No break schedules available. Please contact admin.")
             return
-        
-        selected_template = st.selectbox(
-            "Choose your break schedule:",
-            available_templates,
-            index=None,
-            placeholder="Select a template..."
-        )
-        
-        if selected_template:
-            if st.button("Continue to Break Selection"):
-                st.session_state.selected_template_name = selected_template
-                st.rerun()
-        return
+        if len(available_templates) == 1:
+            # Only one template, auto-select
+            st.session_state.selected_template_name = available_templates[0]
+            st.rerun()
+        else:
+            selected_template = st.selectbox(
+                "Choose your break schedule:",
+                available_templates,
+                index=None,
+                placeholder="Select a template..."
+            )
+            if selected_template:
+                if st.button("Continue to Break Selection"):
+                    st.session_state.selected_template_name = selected_template
+                    st.rerun()
+            return
+
     
     # Step 2: Break Selection
     template = st.session_state.templates[st.session_state.selected_template_name]
@@ -3667,6 +3687,24 @@ else:
             # Agents view
             agent_users = [user for user in users if user[2] == "agent"]
             st.write(f"### Agent Users ({len(agent_users)})")
+
+            # --- Admin: Show agent to template assignments ---
+            if st.session_state.role == "admin":
+                st.subheader("Agent Break Template Assignments")
+                agent_templates = get_all_users(include_templates=True)
+                agent_data = [
+                    {
+                        "Username": u[1],
+                        "Group": u[3],
+                        "Templates": u[4] if u[4] else "-"
+                    }
+                    for u in agent_templates if u[2] == "agent"
+                ]
+                if agent_data:
+                    df = pd.DataFrame(agent_data)
+                    st.dataframe(df, use_container_width=True)
+                else:
+                    st.info("No agents found.")
             
             agent_data = []
             for uid, uname, urole, gname in agent_users:
