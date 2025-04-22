@@ -82,11 +82,6 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN group_name TEXT")
         except Exception:
             pass
-        # MIGRATION: Add is_vip if not exists
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN is_vip INTEGER DEFAULT 0")
-        except Exception:
-            pass
         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS vip_messages (
@@ -599,15 +594,6 @@ def get_hold_images():
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM hold_images ORDER BY timestamp DESC")
-        return cursor.fetchall()
-    finally:
-        conn.close()
-
-def get_hold_tables():
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM hold_tables ORDER BY timestamp DESC")
         return cursor.fetchall()
     finally:
         conn.close()
@@ -2591,243 +2577,253 @@ else:
             st.error("System is currently locked. Access to mistakes is disabled.")
 
     elif st.session_state.current_section == "chat":
-        # Only VIP users (including taha kirri) can access the VIP chat
         if not is_killswitch_enabled():
-            if is_vip_user(st.session_state.username) or st.session_state.username.lower() == "taha kirri":
-                tab_names = ["VIP Chat", "Group Chat"]
-                selected_tab = st.tabs(tab_names)
-                # VIP Chat Tab
-                with selected_tab[0]:
-                    st.subheader(":star: VIP Chat Room")
-                    vip_messages = get_vip_messages()
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    for msg in reversed(vip_messages):
-                        msg_id, sender, message, ts, mentions = msg
-                        is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">{sender[0].upper()}</div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
-                            </div>
+            # Add notification permission request
+            st.markdown("""
+            <div id="notification-container"></div>
+            <script>
+            // Check if notifications are supported
+            if ('Notification' in window) {
+                const container = document.getElementById('notification-container');
+                if (Notification.permission === 'default') {
+                    container.innerHTML = `
+                        <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
+                            <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
+                            <button onclick=\"requestNotificationPermission()\" style=\"margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;\">
+                                Enable Notifications
+                            </button>
                         </div>
-                        """, unsafe_allow_html=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    `;
+                }
+            }
 
-                    # --- Unified Emoji Picker and Input for VIP Chat ---
-                    st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
-                    emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
-                    emoji_cols = st.columns(len(emoji_choices))
-                    for i, emoji in enumerate(emoji_choices):
-                        if emoji_cols[i].button(emoji, key=f"vip_emoji_picker_{emoji}"):
-                            if 'vip_chat_message' not in st.session_state:
-                                st.session_state['vip_chat_message'] = ''
-                            st.session_state['vip_chat_message'] += emoji
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    with st.form("vip_chat_form", clear_on_submit=True):
-                        vip_message_input = st.text_area("Type your message...", key="vip_chat_message")
-                        send_btn = st.form_submit_button("Send")
-                        if send_btn and vip_message_input.strip():
-                            send_vip_message(st.session_state.username, vip_message_input.strip())
-                            st.session_state['vip_chat_message'] = ''
-                            st.rerun()
-        
-        st.subheader("🔍 Search Requests")
-        search_query = st.text_input("Search requests...")
-        # Filter requests by group
-        if st.session_state.role == "admin":
-            # Admin can filter by any group
-            group_filter = None
-            all_groups = [g[0] for g in get_all_groups()] if 'get_all_groups' in globals() else []
-            if all_groups:
-                group_filter = st.selectbox("Filter by group:", [None] + all_groups, format_func=lambda x: x if x else "All Groups", key="group_filter_select")
-            if group_filter:
-                all_requests = search_requests(search_query) if search_query else get_requests()
-                requests = [r for r in all_requests if (len(r) > 7 and r[7] == group_filter)]
-            else:
-                requests = search_requests(search_query) if search_query else get_requests()
-        else:
-            # Agents can only see their own group, regardless of filter
-            user_group = None
-            for u in get_all_users():
-                if u[1] == st.session_state.username:
-                    user_group = u[3]
-                    break
-            all_requests = search_requests(search_query) if search_query else get_requests()
-            requests = [r for r in all_requests if (len(r) > 7 and r[7] == user_group)]
-        
-        st.subheader("All Requests")
-        for req in requests:
-            req_id, agent, req_type, identifier, comment, timestamp, completed, group_name = req
-            with st.container():
-                cols = st.columns([0.1, 0.9])
-                with cols[0]:
-                    st.checkbox("Done", value=bool(completed), 
-                               key=f"check_{req_id}", 
-                               on_change=update_request_status,
-                               args=(req_id, not completed))
-                with cols[1]:
-                    st.markdown(f"""
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between;">
-                            <h4>#{req_id} - {req_type}</h4>
-                            <small>{timestamp}</small>
-                        </div>
-                        <p>Agent: {agent}</p>
-                        <p>Identifier: {identifier}</p>
-                        <div style="margin-top: 1rem;">
-                            <h5>Status Updates:</h5>
-                    """, unsafe_allow_html=True)
-                    
-                    comments = get_request_comments(req_id)
-                    for comment in comments:
-                        cmt_id, _, user, cmt_text, cmt_time = comment
-                        st.markdown(f"""
-                            <div class="comment-box">
-                                <div class="comment-user">
-                                    <small><strong>{user}</strong></small>
-                                    <small>{cmt_time}</small>
-                                </div>
-                                <div class="comment-text">{cmt_text}</div>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    if st.session_state.role == "admin":
-                        with st.form(key=f"comment_form_{req_id}"):
-                            new_comment = st.text_input("Add status update/comment")
-                            if st.form_submit_button("Add Comment"):
-                                if new_comment:
-                                    add_request_comment(req_id, st.session_state.username, new_comment)
-                                    st.rerun()
-        else:
-            st.error("System is currently locked. Access to requests is disabled.")
-
-if st.session_state.current_section == "mistakes":
-
-    if not is_killswitch_enabled():
-        # Only show mistake reporting form to admin users
-        if st.session_state.role == "admin":
-            with st.expander("➕ Report New Mistake"):
-                with st.form("mistake_form"):
-                    cols = st.columns(3)
-                    agent_name = cols[0].text_input("Agent Name")
-                    ticket_id = cols[1].text_input("Ticket ID")
-                    error_description = st.text_area("Error Description")
-                    if st.form_submit_button("Submit"):
-                        if agent_name and ticket_id and error_description:
-                            add_mistake(st.session_state.username, agent_name, ticket_id, error_description)
-                            st.success("Mistake reported successfully!")
-                            st.rerun()
-        
-        st.subheader("🔍 Search Mistakes")
-        search_query = st.text_input("Search mistakes...")
-        mistakes = search_mistakes(search_query) if search_query else get_mistakes()
-        
-        st.subheader("Mistakes Log")
-        for mistake in mistakes:
-            m_id, tl, agent, ticket, error, ts = mistake
-            st.markdown(f"""
-            <div class="card">
-                <div style="display: flex; justify-content: space-between;">
-                    <h4>#{m_id}</h4>
-                    <small>{ts}</small>
-                </div>
-                <p>Agent: {agent}</p>
-                <p>Ticket: {ticket}</p>
-                <p>Error: {error}</p>
-                <p><small>Reported by: {tl}</small></p>
-            </div>
+            async function requestNotificationPermission() {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('notification-container').style.display = 'none';
+                }
+            }
+            </script>
             """, unsafe_allow_html=True)
-    else:
-        st.error("System is currently locked. Access to mistakes is disabled.")
-
-def clear_hold_tables():
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM hold_tables")
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-# --- END HOLD Table Functions ---
-# Only show table paste option to admin users
-if st.session_state.role == "admin":
-    st.write("Paste a table copied from Excel (CSV or tab-separated):")
-    pasted_table = st.text_area("Paste table here", height=150)
-    if st.button("Save HOLD Table"):
-        if pasted_table.strip():
-            try:
-                # Try to parse as DataFrame
-                try:
-                    df = pd.read_csv(io.StringIO(pasted_table), sep=None, engine='python')
-                except Exception:
-                    df = pd.read_csv(io.StringIO(pasted_table), sep='\t')
-                table_data = df.to_csv(index=False)
-                clear_hold_tables()  # Only keep latest
-                if add_hold_table(st.session_state.username, table_data):
-                    st.success("Table saved successfully!")
-                    st.rerun()
-                else:
-                    st.error("Failed to save table.")
-            except Exception as e:
-                st.error(f"Error parsing table: {str(e)}")
-        else:
-            st.warning("Please paste a table.")
-    # Add clear button with confirmation
-    with st.form("clear_hold_tables_form"):
-        confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD tables")
-        if st.form_submit_button("Clear HOLD Tables"):
-            if confirm_clear_hold:
-                if clear_hold_tables():
-                    st.success("All HOLD tables deleted successfully!")
-                    st.rerun()
-                else:
-                    st.error("Failed to delete HOLD tables.")
+            
+            if is_chat_killswitch_enabled():
+                st.warning("Chat functionality is currently disabled by the administrator.")
             else:
-                st.warning("Please confirm by checking the checkbox.")
-# Display most recent table (visible to all users)
-tables = get_hold_tables()
-if tables:
-    table_id, uploader, table_data, timestamp = tables[0]
-    st.markdown(f"""
-    <div style='border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;'>
-        <p><strong>Uploaded by:</strong> {uploader}</p>
-        <p><small>Uploaded at: {timestamp}</small></p>
-    </div>
-    """, unsafe_allow_html=True)
-    try:
-        import pandas as pd
-        import io
-        df = pd.read_csv(io.StringIO(table_data))
-        search_query = st.text_input("🔍 Search in table", key="hold_table_search")
-        if search_query:
-            filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
-            st.dataframe(filtered_df, use_container_width=True)
-        else:
-            st.dataframe(df, use_container_width=True)
-    except Exception as e:
-        st.error(f"Error displaying table: {str(e)}")
-else:
-    st.info("No HOLD tables available")
+                # Group chat group selection
+                group_filter = None
+                if st.session_state.role == "admin":
+                    all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
+                    group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
+                else:
+                    # Always look up the user's group from the users table each time
+                    user_group = None
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            user_group = u[3]
+                            break
+                    st.session_state.group_name = user_group
+                    group_filter = user_group
 
-if st.session_state.current_section == "late_login":
-    st.subheader("⏰ Late Login Report")
-    if not is_killswitch_enabled():
-        with st.form("late_login_form"):
-            cols = st.columns(3)
-            presence_time = cols[0].text_input("Time of presence (HH:MM)", placeholder="08:30")
-            login_time = cols[1].text_input("Time of log in (HH:MM)", placeholder="09:15")
-            reason = cols[2].selectbox("Reason", [
-                "Workspace Issue",
-                "Avaya Issue",
-                "Aaad Tool",
-                "Windows Issue",
-                "Reset Password"
-            ])
+                st.subheader("Group Chat")
+                # Enforce group message visibility: agents only see their group, admin sees selected group
+                if st.session_state.role == "admin":
+                    # Only show messages for selected group; if not selected, show none
+                    view_group = group_filter if group_filter else None
+                else:
+                    # Agents always see only their group (look up each time)
+                    user_group = None
+                    for u in get_all_users():
+                        if u[1] == st.session_state.username:
+                            user_group = u[3]
+                            break
+                    view_group = user_group
+                # Harden: never allow None or empty group to fetch all messages
+                if view_group is not None and str(view_group).strip() != "":
+                    messages = get_group_messages(view_group)
+                else:
+                    messages = []  # No group selected or group is blank, show no messages
+                    if st.session_state.role == "agent":
+                        st.warning("You are not assigned to a group. Please contact an admin.")
+                st.markdown('''<style>
+                .chat-container {background: #f1f5f9; border-radius: 8px; padding: 1rem; max-height: 400px; overflow-y: auto; margin-bottom: 1rem;}
+                .chat-message {display: flex; align-items: flex-start; margin-bottom: 12px;}
+                .chat-message.sent {flex-direction: row-reverse;}
+                .chat-message .message-avatar {width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; margin: 0 10px;}
+                .chat-message .message-content {background: #fff; border-radius: 6px; padding: 8px 14px; min-width: 80px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);}
+                .chat-message.sent .message-content {background: #dbeafe;}
+                .chat-message .message-meta {font-size: 0.8rem; color: #64748b; margin-top: 2px;}
+                </style>''', unsafe_allow_html=True)
+                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                # Chat message rendering
+                for msg in reversed(messages):
+                    # Unpack all 7 fields (id, sender, message, ts, mentions, group_name, reactions)
+                    if isinstance(msg, dict):
+                        msg_id = msg.get('id')
+                        sender = msg.get('sender')
+                        message = msg.get('message')
+                        ts = msg.get('timestamp')
+                        mentions = msg.get('mentions')
+                        group_name = msg.get('group_name')
+                        reactions = msg.get('reactions', {})
+                    else:
+                        # fallback for tuple
+                        if len(msg) == 7:
+                            msg_id, sender, message, ts, mentions, group_name, reactions = msg
+                            try:
+                                reactions = json.loads(reactions) if reactions else {}
+                            except Exception:
+                                reactions = {}
+                        else:
+                            msg_id, sender, message, ts, mentions, group_name = msg
+                            reactions = {}
+                    is_sent = sender == st.session_state.username
+                    st.markdown(f"""
+                    <div class="chat-message {'sent' if is_sent else 'received'}">
+                        <div class="message-avatar">{sender[0].upper()}</div>
+                        <div class="message-content">
+                            <div>{message}</div>
+                            <div class="message-meta">{sender} • {ts}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                # Emoji picker for chat input
+                emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
+                st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
+                emoji_cols = st.columns(len(emoji_choices))
+                for i, emoji in enumerate(emoji_choices):
+                    if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
+                        if 'chat_input' not in st.session_state:
+                            st.session_state['chat_input'] = ''
+                        st.session_state['chat_input'] += emoji
+                st.markdown("</div>", unsafe_allow_html=True)
+                with st.form("chat_form", clear_on_submit=True):
+                    message = st.text_input("Type your message...", key="chat_input")
+                    col1, col2 = st.columns([5,1])
+                    with col2:
+                        if st.form_submit_button("Send"):
+                            if message:
+                                # Admin: send to selected group; Agent: always look up group from users table
+                                if st.session_state.role == "admin":
+                                    send_to_group = group_filter
+                                else:
+                                    # Always look up the user's group from the users table
+                                    send_to_group = None
+                                    for u in get_all_users():
+                                        if u[1] == st.session_state.username:
+                                            send_to_group = u[3]
+                                            break
+                                if send_to_group:
+                                    send_group_message(st.session_state.username, message, send_to_group)
+                                else:
+                                    st.warning("No group selected for chat.")
+                                st.rerun()
+        else:
+            st.error("System is currently locked. Access to chat is disabled.")
+
+    elif st.session_state.current_section == "Live KPIs":
+        if not is_killswitch_enabled():
+            st.subheader("📋 AHT Table")
+            import pandas as pd
+            # --- HOLD Table Functions (now using SQLite for persistence) ---
+            import io
+            def add_hold_table(uploader, table_data):
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    # Only keep the latest table: clear any existing records
+                    cursor.execute("DELETE FROM hold_tables")
+                    timestamp = get_casablanca_time()  # Ensure Casablanca time
+                    cursor.execute("INSERT INTO hold_tables (uploader, table_data, timestamp) VALUES (?, ?, ?)", (uploader, table_data, timestamp))
+                    conn.commit()
+                    return True
+                finally:
+                    conn.close()
+
+            def get_hold_tables():
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT id, uploader, table_data, timestamp FROM hold_tables ORDER BY id DESC LIMIT 1")
+                    result = cursor.fetchall()
+                    return result
+                finally:
+                    conn.close()
+
+            def clear_hold_tables():
+                conn = get_db_connection()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM hold_tables")
+                    conn.commit()
+                    return True
+                finally:
+                    conn.close()
+            # --- END HOLD Table Functions ---
+            # Only show table paste option to admin users
+            if st.session_state.role == "admin":
+                st.write("Paste a table copied from Excel (CSV or tab-separated):")
+                pasted_table = st.text_area("Paste table here", height=150)
+                if st.button("Save HOLD Table"):
+                    if pasted_table.strip():
+                        try:
+                            # Try to parse as DataFrame
+                            try:
+                                df = pd.read_csv(io.StringIO(pasted_table), sep=None, engine='python')
+                            except Exception:
+                                df = pd.read_csv(io.StringIO(pasted_table), sep='\t')
+                            table_data = df.to_csv(index=False)
+                            clear_hold_tables()  # Only keep latest
+                            if add_hold_table(st.session_state.username, table_data):
+                                st.success("Table saved successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to save table.")
+                        except Exception as e:
+                            st.error(f"Error parsing table: {str(e)}")
+                    else:
+                        st.warning("Please paste a table.")
+                # Add clear button with confirmation
+                with st.form("clear_hold_tables_form"):
+                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD tables")
+                    if st.form_submit_button("Clear HOLD Tables"):
+                        if confirm_clear_hold:
+                            if clear_hold_tables():
+                                st.success("All HOLD tables deleted successfully!")
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete HOLD tables.")
+                        else:
+                            st.warning("Please confirm by checking the checkbox.")
+            # Display most recent table (visible to all users)
+            tables = get_hold_tables()
+            if tables:
+                table_id, uploader, table_data, timestamp = tables[0]
+                st.markdown(f"""
+                <div style='border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;'>
+                    <p><strong>Uploaded by:</strong> {uploader}</p>
+                    <p><small>Uploaded at: {timestamp}</small></p>
+                </div>
+                """, unsafe_allow_html=True)
+                try:
+                    import pandas as pd
+                    import io
+                    df = pd.read_csv(io.StringIO(table_data))
+                    search_query = st.text_input("🔍 Search in table", key="hold_table_search")
+                    if search_query:
+                        filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
+                        st.dataframe(filtered_df, use_container_width=True)
+                    else:
+                        st.dataframe(df, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error displaying table: {str(e)}")
+            else:
+                st.info("No HOLD tables available")
+        else:
+            st.error("System is currently locked. Access to HOLD images is disabled.")
+
+    elif st.session_state.current_section == "late_login":
         st.subheader("⏰ Late Login Report")
         
         if not is_killswitch_enabled():
@@ -3425,29 +3421,6 @@ if st.session_state.current_section == "late_login":
         
         st.subheader("Existing Users")
         users = get_all_users()
-
-        # --- VIP MANAGEMENT SECTION (Only for taha kirri) ---
-        if st.session_state.username.lower() == "taha kirri":
-            st.markdown("---")
-            st.subheader("VIP User Management")
-            agent_users = [user for user in users if user[2] == "agent"]
-            vip_agents = [user for user in agent_users if is_vip_user(user[1])]
-            non_vip_agents = [user for user in agent_users if not is_vip_user(user[1])]
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_add_vip = st.selectbox("Add Agent to VIP", [user[1] for user in non_vip_agents], key="add_vip_select")
-                if st.button("Add VIP", key="add_vip_btn"):
-                    if set_vip_status(selected_add_vip, True):
-                        st.success(f"{selected_add_vip} is now a VIP agent!")
-                        st.rerun()
-            with col2:
-                selected_remove_vip = st.selectbox("Remove Agent from VIP", [user[1] for user in vip_agents], key="remove_vip_select")
-                if st.button("Remove VIP", key="remove_vip_btn"):
-                    if set_vip_status(selected_remove_vip, False):
-                        st.success(f"{selected_remove_vip} is no longer a VIP agent.")
-                        st.rerun()
-            st.markdown("**Current VIP Agents:** " + ", ".join([user[1] for user in vip_agents]) if vip_agents else "No VIP agents.")
-
         
         # Create tabs for different user types
         user_tabs = st.tabs(["All Users", "Admins", "Agents", "QA"])
