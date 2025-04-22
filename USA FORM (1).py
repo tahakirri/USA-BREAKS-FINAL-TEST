@@ -2730,81 +2730,91 @@ if st.session_state.current_section == "mistakes":
             """, unsafe_allow_html=True)
     else:
         st.error("System is currently locked. Access to mistakes is disabled.")
-                    conn.close()
 
-            def clear_hold_tables():
-                conn = get_db_connection()
+def clear_hold_tables():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM hold_tables")
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+# --- END HOLD Table Functions ---
+# Only show table paste option to admin users
+if st.session_state.role == "admin":
+    st.write("Paste a table copied from Excel (CSV or tab-separated):")
+    pasted_table = st.text_area("Paste table here", height=150)
+    if st.button("Save HOLD Table"):
+        if pasted_table.strip():
+            try:
+                # Try to parse as DataFrame
                 try:
-                    cursor = conn.cursor()
-                    cursor.execute("DELETE FROM hold_tables")
-                    conn.commit()
-                    return True
-                finally:
-                    conn.close()
-            # --- END HOLD Table Functions ---
-            # Only show table paste option to admin users
-            if st.session_state.role == "admin":
-                st.write("Paste a table copied from Excel (CSV or tab-separated):")
-                pasted_table = st.text_area("Paste table here", height=150)
-                if st.button("Save HOLD Table"):
-                    if pasted_table.strip():
-                        try:
-                            # Try to parse as DataFrame
-                            try:
-                                df = pd.read_csv(io.StringIO(pasted_table), sep=None, engine='python')
-                            except Exception:
-                                df = pd.read_csv(io.StringIO(pasted_table), sep='\t')
-                            table_data = df.to_csv(index=False)
-                            clear_hold_tables()  # Only keep latest
-                            if add_hold_table(st.session_state.username, table_data):
-                                st.success("Table saved successfully!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to save table.")
-                        except Exception as e:
-                            st.error(f"Error parsing table: {str(e)}")
-                    else:
-                        st.warning("Please paste a table.")
-                # Add clear button with confirmation
-                with st.form("clear_hold_tables_form"):
-                    confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD tables")
-                    if st.form_submit_button("Clear HOLD Tables"):
-                        if confirm_clear_hold:
-                            if clear_hold_tables():
-                                st.success("All HOLD tables deleted successfully!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to delete HOLD tables.")
-                        else:
-                            st.warning("Please confirm by checking the checkbox.")
-            # Display most recent table (visible to all users)
-            tables = get_hold_tables()
-            if tables:
-                table_id, uploader, table_data, timestamp = tables[0]
-                st.markdown(f"""
-                <div style='border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;'>
-                    <p><strong>Uploaded by:</strong> {uploader}</p>
-                    <p><small>Uploaded at: {timestamp}</small></p>
-                </div>
-                """, unsafe_allow_html=True)
-                try:
-                    import pandas as pd
-                    import io
-                    df = pd.read_csv(io.StringIO(table_data))
-                    search_query = st.text_input("🔍 Search in table", key="hold_table_search")
-                    if search_query:
-                        filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
-                        st.dataframe(filtered_df, use_container_width=True)
-                    else:
-                        st.dataframe(df, use_container_width=True)
-                except Exception as e:
-                    st.error(f"Error displaying table: {str(e)}")
-            else:
-                st.info("No HOLD tables available")
+                    df = pd.read_csv(io.StringIO(pasted_table), sep=None, engine='python')
+                except Exception:
+                    df = pd.read_csv(io.StringIO(pasted_table), sep='\t')
+                table_data = df.to_csv(index=False)
+                clear_hold_tables()  # Only keep latest
+                if add_hold_table(st.session_state.username, table_data):
+                    st.success("Table saved successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to save table.")
+            except Exception as e:
+                st.error(f"Error parsing table: {str(e)}")
         else:
-            st.error("System is currently locked. Access to HOLD images is disabled.")
+            st.warning("Please paste a table.")
+    # Add clear button with confirmation
+    with st.form("clear_hold_tables_form"):
+        confirm_clear_hold = st.checkbox("I understand and want to clear all HOLD tables")
+        if st.form_submit_button("Clear HOLD Tables"):
+            if confirm_clear_hold:
+                if clear_hold_tables():
+                    st.success("All HOLD tables deleted successfully!")
+                    st.rerun()
+                else:
+                    st.error("Failed to delete HOLD tables.")
+            else:
+                st.warning("Please confirm by checking the checkbox.")
+# Display most recent table (visible to all users)
+tables = get_hold_tables()
+if tables:
+    table_id, uploader, table_data, timestamp = tables[0]
+    st.markdown(f"""
+    <div style='border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; border-radius: 5px;'>
+        <p><strong>Uploaded by:</strong> {uploader}</p>
+        <p><small>Uploaded at: {timestamp}</small></p>
+    </div>
+    """, unsafe_allow_html=True)
+    try:
+        import pandas as pd
+        import io
+        df = pd.read_csv(io.StringIO(table_data))
+        search_query = st.text_input("🔍 Search in table", key="hold_table_search")
+        if search_query:
+            filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False, na=False).any(), axis=1)]
+            st.dataframe(filtered_df, use_container_width=True)
+        else:
+            st.dataframe(df, use_container_width=True)
+    except Exception as e:
+        st.error(f"Error displaying table: {str(e)}")
+else:
+    st.info("No HOLD tables available")
 
-    elif st.session_state.current_section == "late_login":
+if st.session_state.current_section == "late_login":
+    st.subheader("⏰ Late Login Report")
+    if not is_killswitch_enabled():
+        with st.form("late_login_form"):
+            cols = st.columns(3)
+            presence_time = cols[0].text_input("Time of presence (HH:MM)", placeholder="08:30")
+            login_time = cols[1].text_input("Time of log in (HH:MM)", placeholder="09:15")
+            reason = cols[2].selectbox("Reason", [
+                "Workspace Issue",
+                "Avaya Issue",
+                "Aaad Tool",
+                "Windows Issue",
+                "Reset Password"
+            ])
         st.subheader("⏰ Late Login Report")
         
         if not is_killswitch_enabled():
