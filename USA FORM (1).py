@@ -2616,34 +2616,38 @@ else:
 
     elif st.session_state.current_section == "chat":
         if not is_killswitch_enabled():
-            # Private chat between Amal Hichy and Taha Kirri
+            # Private chat as a tab for Amal Hichy and Taha Kirri
             user_lower = st.session_state.username.lower()
             if user_lower in ["amal hichy", "taha kirri"]:
-                st.subheader("Private Chat: Amal Hichy ❤️ ↔️ Taha Kirri")
-                private_group = "private_amal_taha"
-                private_messages = get_group_messages(private_group)
-                st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                for msg in reversed(private_messages):
-                    sender = msg.get('sender') if isinstance(msg, dict) else msg[1]
-                    message = msg.get('message') if isinstance(msg, dict) else msg[2]
-                    ts = msg.get('timestamp') if isinstance(msg, dict) else msg[3]
-                    is_sent = sender == st.session_state.username
-                    st.markdown(f"""
-                    <div class="chat-message {'sent' if is_sent else 'received'}">
-                        <div class="message-avatar">{sender[0].upper()}</div>
-                        <div class="message-content">
-                            <div>{message}</div>
-                            <div class="message-meta">{ts}</div>
+                chat_tabs = st.tabs(["Private", "Group Chat"])
+                with chat_tabs[0]:
+                    private_group = "private_amal_taha"
+                    private_messages = get_group_messages(private_group)
+                    st.subheader("Private")
+                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                    for msg in reversed(private_messages):
+                        sender = msg.get('sender') if isinstance(msg, dict) else msg[1]
+                        message = msg.get('message') if isinstance(msg, dict) else msg[2]
+                        ts = msg.get('timestamp') if isinstance(msg, dict) else msg[3]
+                        is_sent = sender == st.session_state.username
+                        st.markdown(f"""
+                        <div class="chat-message {'sent' if is_sent else 'received'}">
+                            <div class="message-avatar">{sender[0].upper()}</div>
+                            <div class="message-content">
+                                <div>{message}</div>
+                                <div class="message-meta">{ts}</div>
+                            </div>
                         </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-                with st.form("private_message_form"):
-                    private_msg = st.text_input("Send a private message", key="private_msg")
-                    if st.form_submit_button("Send"):
-                        if private_msg.strip():
-                            send_group_message(st.session_state.username, private_msg, private_group)
-                            st.rerun()
+                        """, unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    with st.form("private_message_form"):
+                        private_msg = st.text_input("Send a private message", key="private_msg")
+                        if st.form_submit_button("Send"):
+                            if private_msg.strip():
+                                send_group_message(st.session_state.username, private_msg, private_group)
+                                st.rerun()
+                with chat_tabs[1]:
+                    # The rest of the group chat logic will continue here as before
             # Add notification permission request
             st.markdown("""
             <div id="notification-container"></div>
