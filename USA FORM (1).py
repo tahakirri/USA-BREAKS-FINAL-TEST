@@ -2588,32 +2588,6 @@ else:
                 tab_names = ["VIP Chat", "Group Chat"]
                 selected_tab = st.tabs(tab_names)
                 # VIP Chat Tab
-                with selected_tab[0]:
-                    st.subheader(":star: VIP Chat Room")
-                    vip_messages = get_vip_messages()
-                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-                    for msg in reversed(vip_messages):
-                        msg_id, sender, message, ts, mentions = msg
-                        is_sent = sender == st.session_state.username
-                        st.markdown(f"""
-                        <div class="chat-message {'sent' if is_sent else 'received'}">
-                            <div class="message-avatar">{sender[0].upper()}</div>
-                            <div class="message-content">
-                                <div>{message}</div>
-                                <div class="message-meta">{sender} • {ts}</div>
-                            </div>
-                    container.innerHTML = `
-                        <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
-                            <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
-                            <button onclick=\"requestNotificationPermission()\" style=\"margin-top: 0.5rem; padding: 0.5rem 1rem; background-color: #2563eb; color: white; border: none; border-radius: 0.25rem; cursor: pointer;\">
-                                Enable Notifications
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-
-            async function requestNotificationPermission() {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     document.getElementById('notification-container').style.display = 'none';
@@ -2694,11 +2668,11 @@ else:
                             reactions = {}
                     is_sent = sender == st.session_state.username
                     st.markdown(f"""
-                    <div class="chat-message {'sent' if is_sent else 'received'}">
-                        <div class="message-avatar">{sender[0].upper()}</div>
+                    <div class="chat-message {{'sent' if is_sent else 'received'}}">
+                        <div class="message-avatar">{{sender[0].upper()}}</div>
                         <div class="message-content">
-                            <div>{message}</div>
-                            <div class="message-meta">{sender} • {ts}</div>
+                            <div>{{message}}</div>
+                            <div class="message-meta">{{sender}} • {{ts}}</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
