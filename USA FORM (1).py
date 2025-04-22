@@ -2724,13 +2724,13 @@ else:
                 const messages = {json.dumps(messages_data)};
                 function requestAndShowNotifications() {{
                     if (!('Notification' in window)) return;
-                    if (Notification.permission === "default") {
-    Notification.requestPermission();
-}
+                    if (Notification.permission === "default") {{
+                        Notification.requestPermission();
+                    }}
                     if (Notification.permission === "granted") {{
                         if (messages.length > 0) {{
                             messages.forEach(msg => {{
-                                new Notification(`New message from ${{msg.sender}}`, {{
+                                new Notification(`New message from ${{{msg.sender}}}`, {{
                                     body: msg.message,
                                     icon: "https://cdn-icons-png.flaticon.com/512/561/561127.png"
                                 }});
