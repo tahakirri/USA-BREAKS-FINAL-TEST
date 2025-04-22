@@ -2652,7 +2652,7 @@ else:
                     group_filter = None
                     if st.session_state.role == "admin":
                         all_groups = list(set([u[3] for u in get_all_users() if u[3]]))
-                        group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group")
+                        group_filter = st.selectbox("Select Group to View Chat", all_groups, key="admin_chat_group_group")
                     else:
                         # Always look up the user's group from the users table each time
                         user_group = None
