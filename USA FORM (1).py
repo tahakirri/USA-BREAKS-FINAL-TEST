@@ -3406,7 +3406,23 @@ else:
                     st.info("Note: New accounts will be created as agent accounts.")
                 # Group selection for all new users
                 group_name = st.text_input("Group Name (required)")
-                if st.form_submit_button("Add User"):
+              if st.form_submit_button("Add User"):
+                  # Password complexity check
+                  if not pwd:
+                      st.error("Password is required.")
+                  elif not (re.search(r"[0-9]", pwd) and re.search(r"[^a-zA-Z0-9]", pwd)):
+                      st.error("Your password needs to have a special character and a number.")
+                  elif user and group_name:
+                      result = add_user(user, pwd, role, group_name)
+                      if result == "exists":
+                          st.error("User already exists. Please choose a different username.")
+                      elif result:
+                          st.success("User added successfully!")
+                          st.rerun()
+                      else:
+                          st.error("Failed to add user. Please try again.")
+                  elif not group_name:
+                      st.error("Group name is required.")  if st.form_submit_button("Add User"):
     # Password complexity check
     if not pwd:
         st.error("Password is required.")
