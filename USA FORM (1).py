@@ -2585,23 +2585,23 @@ else:
         # Only VIP users (including taha kirri) can access the VIP chat
         if not is_killswitch_enabled():
             if is_vip_user(st.session_state.username) or st.session_state.username.lower() == "taha kirri":
-                # --- Existing chat code here (unchanged) ---
-                # Add notification permission request
-                st.markdown("""
-                <div id="notification-container"></div>
-                <script>
-                // ... (existing JS notification code) ...
-                </script>
-                """, unsafe_allow_html=True)
-                # ... rest of chat code ...
-            # Add notification permission request
-            st.markdown("""
-            <div id="notification-container"></div>
-            <script>
-            // Check if notifications are supported
-            if ('Notification' in window) {
-                const container = document.getElementById('notification-container');
-                if (Notification.permission === 'default') {
+                tab_names = ["VIP Chat", "Group Chat"]
+                selected_tab = st.tabs(tab_names)
+                # VIP Chat Tab
+                with selected_tab[0]:
+                    st.subheader(":star: VIP Chat Room")
+                    vip_messages = get_vip_messages()
+                    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+                    for msg in reversed(vip_messages):
+                        msg_id, sender, message, ts, mentions = msg
+                        is_sent = sender == st.session_state.username
+                        st.markdown(f"""
+                        <div class="chat-message {'sent' if is_sent else 'received'}">
+                            <div class="message-avatar">{sender[0].upper()}</div>
+                            <div class="message-content">
+                                <div>{message}</div>
+                                <div class="message-meta">{sender} • {ts}</div>
+                            </div>
                     container.innerHTML = `
                         <div style=\"padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; background-color: #1e293b; border: 1px solid #334155;\">
                             <p style=\"margin: 0; color: #e2e8f0;\">Would you like to receive notifications for new messages?</p>
