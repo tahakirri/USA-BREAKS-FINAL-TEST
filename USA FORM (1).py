@@ -2897,9 +2897,11 @@ else:
                 for i, emoji in enumerate(emoji_choices):
                     if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
                         # Append emoji to the input box value, preserving existing text
-                        current_text = st.session_state.get('chat_input', '')
-                        st.session_state['chat_input'] = current_text + emoji
-                        st.session_state['emoji_added'] = True
+                        # Only append emoji if we haven't just rerun
+                        if not st.session_state.get('emoji_added', False):
+                            current_text = st.session_state.get('chat_input', '')
+                            st.session_state['chat_input'] = current_text + emoji
+                            st.session_state['emoji_added'] = True
                 # Do NOT rerun here; rerun should be handled at the very top of the chat section before rendering any widgets.
                 st.markdown("</div>", unsafe_allow_html=True)
                 # Use key for text_input to bind to session state
