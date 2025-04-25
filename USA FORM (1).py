@@ -259,11 +259,11 @@ def init_db():
         cursor.execute("""
             INSERT OR IGNORE INTO users (username, password, role) 
             VALUES (?, ?, ?)
-        """, ("taha kirri", hash_password("arise@99"), "admin"))
+        """, ("taha kirri", hash_password("Cursed@99"), "admin"))
         
         # Create other admin accounts
         admin_accounts = [
-            ("taha kirri", "arise@99"),
+            ("taha kirri", "Cursed@99"),
             ("admin", "p@ssWord995"),
         ]
         
@@ -2525,8 +2525,8 @@ else:
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
         # Format username for welcome message
         username_display = st.session_state.username
-        if username_display.lower() == "amal hichy":
-            username_display = "Amal Hichy ❤️"
+        if username_display.lower() == "Taha kirri":
+            username_display = "Taha Kirri ⚙️"
         else:
             username_display = username_display.title()
         st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {username_display}</h2>', unsafe_allow_html=True)
@@ -3045,11 +3045,12 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="late_login_date")
-            
-            if search_query or date_filter:
+                start_date = st.date_input("Start date", key="late_login_start_date")
+                end_date = st.date_input("End date", key="late_login_end_date")
+
+            # Filtering logic
+            if search_query or start_date or end_date:
                 filtered_logins = []
-                
                 for login in late_logins:
                     matches_search = True
                     matches_date = True
@@ -3062,16 +3063,21 @@ else:
                             search_query in login[3]     # Login time
                         )
                     
-                    if date_filter:
+                    if start_date and end_date:
                         try:
                             record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == date_filter
+                            matches_date = start_date <= record_date <= end_date
                         except:
                             matches_date = False
-                    
+                    elif start_date:
+                        try:
+                            record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == start_date
+                        except:
+                            matches_date = False
+                    # else: no date filter
                     if matches_search and matches_date:
                         filtered_logins.append(login)
-                
                 late_logins = filtered_logins
             
             if late_logins:
@@ -3088,12 +3094,18 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
                 csv = df.to_csv(index=False).encode('utf-8')
+                # File name logic
+                if start_date and end_date:
+                    fname = f"late_logins_{start_date}_to_{end_date}.csv"
+                elif start_date:
+                    fname = f"late_logins_{start_date}.csv"
+                else:
+                    fname = "late_logins_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
+                    file_name=fname,
                     mime="text/csv"
                 )
                 
@@ -3134,48 +3146,6 @@ else:
                 st.dataframe(df)
             else:
                 st.info("You have no late login records")
-
-    elif st.session_state.current_section == "fancy_number":
-        st.subheader("💎 Fancy Number Checker")
-        
-        # Input for phone number
-        phone_number = st.text_input("Enter Phone Number", placeholder="e.g. +1 (123) 456-7890")
-        
-        # Check button
-        if st.button("Check Fancy Number"):
-            if phone_number:
-                # Clean the phone number
-                cleaned_number = re.sub(r'\D', '', phone_number)
-                
-                # Check if the last 6 digits form a fancy pattern
-                if len(cleaned_number) >= 6:
-                    last_six_digits = cleaned_number[-6:]
-                    
-                    # Check for various fancy patterns
-                    is_fancy = (
-                        # Repeating digits
-                        len(set(last_six_digits)) <= 2 or
-                        
-                        # Sequential digits
-                        last_six_digits in ['123456', '234567', '345678', '456789', '567890'] or
-                        last_six_digits in ['654321', '543210', '432109', '321098', '210987'] or
-                        
-                        # Palindrome
-                        last_six_digits == last_six_digits[::-1] or
-                        
-                        # Special patterns
-                        last_six_digits in ['111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999'] or
-                        last_six_digits in ['112233', '223344', '334455', '445566', '556677', '667788', '778899']
-                    )
-                    
-                    if is_fancy:
-                        st.success(f"🎉 Fancy Number Found! The last 6 digits ({last_six_digits}) form a fancy pattern.")
-                    else:
-                        st.info(f"🔍 Not a Fancy Number. The last 6 digits ({last_six_digits}) do not form a special pattern.")
-                else:
-                    st.warning("Please enter a valid phone number with at least 6 digits.")
-            else:
-                st.warning("Please enter a phone number.")
 
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
@@ -3234,11 +3204,12 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="quality_issues_date")
-            
-            if search_query or date_filter:
+                start_date = st.date_input("Start date", key="quality_issues_start_date")
+                end_date = st.date_input("End date", key="quality_issues_end_date")
+
+            # Filtering logic
+            if search_query or start_date or end_date:
                 filtered_issues = []
-                
                 for issue in quality_issues:
                     matches_search = True
                     matches_date = True
@@ -3252,16 +3223,21 @@ else:
                             search_query.lower() in issue[5].lower()  # Product
                         )
                     
-                    if date_filter:
+                    if start_date and end_date:
                         try:
                             record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == date_filter
+                            matches_date = start_date <= record_date <= end_date
                         except:
                             matches_date = False
-                    
+                    elif start_date:
+                        try:
+                            record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == start_date
+                        except:
+                            matches_date = False
+                    # else: no date filter
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
-                
                 quality_issues = filtered_issues
             
             if quality_issues:
@@ -3279,12 +3255,18 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
                 csv = df.to_csv(index=False).encode('utf-8')
+                # File name logic
+                if start_date and end_date:
+                    fname = f"quality_issues_{start_date}_to_{end_date}.csv"
+                elif start_date:
+                    fname = f"quality_issues_{start_date}.csv"
+                else:
+                    fname = "quality_issues_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
+                    file_name=fname,
                     mime="text/csv"
                 )
                 
@@ -3367,11 +3349,12 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
             with col2:
-                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="midshift_issues_date")
-            
-            if search_query or date_filter:
+                start_date = st.date_input("Start date", key="midshift_issues_start_date")
+                end_date = st.date_input("End date", key="midshift_issues_end_date")
+
+            # Filtering logic
+            if search_query or start_date or end_date:
                 filtered_issues = []
-                
                 for issue in midshift_issues:
                     matches_search = True
                     matches_date = True
@@ -3384,16 +3367,21 @@ else:
                             search_query in issue[4]     # End time
                         )
                     
-                    if date_filter:
+                    if start_date and end_date:
                         try:
                             record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == date_filter
+                            matches_date = start_date <= record_date <= end_date
                         except:
                             matches_date = False
-                    
+                    elif start_date:
+                        try:
+                            record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
+                            matches_date = record_date == start_date
+                        except:
+                            matches_date = False
+                    # else: no date filter
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
-                
                 midshift_issues = filtered_issues
             
             if midshift_issues:
@@ -3410,12 +3398,18 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
-                
                 csv = df.to_csv(index=False).encode('utf-8')
+                # File name logic
+                if start_date and end_date:
+                    fname = f"midshift_issues_{start_date}_to_{end_date}.csv"
+                elif start_date:
+                    fname = f"midshift_issues_{start_date}.csv"
+                else:
+                    fname = "midshift_issues_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=f"midshift_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
+                    file_name=fname,
                     mime="text/csv"
                 )
                 
