@@ -1378,15 +1378,20 @@ def admin_break_dashboard():
                         template_name = breaks[break_type].get('template', 'Unknown')
                         break
                 
+                # Find a single 'booked_at' value for this agent's booking
+                booked_at = None
+                for btype in ['lunch', 'early_tea', 'late_tea']:
+                    if btype in breaks and isinstance(breaks[btype], dict):
+                        booked_at = breaks[btype].get('booked_at', None)
+                        if booked_at:
+                            break
                 booking = {
                     "Agent": agent,
                     "Template": template_name or "Unknown",
                     "Lunch": breaks.get("lunch", {}).get("time", "-") if isinstance(breaks.get("lunch"), dict) else breaks.get("lunch", "-"),
-                    "Lunch Booked At": breaks.get("lunch", {}).get("booked_at", "-") if isinstance(breaks.get("lunch"), dict) else "-",
                     "Early Tea": breaks.get("early_tea", {}).get("time", "-") if isinstance(breaks.get("early_tea"), dict) else breaks.get("early_tea", "-"),
-                    "Early Tea Booked At": breaks.get("early_tea", {}).get("booked_at", "-") if isinstance(breaks.get("early_tea"), dict) else "-",
                     "Late Tea": breaks.get("late_tea", {}).get("time", "-") if isinstance(breaks.get("late_tea"), dict) else breaks.get("late_tea", "-"),
-                    "Late Tea Booked At": breaks.get("late_tea", {}).get("booked_at", "-") if isinstance(breaks.get("late_tea"), dict) else "-"
+                    "Booked At": booked_at or "-"
                 }
                 bookings_data.append(booking)
             
@@ -1509,6 +1514,15 @@ def agent_break_dashboard():
         if template_name:
             st.info(f"Template: **{template_name}**")
         
+        # Find a single 'booked_at' value to display (first found among breaks)
+        booked_at = None
+        for break_type in ['lunch', 'early_tea', 'late_tea']:
+            if break_type in bookings and isinstance(bookings[break_type], dict):
+                booked_at = bookings[break_type].get('booked_at', None)
+                if booked_at:
+                    break
+        if booked_at:
+            st.caption(f"Booked at: {booked_at}")
         for break_type, display_name in [
             ("lunch", "Lunch Break"),
             ("early_tea", "Early Tea Break"),
@@ -1516,11 +1530,7 @@ def agent_break_dashboard():
         ]:
             if break_type in bookings:
                 if isinstance(bookings[break_type], dict):
-                    booked_at = bookings[break_type].get('booked_at', None)
-                    if booked_at:
-                        st.write(f"**{display_name}:** {bookings[break_type]['time']}  ", f"(Booked at: {booked_at})")
-                    else:
-                        st.write(f"**{display_name}:** {bookings[break_type]['time']}")
+                    st.write(f"**{display_name}:** {bookings[break_type]['time']}")
                 else:
                     st.write(f"**{display_name}:** {bookings[break_type]}")
         return
