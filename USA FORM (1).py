@@ -1,4 +1,20 @@
 import streamlit as st
+
+# --- Force white background for tables in light mode ---
+st.markdown('''<style>
+/* White background for dataframes/tables in light mode */
+@media (prefers-color-scheme: light) {
+    .stDataFrame, .stTable, .stTable > div, .stDataFrame > div {
+        background-color: white !important;
+        color: black !important;
+    }
+    .stDataFrame .css-1v0mbdj, .stTable .css-1v0mbdj {
+        background-color: white !important;
+        color: black !important;
+    }
+}
+</style>''', unsafe_allow_html=True)
+
 import sqlite3
 import hashlib
 from datetime import datetime, time, timedelta
