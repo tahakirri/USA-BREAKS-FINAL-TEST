@@ -4251,8 +4251,6 @@ if __name__ == "__main__":
     if 'color_mode' not in st.session_state:
         st.session_state.color_mode = 'dark'
         
-    inject_custom_css()
-    
     # Add route for message checking
     if st.query_params.get("check_messages"):
         st.json(handle_message_check())
