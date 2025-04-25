@@ -2919,11 +2919,7 @@ else:
                                 else:
                                     st.warning("No group selected for chat.")
                                 st.rerun()
-                    col1, col2 = st.columns([5,1])
-                    with col2:
-                        if st.form_submit_button("Send"):
-                            if message:
-                                # Admin: send to selected group; Agent: always look up group from users table
+
                                 if st.session_state.role == "admin":
                                     send_to_group = group_filter
                                 else:
