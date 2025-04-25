@@ -2891,12 +2891,34 @@ else:
                 emoji_cols = st.columns(len(emoji_choices))
                 for i, emoji in enumerate(emoji_choices):
                     if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
-                        if 'chat_input' not in st.session_state:
-                            st.session_state['chat_input'] = ''
-                        st.session_state['chat_input'] += emoji
+                        # Append emoji to the input box value, preserving existing text
+                        current_text = st.session_state.get('chat_input', '')
+                        st.session_state['chat_input'] = current_text + emoji
+                        # Rerun to update the input box immediately after emoji click
+                        st.experimental_rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
+                # Use key for text_input to bind to session state
                 with st.form("chat_form", clear_on_submit=True):
-                    message = st.text_input("Type your message...", key="chat_input")
+                    message = st.text_input("Type your message...", value=st.session_state.get('chat_input', ''), key="chat_input")
+                    # Ensure that when the form is submitted, the input is cleared
+                    col1, col2 = st.columns([5,1])
+                    with col2:
+                        if st.form_submit_button("Send"):
+                            if message:
+                                if st.session_state.role == "admin":
+                                    send_to_group = group_filter
+                                else:
+                                    send_to_group = None
+                                    for u in get_all_users():
+                                        if u[1] == st.session_state.username:
+                                            send_to_group = u[3]
+                                            break
+                                if send_to_group:
+                                    send_group_message(st.session_state.username, message, send_to_group)
+                                    st.session_state['chat_input'] = ''  # Clear input after sending
+                                else:
+                                    st.warning("No group selected for chat.")
+                                st.rerun()
                     col1, col2 = st.columns([5,1])
                     with col2:
                         if st.form_submit_button("Send"):
