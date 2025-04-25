@@ -2885,6 +2885,11 @@ else:
                     """, unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
+                # Handle rerun for emoji_added at the top of the chat section
+                if st.session_state.get('emoji_added', False):
+                    st.session_state['emoji_added'] = False
+                    st.experimental_rerun()
+
                 # Emoji picker for chat input
                 emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
                 st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
@@ -2895,14 +2900,11 @@ else:
                         current_text = st.session_state.get('chat_input', '')
                         st.session_state['chat_input'] = current_text + emoji
                         st.session_state['emoji_added'] = True
-                # Safe rerun after emoji added
-                if st.session_state.get('emoji_added', False):
-                    st.session_state['emoji_added'] = False
-                    st.rerun()
+                # Do NOT rerun here; rerun should be handled at the very top of the chat section before rendering any widgets.
                 st.markdown("</div>", unsafe_allow_html=True)
                 # Use key for text_input to bind to session state
                 with st.form("chat_form", clear_on_submit=True):
-                    message = st.text_input("Type your message...", value=st.session_state.get('chat_input', ''), key="chat_input")
+                    message = st.text_input("Type your message...", key="chat_input")
                     # Ensure that when the form is submitted, the input is cleared
                     col1, col2 = st.columns([5,1])
                     with col2:
