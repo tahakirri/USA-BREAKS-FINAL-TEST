@@ -1487,7 +1487,7 @@ def agent_break_dashboard():
             st.session_state.last_booking_clear_per_agent = {}
         last_clear = st.session_state.last_booking_clear_per_agent.get(agent_id)
         # Clear after 11:59 AM
-        if (now_casa.hour > 11 or (now_casa.hour == 11 and now_casa.minute >= 59)):
+        if (now_casa.hour > 05 or (now_casa.hour == 05 and now_casa.minute >= 00)):
             if last_clear != casa_date:
                 # Clear only this agent's bookings for today
                 if current_date in st.session_state.agent_bookings:
