@@ -1469,23 +1469,27 @@ def agent_break_dashboard():
         st.session_state.selected_template_name = None
     
     agent_id = st.session_state.username
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    
-    # --- Clear today's bookings after 5 AM if not already cleared ---
-    # Use session_state to track last clear date
-    if 'last_booking_clear_date' not in st.session_state:
-        st.session_state.last_booking_clear_date = None
-    # --- Use Casablanca time for 5am logic ---
     morocco_tz = pytz.timezone('Africa/Casablanca')
     now_casa = datetime.now(morocco_tz)
     casa_date = now_casa.strftime('%Y-%m-%d')
-    if now_casa.hour >= 5:
-        if st.session_state.last_booking_clear_date != casa_date:
-            # Clear only today's bookings (Casablanca date)
-            st.session_state.agent_bookings[casa_date] = {}
-            st.session_state.last_booking_clear_date = casa_date
-            save_break_data()
     current_date = casa_date  # Use Casablanca date for all booking logic
+
+    # Only apply auto-clear for agents (not admin/qa)
+    user_role = st.session_state.get('role', 'agent')
+    if user_role == 'agent':
+        # Track last clear per agent
+        if 'last_booking_clear_per_agent' not in st.session_state:
+            st.session_state.last_booking_clear_per_agent = {}
+        last_clear = st.session_state.last_booking_clear_per_agent.get(agent_id)
+        # Clear after 11:59 AM
+        if (now_casa.hour > 11 or (now_casa.hour == 11 and now_casa.minute >= 59)):
+            if last_clear != casa_date:
+                # Clear only this agent's bookings for today
+                if current_date in st.session_state.agent_bookings:
+                    st.session_state.agent_bookings[current_date].pop(agent_id, None)
+                st.session_state.last_booking_clear_per_agent[agent_id] = casa_date
+                save_break_data()
+
     # Check if agent already has confirmed bookings
     has_confirmed_bookings = (
         current_date in st.session_state.agent_bookings and 
