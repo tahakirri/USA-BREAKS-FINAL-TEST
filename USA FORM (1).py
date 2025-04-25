@@ -1,5 +1,13 @@
 import streamlit as st
 
+# --- Set page config FIRST as required by Streamlit ---
+st.set_page_config(
+    page_title="Lyca Management System",
+    page_icon=":office:",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # --- Force white background for tables in light mode ---
 st.markdown('''<style>
 /* White background for dataframes/tables in light mode */
@@ -2435,17 +2443,210 @@ def inject_custom_css():
         
         .theme-toggle label {{
             margin-right: 0.5rem;
-            color: {c['text']};
-        }}
-    </style>
-    """, unsafe_allow_html=True)
-
-st.set_page_config(
     page_title="Lyca Management System",
     page_icon=":office:",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+/* Chat Message Styling */
+.chat-message {
+    display: flex;
+    margin-bottom: 1rem;
+    max-width: 80%;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.chat-message.received {
+    margin-right: auto;
+}
+
+.chat-message.sent {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    position: relative;
+}
+
+.received .message-content {
+    background-color: {c['other_message_bg']};
+    color: {c['text']};
+    border-bottom-left-radius: 0.25rem;
+    margin-right: 1rem;
+    border: 1px solid {c['border']};
+}
+
+.sent .message-content {
+    background-color: {c['my_message_bg']};
+    color: #222 !important;
+    border-bottom-right-radius: 0.25rem;
+    margin-left: 1rem;
+    border: 1px solid {c['accent_hover']};
+}
+
+.message-meta {
+    font-size: 0.75rem;
+    color: {c['text_secondary']};
+    margin-top: 0.25rem;
+}
+
+.message-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: {c['accent']};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* Table Styling */
+.stDataFrame {
+    background-color: {c['card']} !important;
+    border: 1px solid {c['table_border']} !important;
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+}
+
+.stDataFrame td {
+    color: {c['text']} !important;
+    border-color: {c['table_border']} !important;
+    background-color: {c['table_row_even']} !important;
+}
+
+.stDataFrame tr:nth-child(odd) td {
+    background-color: {c['table_row_odd']} !important;
+}
+
+.stDataFrame th {
+    color: {c['text']} !important;
+    background-color: {c['table_header']} !important;
+    border-color: {c['table_border']} !important;
+    font-weight: 600 !important;
+}
+
+/* Buttons */
+.stButton button,
+button[kind="primary"],
+.stDownloadButton button,
+div[data-testid="stForm"] button,
+button[data-testid="baseButton-secondary"],
+.stButton > button {    
+    background-color: {c['button_bg']} !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.stButton button:hover,
+button[kind="primary"]:hover,
+.stDownloadButton button:hover,
+div[data-testid="stForm"] button:hover,
+button[data-testid="baseButton-secondary"]:hover,
+.stButton > button:hover {    
+    background-color: {c['button_hover']} !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Secondary Buttons */
+.secondary-button,
+button[data-testid="baseButton-secondary"],
+div[data-baseweb="button"] {    
+    background-color: {c['button_bg']} !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.secondary-button:hover,
+button[data-testid="baseButton-secondary"]:hover,
+div[data-baseweb="button"]:hover {    
+    background-color: {c['button_hover']} !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* VIP Button */
+.vip-button {    
+    background-color: {c['accent']} !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.vip-button:hover {    
+    background-color: {c['accent_hover']} !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Checkbox Styling */
+.stCheckbox > label {
+    color: {c['text']} !important;
+}
+
+.stCheckbox > div[role="checkbox"] {
+    background-color: {c['input_bg']} !important;
+    border-color: {c['border']} !important;
+}
+
+/* Date Input Styling */
+.stDateInput > div > div {
+    background-color: {c['input_bg']} !important;
+    color: {c['input_text']} !important;
+    border-color: {c['border']} !important;
+}
+
+/* Expander Styling */
+.streamlit-expanderHeader {
+    background-color: {c['card']} !important;
+    color: {c['text']} !important;
+    border-color: {c['border']} !important;
+}
+
+/* Tabs Styling */
+.stTabs [data-baseweb="tab-list"] {
+    background-color: {c['card']} !important;
+    border-color: {c['border']} !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    color: {c['text']} !important;
+}
+
+/* Theme Toggle Switch */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    background-color: {c['card']};
+    border: 1px solid {c['border']};
+}
+
+.theme-toggle label {
+    margin-right: 0.5rem;
+    color: {c['text']};
+}
+</style>
+""", unsafe_allow_html=True)
 
 # Custom sidebar background color and text color for light/dark mode
 sidebar_bg = '#ffffff' if st.session_state.get('color_mode', 'light') == 'light' else '#1e293b'
