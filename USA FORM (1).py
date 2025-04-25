@@ -2894,8 +2894,11 @@ else:
                         # Append emoji to the input box value, preserving existing text
                         current_text = st.session_state.get('chat_input', '')
                         st.session_state['chat_input'] = current_text + emoji
-                        # Rerun to update the input box immediately after emoji click
-                        st.experimental_rerun()
+                        st.session_state['emoji_added'] = True
+                # Safe rerun after emoji added
+                if st.session_state.get('emoji_added', False):
+                    st.session_state['emoji_added'] = False
+                    st.experimental_rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
                 # Use key for text_input to bind to session state
                 with st.form("chat_form", clear_on_submit=True):
