@@ -2898,7 +2898,7 @@ else:
                 # Safe rerun after emoji added
                 if st.session_state.get('emoji_added', False):
                     st.session_state['emoji_added'] = False
-                    st.experimental_rerun()
+                    st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
                 # Use key for text_input to bind to session state
                 with st.form("chat_form", clear_on_submit=True):
