@@ -1175,6 +1175,25 @@ def admin_break_dashboard():
             })
         df = pd.DataFrame(formatted)
         st.dataframe(df, use_container_width=True)
+        # Export and Clear buttons
+        export_col, clear_col = st.columns([1,1])
+        with export_col:
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("Export All Booking History (CSV)", csv, "all_booking_history.csv", "text/csv")
+        with clear_col:
+            if 'confirm_clear_history' not in st.session_state:
+                st.session_state.confirm_clear_history = False
+            if not st.session_state.confirm_clear_history:
+                if st.button("Clear All Booking History", key="clear_history_btn"):
+                    st.session_state.confirm_clear_history = True
+            else:
+                st.warning("Are you sure you want to clear all booking history? This cannot be undone.")
+                if st.button("Confirm Clear All History", key="confirm_clear_history_btn"):
+                    st.session_state.booking_history.clear()
+                    st.session_state.confirm_clear_history = False
+                    st.success("All booking history cleared!")
+                if st.button("Cancel", key="cancel_clear_history_btn"):
+                    st.session_state.confirm_clear_history = False
     else:
         st.info("No bookings have been made yet.")
 
@@ -1511,8 +1530,8 @@ def agent_break_dashboard():
     current_date = casa_date  # Use Casablanca date for all booking logic
 
     # --- Time for 12:50pm Casablanca ---
-    reset_hour = 13
-    reset_minute = 18
+    reset_hour = 5
+    reset_minute = 0
     reset_time = time(hour=reset_hour, minute=reset_minute)
     now_time = now_casa.time()
 
