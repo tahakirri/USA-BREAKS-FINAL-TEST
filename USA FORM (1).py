@@ -1512,7 +1512,7 @@ def agent_break_dashboard():
 
     # --- Time for 12:50pm Casablanca ---
     reset_hour = 13
-    reset_minute = 00
+    reset_minute = 02
     reset_time = time(hour=reset_hour, minute=reset_minute)
     now_time = now_casa.time()
 
