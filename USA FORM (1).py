@@ -1512,26 +1512,20 @@ def agent_break_dashboard():
 
     # --- Time for 12:50pm Casablanca ---
     reset_hour = 13
-    reset_minute = 6
+    reset_minute = 15
     reset_time = time(hour=reset_hour, minute=reset_minute)
     now_time = now_casa.time()
 
     # Only apply auto-clear for agents (not admin/qa)
     user_role = st.session_state.get('role', 'agent')
     if user_role == 'agent':
-        # Track last reset per agent (after 12:50pm)
-        if 'last_booking_reset_per_agent' not in st.session_state:
-            st.session_state.last_booking_reset_per_agent = {}
-        last_reset = st.session_state.last_booking_reset_per_agent.get(agent_id)
-        # Only reset after 12:50pm
+        # Always clear booking after reset time, every time agent accesses
         if now_time >= reset_time:
-            if last_reset != casa_date:
-                # Mark agent as eligible to book again after 12:50pm
-                if current_date in st.session_state.agent_bookings:
-                    st.session_state.agent_bookings[current_date].pop(agent_id, None)
-                st.session_state.last_booking_reset_per_agent[agent_id] = casa_date
-                st.session_state.booking_confirmed = False
-                save_break_data()
+            if current_date in st.session_state.agent_bookings:
+                st.session_state.agent_bookings[current_date].pop(agent_id, None)
+            st.session_state.last_booking_reset_per_agent[agent_id] = casa_date
+            st.session_state.booking_confirmed = False
+            save_break_data()
 
     # Check if agent already has confirmed bookings
     has_confirmed_bookings = (
