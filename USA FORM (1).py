@@ -1709,16 +1709,6 @@ def agent_break_dashboard():
             append_booking_to_history(agent_id, current_date, breaks, st.session_state.selected_template_name)
             st.success("Breaks booked successfully!")
             st.rerun()
-                "early_tea": early_tea if early_tea else None,
-                "late_tea": late_tea if late_tea else None
-            }
-            
-            conflict = check_break_conflicts(selected_breaks)
-            if conflict:
-                st.error(conflict)
-                return
-            
-            # Check limits for each selected break
             can_book = True
             if lunch_time:
                 count = sum(1 for bookings in st.session_state.agent_bookings.get(current_date, {}).values()
