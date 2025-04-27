@@ -1497,7 +1497,7 @@ def agent_break_dashboard():
 
     # --- Time for 12:50pm Casablanca ---
     reset_hour = 12
-    reset_minute = 53
+    reset_minute = 58
     reset_time = time(hour=reset_hour, minute=reset_minute)
     now_time = now_casa.time()
 
@@ -1631,7 +1631,7 @@ def agent_break_dashboard():
     # Break selection
     with st.form("break_selection_form"):
         st.write("**Lunch Break** (30 minutes)")
-        # --- Add a hidden field to detect form submission ---
+        # --- Use a single form submit button for confirmation ---
         booking_submitted = st.form_submit_button("Confirm Breaks")
 
         lunch_options = []
@@ -1709,17 +1709,6 @@ def agent_break_dashboard():
             append_booking_to_history(agent_id, current_date, breaks, st.session_state.selected_template_name)
             st.success("Breaks booked successfully!")
             st.rerun()
-
-        
-        # Validate and confirm
-        if st.form_submit_button("Confirm Breaks"):
-            if not (lunch_time and early_tea and late_tea):
-                st.error("Please select all three breaks before confirming.")
-                return
-            
-            # Check for time conflicts
-            selected_breaks = {
-                "lunch": lunch_time if lunch_time else None,
                 "early_tea": early_tea if early_tea else None,
                 "late_tea": late_tea if late_tea else None
             }
