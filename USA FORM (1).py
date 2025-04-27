@@ -1129,6 +1129,10 @@ def clear_all_bookings():
         return False
 
 def admin_break_dashboard():
+    # --- Booking History for Admins ---
+    if 'booking_history' not in st.session_state:
+        st.session_state.booking_history = []
+
     st.title("Break Schedule Management")
     st.markdown("---")
     
@@ -1151,6 +1155,14 @@ def admin_break_dashboard():
             st.session_state.active_templates.append("Default Template")
         save_break_data()
     
+    # Show all booking history for admin
+    st.subheader("All Booking History")
+    if st.session_state.booking_history:
+        df = pd.DataFrame(st.session_state.booking_history)
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("No bookings have been made yet.")
+
     # Template Activation Management
     # Inject CSS to fix white-on-white metric text
     st.markdown("""
@@ -1456,6 +1468,10 @@ def check_break_conflicts(selected_breaks):
     return None
 
 def agent_break_dashboard():
+    # --- Booking History for Admins ---
+    if 'booking_history' not in st.session_state:
+        st.session_state.booking_history = []
+
     st.title("Break Booking")
     st.markdown("---")
     
@@ -1479,20 +1495,27 @@ def agent_break_dashboard():
     casa_date = now_casa.strftime('%Y-%m-%d')
     current_date = casa_date  # Use Casablanca date for all booking logic
 
+    # --- Time for 12:50pm Casablanca ---
+    reset_hour = 12
+    reset_minute = 53
+    reset_time = time(hour=reset_hour, minute=reset_minute)
+    now_time = now_casa.time()
+
     # Only apply auto-clear for agents (not admin/qa)
     user_role = st.session_state.get('role', 'agent')
     if user_role == 'agent':
-        # Track last clear per agent
-        if 'last_booking_clear_per_agent' not in st.session_state:
-            st.session_state.last_booking_clear_per_agent = {}
-        last_clear = st.session_state.last_booking_clear_per_agent.get(agent_id)
-        # Clear after 11:59 AM
-        if (now_casa.hour > 05 or (now_casa.hour == 05 and now_casa.minute >= 00)):
-            if last_clear != casa_date:
-                # Clear only this agent's bookings for today
+        # Track last reset per agent (after 12:50pm)
+        if 'last_booking_reset_per_agent' not in st.session_state:
+            st.session_state.last_booking_reset_per_agent = {}
+        last_reset = st.session_state.last_booking_reset_per_agent.get(agent_id)
+        # Only reset after 12:50pm
+        if now_time >= reset_time:
+            if last_reset != casa_date:
+                # Mark agent as eligible to book again after 12:50pm
                 if current_date in st.session_state.agent_bookings:
                     st.session_state.agent_bookings[current_date].pop(agent_id, None)
-                st.session_state.last_booking_clear_per_agent[agent_id] = casa_date
+                st.session_state.last_booking_reset_per_agent[agent_id] = casa_date
+                st.session_state.booking_confirmed = False
                 save_break_data()
 
     # Check if agent already has confirmed bookings
@@ -1510,11 +1533,8 @@ def agent_break_dashboard():
             if break_type in bookings and isinstance(bookings[break_type], dict):
                 template_name = bookings[break_type].get('template')
                 break
-        
         if template_name:
             st.info(f"Template: **{template_name}**")
-        
-        # Find a single 'booked_at' value to display (first found among breaks)
         booked_at = None
         for break_type in ['lunch', 'early_tea', 'late_tea']:
             if break_type in bookings and isinstance(bookings[break_type], dict):
@@ -1534,6 +1554,18 @@ def agent_break_dashboard():
                 else:
                     st.write(f"**{display_name}:** {bookings[break_type]}")
         return
+
+    # When agent confirms booking, append to booking_history
+    def append_booking_to_history(agent_id, date, breaks, template_name):
+        morocco_tz = pytz.timezone('Africa/Casablanca')
+        now_casa = datetime.now(morocco_tz)
+        st.session_state.booking_history.append({
+            'agent': agent_id,
+            'date': date,
+            'template': template_name,
+            'breaks': breaks,
+            'timestamp': now_casa.strftime('%Y-%m-%d %H:%M:%S')
+        })
     
     # Determine agent's assigned templates
     agent_templates = []
@@ -1599,6 +1631,9 @@ def agent_break_dashboard():
     # Break selection
     with st.form("break_selection_form"):
         st.write("**Lunch Break** (30 minutes)")
+        # --- Add a hidden field to detect form submission ---
+        booking_submitted = st.form_submit_button("Confirm Breaks")
+
         lunch_options = []
         for slot in template["lunch_breaks"]:
             count = count_bookings(current_date, "lunch", slot)
@@ -1654,6 +1689,26 @@ def agent_break_dashboard():
             index=0 if not late_tea_labels else None
         )
         late_tea = late_tea_values[late_tea_labels.index(late_tea)] if late_tea in late_tea_labels else ""
+
+        # --- On booking confirmation, save to agent_bookings and booking_history ---
+        if booking_submitted:
+            breaks = {}
+            if lunch_time:
+                breaks['lunch'] = {'time': lunch_time, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
+            if early_tea:
+                breaks['early_tea'] = {'time': early_tea, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
+            if late_tea:
+                breaks['late_tea'] = {'time': late_tea, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
+            # Save to agent_bookings for current session
+            if current_date not in st.session_state.agent_bookings:
+                st.session_state.agent_bookings[current_date] = {}
+            st.session_state.agent_bookings[current_date][agent_id] = breaks
+            st.session_state.booking_confirmed = True
+            save_break_data()
+            # Save to booking history (for admin)
+            append_booking_to_history(agent_id, current_date, breaks, st.session_state.selected_template_name)
+            st.success("Breaks booked successfully!")
+            st.rerun()
 
         
         # Validate and confirm
