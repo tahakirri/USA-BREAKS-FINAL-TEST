@@ -1158,7 +1158,22 @@ def admin_break_dashboard():
     # Show all booking history for admin
     st.subheader("All Booking History")
     if st.session_state.booking_history:
-        df = pd.DataFrame(st.session_state.booking_history)
+        # Format the booking history for display
+        formatted = []
+        for entry in st.session_state.booking_history:
+            breaks = entry.get('breaks', {})
+            early_tea = breaks.get('early_tea', {}).get('time', '') if isinstance(breaks.get('early_tea'), dict) else ''
+            lunch = breaks.get('lunch', {}).get('time', '') if isinstance(breaks.get('lunch'), dict) else ''
+            late_tea = breaks.get('late_tea', {}).get('time', '') if isinstance(breaks.get('late_tea'), dict) else ''
+            formatted.append({
+                'Agent Name': entry.get('agent', ''),
+                'Template': entry.get('template', ''),
+                'Early Tea Break': early_tea,
+                'Lunch Break': lunch,
+                'Late Tea Break': late_tea,
+                'Timestamp': entry.get('timestamp', '')
+            })
+        df = pd.DataFrame(formatted)
         st.dataframe(df, use_container_width=True)
     else:
         st.info("No bookings have been made yet.")
@@ -1496,8 +1511,8 @@ def agent_break_dashboard():
     current_date = casa_date  # Use Casablanca date for all booking logic
 
     # --- Time for 12:50pm Casablanca ---
-    reset_hour = 12
-    reset_minute = 58
+    reset_hour = 13
+    reset_minute = 00
     reset_time = time(hour=reset_hour, minute=reset_minute)
     now_time = now_casa.time()
 
