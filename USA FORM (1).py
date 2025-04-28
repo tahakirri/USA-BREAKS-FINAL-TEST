@@ -2861,6 +2861,9 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
                 with st.form("chat_form", clear_on_submit=True):
                     message = st.text_input("Type your message...", key="chat_input")
+# Reset emoji click count after message input
+if 'emoji_click_count' in st.session_state:
+    st.session_state['emoji_click_count'] = 0
                     col1, col2 = st.columns([5,1])
                     with col2:
                         if st.form_submit_button("Send"):
