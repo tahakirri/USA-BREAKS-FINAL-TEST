@@ -1537,8 +1537,9 @@ def agent_break_dashboard():
     # Only apply auto-clear for agents (not admin/qa)
     user_role = st.session_state.get('role', 'agent')
     if user_role == 'agent':
-        # Always clear booking after reset time, every time agent accesses
-        if now_time >= reset_time:
+        # Only clear booking once per day after reset time
+        last_reset = st.session_state.last_booking_reset_per_agent.get(agent_id)
+        if now_time >= reset_time and last_reset != casa_date:
             if current_date in st.session_state.agent_bookings:
                 st.session_state.agent_bookings[current_date].pop(agent_id, None)
             st.session_state.last_booking_reset_per_agent[agent_id] = casa_date
