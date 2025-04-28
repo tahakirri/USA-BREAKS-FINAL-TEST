@@ -1129,10 +1129,6 @@ def clear_all_bookings():
         return False
 
 def admin_break_dashboard():
-    # --- Booking History for Admins ---
-    if 'booking_history' not in st.session_state:
-        st.session_state.booking_history = []
-
     st.title("Break Schedule Management")
     st.markdown("---")
     
@@ -1155,45 +1151,6 @@ def admin_break_dashboard():
             st.session_state.active_templates.append("Default Template")
         save_break_data()
     
-    # Show all booking history for admin
-    st.subheader("All Booking History")
-    if st.session_state.booking_history:
-        # Format the booking history for display
-        formatted = []
-        for entry in st.session_state.booking_history:
-            breaks = entry.get('breaks', {})
-            early_tea = breaks.get('early_tea', {}).get('time', '') if isinstance(breaks.get('early_tea'), dict) else ''
-            lunch = breaks.get('lunch', {}).get('time', '') if isinstance(breaks.get('lunch'), dict) else ''
-            late_tea = breaks.get('late_tea', {}).get('time', '') if isinstance(breaks.get('late_tea'), dict) else ''
-            formatted.append({
-                'Agent Name': entry.get('agent', ''),
-                'Template': entry.get('template', ''),
-                'Early Tea Break': early_tea,
-                'Lunch Break': lunch,
-                'Late Tea Break': late_tea,
-                'Timestamp': entry.get('timestamp', '')
-            })
-        df = pd.DataFrame(formatted)
-        st.dataframe(df, use_container_width=True)
-        # Export and Clear buttons (vertically below the table)
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("Export All Booking History (CSV)", csv, "all_booking_history.csv", "text/csv")
-        if 'confirm_clear_history' not in st.session_state:
-            st.session_state.confirm_clear_history = False
-        if not st.session_state.confirm_clear_history:
-            if st.button("Clear All Booking History", key="clear_history_btn"):
-                st.session_state.confirm_clear_history = True
-        else:
-            st.warning("Are you sure you want to clear all booking history? This cannot be undone.")
-            if st.button("Confirm Clear All History", key="confirm_clear_history_btn"):
-                st.session_state.booking_history.clear()
-                st.session_state.confirm_clear_history = False
-                st.success("All booking history cleared!")
-            if st.button("Cancel", key="cancel_clear_history_btn"):
-                st.session_state.confirm_clear_history = False
-    else:
-        st.info("No bookings have been made yet.")
-
     # Template Activation Management
     # Inject CSS to fix white-on-white metric text
     st.markdown("""
@@ -1421,20 +1378,12 @@ def admin_break_dashboard():
                         template_name = breaks[break_type].get('template', 'Unknown')
                         break
                 
-                # Find a single 'booked_at' value for this agent's booking
-                booked_at = None
-                for btype in ['lunch', 'early_tea', 'late_tea']:
-                    if btype in breaks and isinstance(breaks[btype], dict):
-                        booked_at = breaks[btype].get('booked_at', None)
-                        if booked_at:
-                            break
                 booking = {
                     "Agent": agent,
                     "Template": template_name or "Unknown",
                     "Lunch": breaks.get("lunch", {}).get("time", "-") if isinstance(breaks.get("lunch"), dict) else breaks.get("lunch", "-"),
                     "Early Tea": breaks.get("early_tea", {}).get("time", "-") if isinstance(breaks.get("early_tea"), dict) else breaks.get("early_tea", "-"),
-                    "Late Tea": breaks.get("late_tea", {}).get("time", "-") if isinstance(breaks.get("late_tea"), dict) else breaks.get("late_tea", "-"),
-                    "Booked At": booked_at or "-"
+                    "Late Tea": breaks.get("late_tea", {}).get("time", "-") if isinstance(breaks.get("late_tea"), dict) else breaks.get("late_tea", "-")
                 }
                 bookings_data.append(booking)
             
@@ -1499,10 +1448,6 @@ def check_break_conflicts(selected_breaks):
     return None
 
 def agent_break_dashboard():
-    # --- Booking History for Admins ---
-    if 'booking_history' not in st.session_state:
-        st.session_state.booking_history = []
-
     st.title("Break Booking")
     st.markdown("---")
     
@@ -1519,33 +1464,10 @@ def agent_break_dashboard():
         st.session_state.booking_confirmed = False
     if 'selected_template_name' not in st.session_state:
         st.session_state.selected_template_name = None
-    if 'last_booking_reset_per_agent' not in st.session_state:
-        st.session_state.last_booking_reset_per_agent = {}
     
     agent_id = st.session_state.username
-    morocco_tz = pytz.timezone('Africa/Casablanca')
-    now_casa = datetime.now(morocco_tz)
-    casa_date = now_casa.strftime('%Y-%m-%d')
-    current_date = casa_date  # Use Casablanca date for all booking logic
-
-    # --- Time for 12:50pm Casablanca ---
-    reset_hour = 11
-    reset_minute = 43
-    reset_time = time(hour=reset_hour, minute=reset_minute)
-    now_time = now_casa.time()
-
-    # Only apply auto-clear for agents (not admin/qa)
-    user_role = st.session_state.get('role', 'agent')
-    if user_role == 'agent':
-        # Only clear booking once per day after reset time
-        last_reset = st.session_state.last_booking_reset_per_agent.get(agent_id)
-        if now_time >= reset_time and last_reset != casa_date:
-            if current_date in st.session_state.agent_bookings:
-                st.session_state.agent_bookings[current_date].pop(agent_id, None)
-            st.session_state.last_booking_reset_per_agent[agent_id] = casa_date
-            st.session_state.booking_confirmed = False
-            save_break_data()
-
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    
     # Check if agent already has confirmed bookings
     has_confirmed_bookings = (
         current_date in st.session_state.agent_bookings and 
@@ -1561,16 +1483,10 @@ def agent_break_dashboard():
             if break_type in bookings and isinstance(bookings[break_type], dict):
                 template_name = bookings[break_type].get('template')
                 break
+        
         if template_name:
             st.info(f"Template: **{template_name}**")
-        booked_at = None
-        for break_type in ['lunch', 'early_tea', 'late_tea']:
-            if break_type in bookings and isinstance(bookings[break_type], dict):
-                booked_at = bookings[break_type].get('booked_at', None)
-                if booked_at:
-                    break
-        if booked_at:
-            st.caption(f"Booked at: {booked_at}")
+        
         for break_type, display_name in [
             ("lunch", "Lunch Break"),
             ("early_tea", "Early Tea Break"),
@@ -1582,39 +1498,7 @@ def agent_break_dashboard():
                 else:
                     st.write(f"**{display_name}:** {bookings[break_type]}")
         return
-
-    # When agent confirms booking, append to booking_history
-    def append_booking_to_history(agent_id, date, breaks, template_name):
-        morocco_tz = pytz.timezone('Africa/Casablanca')
-        now_casa = datetime.now(morocco_tz)
-        st.session_state.booking_history.append({
-            'agent': agent_id,
-            'date': date,
-            'template': template_name,
-            'breaks': breaks,
-            'timestamp': now_casa.strftime('%Y-%m-%d %H:%M:%S')
-        })
-
-    # --- Show Booking History at the very end ---
-    if 'booking_history' not in st.session_state:
-        st.session_state.booking_history = []
-    if st.session_state.get('role', 'agent') == 'admin' and st.session_state.booking_history:
-        st.markdown('---')
-        st.subheader('All Booking History')
-        import pandas as pd
-        df = pd.DataFrame(st.session_state.booking_history)
-        st.dataframe(df)
-
-    # --- Show Booking History at the very end ---
-    if 'booking_history' not in st.session_state:
-        st.session_state.booking_history = []
-    if st.session_state.get('role', 'agent') == 'admin' and st.session_state.booking_history:
-        st.markdown('---')
-        st.subheader('All Booking History')
-        import pandas as pd
-        df = pd.DataFrame(st.session_state.booking_history)
-        st.dataframe(df)
-
+    
     # Determine agent's assigned templates
     agent_templates = []
     try:
@@ -1679,9 +1563,6 @@ def agent_break_dashboard():
     # Break selection
     with st.form("break_selection_form"):
         st.write("**Lunch Break** (30 minutes)")
-        # --- Use a single form submit button for confirmation ---
-        booking_submitted = st.form_submit_button("Confirm Breaks")
-
         lunch_options = []
         for slot in template["lunch_breaks"]:
             count = count_bookings(current_date, "lunch", slot)
@@ -1738,43 +1619,80 @@ def agent_break_dashboard():
         )
         late_tea = late_tea_values[late_tea_labels.index(late_tea)] if late_tea in late_tea_labels else ""
 
-        # --- On booking confirmation, save to agent_bookings and booking_history ---
-        if booking_submitted:
-            breaks = {}
-            if lunch_time:
-                breaks['lunch'] = {'time': lunch_time, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
-            if early_tea:
-                breaks['early_tea'] = {'time': early_tea, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
-            if late_tea:
-                breaks['late_tea'] = {'time': late_tea, 'template': st.session_state.selected_template_name, 'booked_at': datetime.now(morocco_tz).strftime('%Y-%m-%d %H:%M:%S')}
-
-            if not breaks:
-                st.error("Please select at least one break to book.")
+        
+        # Validate and confirm
+        if st.form_submit_button("Confirm Breaks"):
+            if not (lunch_time and early_tea and late_tea):
+                st.error("Please select all three breaks before confirming.")
                 return
-
-            # Check for slot limits
+            
+            # Check for time conflicts
+            selected_breaks = {
+                "lunch": lunch_time if lunch_time else None,
+                "early_tea": early_tea if early_tea else None,
+                "late_tea": late_tea if late_tea else None
+            }
+            
+            conflict = check_break_conflicts(selected_breaks)
+            if conflict:
+                st.error(conflict)
+                return
+            
+            # Check limits for each selected break
             can_book = True
-            for break_type, break_info in breaks.items():
-                slot = break_info['time']
-                limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get(break_type, {}).get(slot, 5 if break_type == 'lunch' else 3)
-                count = sum(1 for b in st.session_state.agent_bookings.get(current_date, {}).values() if isinstance(b.get(break_type), dict) and b[break_type]['time'] == slot)
+            if lunch_time:
+                count = sum(1 for bookings in st.session_state.agent_bookings.get(current_date, {}).values()
+                           if isinstance(bookings.get("lunch"), dict) and bookings["lunch"]["time"] == lunch_time)
+                limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("lunch", {}).get(lunch_time, 5)
                 if count >= limit:
-                    st.error(f"{break_type.replace('_', ' ').capitalize()} at {slot} is full.")
+                    st.error(f"Lunch break at {lunch_time} is full.")
                     can_book = False
-            if not can_book:
-                return
-
-            # Save to agent_bookings for current session
-            if current_date not in st.session_state.agent_bookings:
-                st.session_state.agent_bookings[current_date] = {}
-            st.session_state.agent_bookings[current_date][agent_id] = breaks
-            st.session_state.booking_confirmed = True
-            save_break_data()
-            # Save to booking history (for admin)
-            append_booking_to_history(agent_id, current_date, breaks, st.session_state.selected_template_name)
-            st.success("Breaks booked successfully!")
-            st.rerun()
-
+            
+            if early_tea:
+                count = sum(1 for bookings in st.session_state.agent_bookings.get(current_date, {}).values()
+                           if isinstance(bookings.get("early_tea"), dict) and bookings["early_tea"]["time"] == early_tea)
+                limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("early_tea", {}).get(early_tea, 3)
+                if count >= limit:
+                    st.error(f"Early tea break at {early_tea} is full.")
+                    can_book = False
+            
+            if late_tea:
+                count = sum(1 for bookings in st.session_state.agent_bookings.get(current_date, {}).values()
+                           if isinstance(bookings.get("late_tea"), dict) and bookings["late_tea"]["time"] == late_tea)
+                limit = st.session_state.break_limits.get(st.session_state.selected_template_name, {}).get("late_tea", {}).get(late_tea, 3)
+                if count >= limit:
+                    st.error(f"Late tea break at {late_tea} is full.")
+                    can_book = False
+            
+            if can_book:
+                # Save the bookings
+                if current_date not in st.session_state.agent_bookings:
+                    st.session_state.agent_bookings[current_date] = {}
+                
+                bookings = {}
+                if lunch_time:
+                    bookings["lunch"] = {
+                        "time": lunch_time,
+                        "template": st.session_state.selected_template_name,
+                        "booked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                if early_tea:
+                    bookings["early_tea"] = {
+                        "time": early_tea,
+                        "template": st.session_state.selected_template_name,
+                        "booked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                if late_tea:
+                    bookings["late_tea"] = {
+                        "time": late_tea,
+                        "template": st.session_state.selected_template_name,
+                        "booked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                
+                st.session_state.agent_bookings[current_date][agent_id] = bookings
+                save_break_data()
+                st.success("Your breaks have been confirmed!")
+                st.rerun()
 
 def is_vip_user(username):
     """Check if a user has VIP status"""
@@ -2585,8 +2503,8 @@ else:
         welcome_color = '#1e293b' if st.session_state.get('color_mode', 'light') == 'light' else '#fff'
         # Format username for welcome message
         username_display = st.session_state.username
-        if username_display.lower() == "Taha kirri":
-            username_display = "Taha Kirri ⚙️"
+        if username_display.lower() == "TAHA KIRRI":
+            username_display = "Taha Kirri "
         else:
             username_display = username_display.title()
         st.markdown(f'<h2 style="color: {welcome_color};">✨ Welcome, {username_display}</h2>', unsafe_allow_html=True)
@@ -3105,12 +3023,11 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search late login records...", key="late_login_search")
             with col2:
-                start_date = st.date_input("Start date", key="late_login_start_date")
-                end_date = st.date_input("End date", key="late_login_end_date")
-
-            # Filtering logic
-            if search_query or start_date or end_date:
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="late_login_date")
+            
+            if search_query or date_filter:
                 filtered_logins = []
+                
                 for login in late_logins:
                     matches_search = True
                     matches_date = True
@@ -3123,21 +3040,16 @@ else:
                             search_query in login[3]     # Login time
                         )
                     
-                    if start_date and end_date:
+                    if date_filter:
                         try:
                             record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = start_date <= record_date <= end_date
+                            matches_date = record_date == date_filter
                         except:
                             matches_date = False
-                    elif start_date:
-                        try:
-                            record_date = datetime.strptime(login[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == start_date
-                        except:
-                            matches_date = False
-                    # else: no date filter
+                    
                     if matches_search and matches_date:
                         filtered_logins.append(login)
+                
                 late_logins = filtered_logins
             
             if late_logins:
@@ -3154,18 +3066,12 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
+                
                 csv = df.to_csv(index=False).encode('utf-8')
-                # File name logic
-                if start_date and end_date:
-                    fname = f"late_logins_{start_date}_to_{end_date}.csv"
-                elif start_date:
-                    fname = f"late_logins_{start_date}.csv"
-                else:
-                    fname = "late_logins_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=fname,
+                    file_name=f"late_logins_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
@@ -3206,6 +3112,48 @@ else:
                 st.dataframe(df)
             else:
                 st.info("You have no late login records")
+
+    elif st.session_state.current_section == "fancy_number":
+        st.subheader("💎 Fancy Number Checker")
+        
+        # Input for phone number
+        phone_number = st.text_input("Enter Phone Number", placeholder="e.g. +1 (123) 456-7890")
+        
+        # Check button
+        if st.button("Check Fancy Number"):
+            if phone_number:
+                # Clean the phone number
+                cleaned_number = re.sub(r'\D', '', phone_number)
+                
+                # Check if the last 6 digits form a fancy pattern
+                if len(cleaned_number) >= 6:
+                    last_six_digits = cleaned_number[-6:]
+                    
+                    # Check for various fancy patterns
+                    is_fancy = (
+                        # Repeating digits
+                        len(set(last_six_digits)) <= 2 or
+                        
+                        # Sequential digits
+                        last_six_digits in ['123456', '234567', '345678', '456789', '567890'] or
+                        last_six_digits in ['654321', '543210', '432109', '321098', '210987'] or
+                        
+                        # Palindrome
+                        last_six_digits == last_six_digits[::-1] or
+                        
+                        # Special patterns
+                        last_six_digits in ['111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999'] or
+                        last_six_digits in ['112233', '223344', '334455', '445566', '556677', '667788', '778899']
+                    )
+                    
+                    if is_fancy:
+                        st.success(f"🎉 Fancy Number Found! The last 6 digits ({last_six_digits}) form a fancy pattern.")
+                    else:
+                        st.info(f"🔍 Not a Fancy Number. The last 6 digits ({last_six_digits}) do not form a special pattern.")
+                else:
+                    st.warning("Please enter a valid phone number with at least 6 digits.")
+            else:
+                st.warning("Please enter a phone number.")
 
     elif st.session_state.current_section == "quality_issues":
         st.subheader("📞 Quality Related Technical Issue")
@@ -3264,12 +3212,11 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search quality issues...", key="quality_issues_search")
             with col2:
-                start_date = st.date_input("Start date", key="quality_issues_start_date")
-                end_date = st.date_input("End date", key="quality_issues_end_date")
-
-            # Filtering logic
-            if search_query or start_date or end_date:
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="quality_issues_date")
+            
+            if search_query or date_filter:
                 filtered_issues = []
+                
                 for issue in quality_issues:
                     matches_search = True
                     matches_date = True
@@ -3283,21 +3230,16 @@ else:
                             search_query.lower() in issue[5].lower()  # Product
                         )
                     
-                    if start_date and end_date:
+                    if date_filter:
                         try:
                             record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = start_date <= record_date <= end_date
+                            matches_date = record_date == date_filter
                         except:
                             matches_date = False
-                    elif start_date:
-                        try:
-                            record_date = datetime.strptime(issue[6], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == start_date
-                        except:
-                            matches_date = False
-                    # else: no date filter
+                    
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
+                
                 quality_issues = filtered_issues
             
             if quality_issues:
@@ -3315,18 +3257,12 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
+                
                 csv = df.to_csv(index=False).encode('utf-8')
-                # File name logic
-                if start_date and end_date:
-                    fname = f"quality_issues_{start_date}_to_{end_date}.csv"
-                elif start_date:
-                    fname = f"quality_issues_{start_date}.csv"
-                else:
-                    fname = "quality_issues_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=fname,
+                    file_name=f"quality_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
@@ -3409,12 +3345,11 @@ else:
             with col1:
                 search_query = st.text_input("🔍 Search mid-shift issues...", key="midshift_issues_search")
             with col2:
-                start_date = st.date_input("Start date", key="midshift_issues_start_date")
-                end_date = st.date_input("End date", key="midshift_issues_end_date")
-
-            # Filtering logic
-            if search_query or start_date or end_date:
+                date_filter = st.date_input("📅 Filter by date (Casablanca time)", key="midshift_issues_date")
+            
+            if search_query or date_filter:
                 filtered_issues = []
+                
                 for issue in midshift_issues:
                     matches_search = True
                     matches_date = True
@@ -3427,21 +3362,16 @@ else:
                             search_query in issue[4]     # End time
                         )
                     
-                    if start_date and end_date:
+                    if date_filter:
                         try:
                             record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = start_date <= record_date <= end_date
+                            matches_date = record_date == date_filter
                         except:
                             matches_date = False
-                    elif start_date:
-                        try:
-                            record_date = datetime.strptime(issue[5], "%Y-%m-%d %H:%M:%S").date()
-                            matches_date = record_date == start_date
-                        except:
-                            matches_date = False
-                    # else: no date filter
+                    
                     if matches_search and matches_date:
                         filtered_issues.append(issue)
+                
                 midshift_issues = filtered_issues
             
             if midshift_issues:
@@ -3458,18 +3388,12 @@ else:
                 
                 df = pd.DataFrame(data)
                 st.dataframe(df)
+                
                 csv = df.to_csv(index=False).encode('utf-8')
-                # File name logic
-                if start_date and end_date:
-                    fname = f"midshift_issues_{start_date}_to_{end_date}.csv"
-                elif start_date:
-                    fname = f"midshift_issues_{start_date}.csv"
-                else:
-                    fname = "midshift_issues_all.csv"
                 st.download_button(
                     label="Download as CSV",
                     data=csv,
-                    file_name=fname,
+                    file_name=f"midshift_issues_{date_filter.strftime('%Y-%m-%d') if date_filter else 'all'}.csv",
                     mime="text/csv"
                 )
                 
