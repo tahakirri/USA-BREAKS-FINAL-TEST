@@ -2886,7 +2886,6 @@ else:
                                     send_group_message(st.session_state.username, message, send_to_group)
                                 else:
                                     st.warning("No group selected for chat.")
-                                st.session_state['chat_input'] = ''  # Clear after send
                                 st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
