@@ -1519,6 +1519,8 @@ def agent_break_dashboard():
         st.session_state.booking_confirmed = False
     if 'selected_template_name' not in st.session_state:
         st.session_state.selected_template_name = None
+    if 'last_booking_reset_per_agent' not in st.session_state:
+        st.session_state.last_booking_reset_per_agent = {}
     
     agent_id = st.session_state.username
     morocco_tz = pytz.timezone('Africa/Casablanca')
