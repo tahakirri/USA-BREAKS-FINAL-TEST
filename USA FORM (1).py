@@ -2853,17 +2853,21 @@ else:
                 emoji_choices = ["👍", "😂", "😍", "😮", "😢", "👎"]
                 st.markdown("<div style='margin-bottom: 0.5rem;'>", unsafe_allow_html=True)
                 emoji_cols = st.columns(len(emoji_choices))
+                if 'emoji_to_add' not in st.session_state:
+                    st.session_state['emoji_to_add'] = ''
                 for i, emoji in enumerate(emoji_choices):
-                    if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}"):
+                    if emoji_cols[i].button(emoji, key=f"emoji_picker_{emoji}_{i}"):
+                        st.session_state['emoji_to_add'] = emoji
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                with st.form("chat_form", clear_on_submit=True):
+                    # If an emoji was picked, append it to the input
+                    if st.session_state.get('emoji_to_add'):
                         if 'chat_input' not in st.session_state:
                             st.session_state['chat_input'] = ''
-                        st.session_state['chat_input'] += emoji
-                st.markdown("</div>", unsafe_allow_html=True)
-                with st.form("chat_form", clear_on_submit=True):
+                        st.session_state['chat_input'] += st.session_state['emoji_to_add']
+                        st.session_state['emoji_to_add'] = ''
                     message = st.text_input("Type your message...", key="chat_input")
-# Reset emoji click count after message input
-if 'emoji_click_count' in st.session_state:
-    st.session_state['emoji_click_count'] = 0
                     col1, col2 = st.columns([5,1])
                     with col2:
                         if st.form_submit_button("Send"):
@@ -2882,6 +2886,7 @@ if 'emoji_click_count' in st.session_state:
                                     send_group_message(st.session_state.username, message, send_to_group)
                                 else:
                                     st.warning("No group selected for chat.")
+                                st.session_state['chat_input'] = ''  # Clear after send
                                 st.rerun()
         else:
             st.error("System is currently locked. Access to chat is disabled.")
