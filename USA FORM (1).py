@@ -1593,7 +1593,27 @@ def agent_break_dashboard():
             'breaks': breaks,
             'timestamp': now_casa.strftime('%Y-%m-%d %H:%M:%S')
         })
-    
+
+    # --- Show Booking History at the very end ---
+    if 'booking_history' not in st.session_state:
+        st.session_state.booking_history = []
+    if st.session_state.get('role', 'agent') == 'admin' and st.session_state.booking_history:
+        st.markdown('---')
+        st.subheader('All Booking History')
+        import pandas as pd
+        df = pd.DataFrame(st.session_state.booking_history)
+        st.dataframe(df)
+
+    # --- Show Booking History at the very end ---
+    if 'booking_history' not in st.session_state:
+        st.session_state.booking_history = []
+    if st.session_state.get('role', 'agent') == 'admin' and st.session_state.booking_history:
+        st.markdown('---')
+        st.subheader('All Booking History')
+        import pandas as pd
+        df = pd.DataFrame(st.session_state.booking_history)
+        st.dataframe(df)
+
     # Determine agent's assigned templates
     agent_templates = []
     try:
